@@ -26,6 +26,9 @@ CREATE TABLE PersonalStudyTopics (
     ai_confidence TINYINT DEFAULT NULL COMMENT 'AI 분류 신뢰도(0~100)',
     start_date DATE COMMENT '학습 시작일',
     end_date DATE COMMENT '학습 종료일',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '소프트 딜리트 여부 (0=유효, 1=삭제됨)',
+    deleted_at DATETIME DEFAULT NULL COMMENT '삭제된 시각 (삭제 시 기록)',
+    is_finished TINYINT(1) AS (CASE WHEN end_date IS NOT NULL AND end_date <= CURDATE() THEN 1 ELSE 0 END) STORED COMMENT '학습 기간 종료 여부',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일 (사용자/AI 수정 시 갱신)',
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
@@ -141,6 +144,9 @@ CREATE TABLE GroupStudyTopics (
     ai_confidence TINYINT DEFAULT NULL COMMENT 'AI 분류 신뢰도',
     start_date DATE COMMENT '학습 시작일',
     end_date DATE COMMENT '학습 종료일',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '소프트 딜리트 여부 (0=유효, 1=삭제됨)',
+    deleted_at DATETIME DEFAULT NULL COMMENT '삭제된 시각 (삭제 시 기록)',
+    is_finished TINYINT(1) AS (CASE WHEN end_date IS NOT NULL AND end_date <= CURDATE() THEN 1 ELSE 0 END) STORED COMMENT '학습 기간 종료 여부',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
     FOREIGN KEY (group_id) REFERENCES StudyGroups(group_id)
