@@ -1,0 +1,525 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0" version="29.0.3">
+  <diagram name="페이지-1" id="Hi-hTKct_0ZmLPO_Eel_">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="u_dggLiKKXICfo_ERmUR-63" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="-1039" width="110" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-2" value="Activity Diagram" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009999;" vertex="1" parent="1">
+          <mxGeometry x="37" y="-1160" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-3" value="로그인" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="220" y="-1000" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-7" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="-870" as="sourcePoint" />
+            <mxPoint x="250" y="-850" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-8" value="학습 주제 선택" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="220" y="-900" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-16" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-3">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470" y="-890" as="sourcePoint" />
+            <mxPoint x="250" y="-950" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-23" value="스터디 기간&lt;div&gt;&amp;nbsp;설정&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="210" y="-850" width="80" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-24" value="일일 공부 시간 선택" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="220" y="-790" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-25" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-23">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="-810" as="sourcePoint" />
+            <mxPoint x="250" y="-790" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-67" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="370" y="-760" as="sourcePoint" />
+            <mxPoint x="390" y="-728.9655172413793" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="370" y="-729" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-27" value="&lt;div&gt;맞춤형&lt;/div&gt;스터디&lt;div&gt;프로젝트&lt;/div&gt;&lt;div&gt;(캘린더)&lt;/div&gt;&lt;div&gt;생성&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="320" y="-840" width="50" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-31" value="주간 학습 계획" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="390" y="-820" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-32" value="" style="endArrow=classic;html=1;rounded=0;entryX=-0.015;entryY=0.639;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;dashed=1;entryPerimeter=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-27" target="u_dggLiKKXICfo_ERmUR-31">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="410" y="-824" as="sourcePoint" />
+            <mxPoint x="430" y="-824" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="370" y="-800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-33" value="AI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#6600CC;" vertex="1" parent="1">
+          <mxGeometry x="300" y="-1090" width="90" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-34" value="" style="endArrow=none;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-27" target="u_dggLiKKXICfo_ERmUR-63">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="460" y="-870" as="sourcePoint" />
+            <mxPoint x="345" y="-870" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-35" value="&lt;div&gt;학습 메모&lt;/div&gt;&lt;div&gt;추가&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="470" y="-969" width="70" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-38" value="&lt;div&gt;AI 자동화&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="600" y="-969" width="80" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-41" value="&lt;div&gt;공부 내용&lt;/div&gt;&lt;div&gt;필기&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="300" y="-1029" width="90" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-44" value="&lt;div&gt;중요도 분류&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="300" y="-989" width="90" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-45" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="450" y="-804" as="sourcePoint" />
+            <mxPoint x="470" y="-804" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-46" value="&lt;div&gt;AI 기반 시각화 / 추천&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="470" y="-820" width="80" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-48" value="&lt;div&gt;이미지 읽기&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="300" y="-949" width="90" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-49" value="&lt;div&gt;자동&lt;/div&gt;&lt;div&gt;카테고리화&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="300" y="-909" width="90" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-66" value="AI 코치&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;알림&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(학습 요약, 계획 확인)&lt;/span&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="390" y="-750" width="160" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-68" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="-680" width="510" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-69" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="-570" width="510" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-70" value="" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="-450" width="510" height="370" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-73" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-38" target="u_dggLiKKXICfo_ERmUR-69">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="785" y="-770" as="sourcePoint" />
+            <mxPoint x="730" y="-520" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="785" y="-953" />
+              <mxPoint x="785" y="-690" />
+              <mxPoint x="785" y="-520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-75" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-66" target="u_dggLiKKXICfo_ERmUR-68">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470" y="-590" as="sourcePoint" />
+            <mxPoint x="540" y="-692" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="470" y="-700" />
+              <mxPoint x="315" y="-700" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-76" value="&lt;div&gt;이해/복습&lt;/div&gt;&lt;div&gt;문제 생성&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="110" y="-670" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-77" value="객관식" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="190" y="-670" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-78" value="주관식" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="190" y="-640" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-79" value="매칭" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="190" y="-610" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-80" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-76" target="u_dggLiKKXICfo_ERmUR-78">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="170" y="-619.5" as="sourcePoint" />
+            <mxPoint x="210" y="-619.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-81" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-79" target="u_dggLiKKXICfo_ERmUR-77">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="-580" as="sourcePoint" />
+            <mxPoint x="190" y="-670" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="170" y="-600" />
+              <mxPoint x="170" y="-619.5" />
+              <mxPoint x="170" y="-660" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-82" value="&lt;div&gt;답안&lt;/div&gt;&lt;div&gt;제출&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="270" y="-670" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-83" value="" style="endArrow=none;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;dashed=1;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-79" target="u_dggLiKKXICfo_ERmUR-77">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="430" y="-620" as="sourcePoint" />
+            <mxPoint x="480" y="-670" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="250" y="-600" />
+              <mxPoint x="250" y="-660" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-84" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="240" y="-630" as="sourcePoint" />
+            <mxPoint x="270" y="-630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-85" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="320" y="-630" as="sourcePoint" />
+            <mxPoint x="350" y="-630" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-86" value="&lt;div&gt;AI 피드백 / 해설&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="350" y="-670" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-87" value="&lt;div&gt;오늘 학습 내용 요약&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="470" y="-670" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-88" value="&lt;div&gt;자동 생성 노드&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="110" y="-560" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-89" value="&lt;div&gt;상위/하위 구조 생성&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="230" y="-560" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-90" value="&lt;div&gt;교차 주제 연결&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="350" y="-560" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-91" value="&lt;div&gt;클릭시&lt;/div&gt;&lt;div&gt;위키 문서 이동&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="470" y="-560" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-93" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.853;entryY=-0.01;entryDx=0;entryDy=0;entryPerimeter=0;dashed=1;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-91" target="u_dggLiKKXICfo_ERmUR-70">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="390" y="-480" as="sourcePoint" />
+            <mxPoint x="440" y="-530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-94" value="&lt;div&gt;위키 자동 생성&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="110" y="-420" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-95" value="&lt;div&gt;문서 저장&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="110" y="-300" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-96" value="&lt;div&gt;UI 표기&lt;/div&gt;&lt;div&gt;/ 검색&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="110" y="-180" width="50" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-97" value="학습 진행 사항" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="390" y="-780" width="160" height="21" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-100" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-27" target="u_dggLiKKXICfo_ERmUR-97">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="-779" as="sourcePoint" />
+            <mxPoint x="430" y="-774" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="370" y="-779" />
+              <mxPoint x="370" y="-770" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-102" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="-920" as="sourcePoint" />
+            <mxPoint x="250" y="-901" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-103" value="개인" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009900;" vertex="1" parent="1">
+          <mxGeometry x="220" y="-950" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-107" value="그룹" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#009900;" vertex="1" parent="1">
+          <mxGeometry x="95" y="-1000" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-109" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-38" target="u_dggLiKKXICfo_ERmUR-70">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="785" y="-770" as="sourcePoint" />
+            <mxPoint x="730" y="-260" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="785" y="-953" />
+              <mxPoint x="785" y="-520" />
+              <mxPoint x="785" y="-260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-110" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-38" target="u_dggLiKKXICfo_ERmUR-68">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="785" y="-770" as="sourcePoint" />
+            <mxPoint x="730" y="-640" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="785" y="-953" />
+              <mxPoint x="785" y="-630" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-60" value="AI 코치" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="650" y="-650" width="60" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-57" value="AI 마인드맵" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="690" y="-540" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-61" value="AI 위키" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="700" y="-280" width="60" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-115" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-97" target="u_dggLiKKXICfo_ERmUR-116">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="554" y="-769.5" as="sourcePoint" />
+            <mxPoint x="580" y="-769" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-116" value="개인/그룹 학습 진도 요약" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="580" y="-780" width="130" height="21" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-119" value="부족한 키워드&lt;div&gt;/반복 학습 추천&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="580" y="-750" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-122" value="" style="endArrow=none;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;entryX=0.5;entryY=1;entryDx=0;entryDy=0;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-68" target="u_dggLiKKXICfo_ERmUR-119">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470" y="-710" as="sourcePoint" />
+            <mxPoint x="730" y="-620" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="315" y="-700" />
+              <mxPoint x="655" y="-700" />
+              <mxPoint x="655" y="-710" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-125" value="개인/그룹 뷰&lt;div&gt;선택&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="600" y="-540" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-128" value="탈퇴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="35" y="-940" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-129" value="생성" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="100" y="-940" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-130" value="탈퇴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="160" y="-940" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-131" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-107" target="u_dggLiKKXICfo_ERmUR-129">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="125" y="-990" as="sourcePoint" />
+            <mxPoint x="125" y="-931" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-140" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-107" target="u_dggLiKKXICfo_ERmUR-128">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="125" y="-990" as="sourcePoint" />
+            <mxPoint x="115" y="-912" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="125" y="-961" />
+              <mxPoint x="60" y="-961" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-141" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-107" target="u_dggLiKKXICfo_ERmUR-130">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="125" y="-970" as="sourcePoint" />
+            <mxPoint x="105" y="-911" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="125" y="-961" />
+              <mxPoint x="185" y="-961" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-142" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-128" target="u_dggLiKKXICfo_ERmUR-143">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="235" y="-831" as="sourcePoint" />
+            <mxPoint x="245" y="-930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-143" value="그룹 선택" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="30" y="-899" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-148" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-129" target="u_dggLiKKXICfo_ERmUR-8">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="125" y="-921" as="sourcePoint" />
+            <mxPoint x="125" y="-900" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="125" y="-884" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-155" value="" style="endArrow=classic;html=1;rounded=0;entryX=-0.015;entryY=0.639;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;dashed=1;entryPerimeter=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-27" target="u_dggLiKKXICfo_ERmUR-156">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="370" y="-815" as="sourcePoint" />
+            <mxPoint x="430" y="-864" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="370" y="-840" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-156" value="일일 학습 계획" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="390" y="-860" width="60" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-157" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="450" y="-844" as="sourcePoint" />
+            <mxPoint x="470" y="-844" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-158" value="&lt;div&gt;오늘 학습 키워드 / 해야 할 학습 목록&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="470" y="-860" width="240" height="31" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-160" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-3" target="u_dggLiKKXICfo_ERmUR-107">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="-990" as="sourcePoint" />
+            <mxPoint x="390" y="-990" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-161" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-24" target="u_dggLiKKXICfo_ERmUR-27">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="280" y="-800" as="sourcePoint" />
+            <mxPoint x="420" y="-800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-162" value="개인/그룹 뷰&lt;div&gt;선택&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="600" y="-280" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-163" value="개요 / 핵심 / 상세 내용 작성" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-440" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-164" value="관련 문서 연결" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-410" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-165" value="추가 설명 / 예시 제공" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-380" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-166" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-94" target="u_dggLiKKXICfo_ERmUR-164">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="-380" as="sourcePoint" />
+            <mxPoint x="210" y="-369.5" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="170" y="-380" />
+              <mxPoint x="170" y="-400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-167" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-165" target="u_dggLiKKXICfo_ERmUR-163">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="-350" as="sourcePoint" />
+            <mxPoint x="190" y="-440" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="170" y="-370" />
+              <mxPoint x="170" y="-389.5" />
+              <mxPoint x="170" y="-430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-179" value="출처 메모 링크" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-300" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-180" value="마인드맵 노드 연결" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-240" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-182" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-180" target="u_dggLiKKXICfo_ERmUR-179">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="-210" as="sourcePoint" />
+            <mxPoint x="190" y="-290" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="170" y="-230" />
+              <mxPoint x="170" y="-249.5" />
+              <mxPoint x="170" y="-290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-183" value="문서 내용 보기" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-180" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-184" value="관련 문서 탐색 / 검색" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-150" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-185" value="마인드맵 위치 확인 / 검색" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-120" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-186" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" target="u_dggLiKKXICfo_ERmUR-184">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="-140" as="sourcePoint" />
+            <mxPoint x="210" y="-129.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-187" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-185" target="u_dggLiKKXICfo_ERmUR-183">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="190" y="-90" as="sourcePoint" />
+            <mxPoint x="190" y="-180" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="170" y="-110" />
+              <mxPoint x="170" y="-129.5" />
+              <mxPoint x="170" y="-170" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-189" value="" style="endArrow=none;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-95">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="330" y="-280" as="sourcePoint" />
+            <mxPoint x="170" y="-260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-190" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-94" target="u_dggLiKKXICfo_ERmUR-191">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="170" y="-340" as="sourcePoint" />
+            <mxPoint x="200" y="-360" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="170" y="-380" />
+              <mxPoint x="170" y="-340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-191" value="위키 수정" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66CC00;" vertex="1" parent="1">
+          <mxGeometry x="200" y="-350" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-192" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-191" target="u_dggLiKKXICfo_ERmUR-193">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="460" y="-290" as="sourcePoint" />
+            <mxPoint x="380" y="-340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-193" value="수정 사항 검토" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D051FF;" vertex="1" parent="1">
+          <mxGeometry x="380" y="-350" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-197" value="" style="endArrow=none;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-63" target="u_dggLiKKXICfo_ERmUR-33">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="330" y="-1021" as="sourcePoint" />
+            <mxPoint x="330" y="-1050" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-198" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-63" target="u_dggLiKKXICfo_ERmUR-35">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="-870" as="sourcePoint" />
+            <mxPoint x="450" y="-920" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-199" value="" style="endArrow=classic;html=1;rounded=0;fontFamily=Helvetica;fontSize=12;fontColor=default;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="u_dggLiKKXICfo_ERmUR-35" target="u_dggLiKKXICfo_ERmUR-38">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="520" y="-954" as="sourcePoint" />
+            <mxPoint x="570" y="-953" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="u_dggLiKKXICfo_ERmUR-200" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" target="u_dggLiKKXICfo_ERmUR-119">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="550" y="-770" as="sourcePoint" />
+            <mxPoint x="570" y="-740" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="560" y="-770" />
+              <mxPoint x="560" y="-730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
