@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.usyj.makgora.converter.JpaJsonConverter;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -25,11 +26,11 @@ public class IssueEntity {
     // 연관 관계
     @ManyToOne
     @JoinColumn(name = "article_id", referencedColumnName = "article_id", foreignKey = @ForeignKey(name = "fk_issue_article"))
-    private Article article;
+    private RssArticleEntity article;
 
     @ManyToOne
     @JoinColumn(name = "community_post_id", referencedColumnName = "post_id", foreignKey = @ForeignKey(name = "fk_issue_community_post"))
-    private CommunityPost communityPost;
+    private CommunityPostEntity communityPost;
 
     // 일반 컬럼
     @Column(nullable = false)
