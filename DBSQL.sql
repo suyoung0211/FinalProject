@@ -4,6 +4,7 @@ CREATE TABLE Users (
     email VARCHAR(150) NOT NULL UNIQUE COMMENT '로그인용 이메일',
     password VARCHAR(255) NOT NULL COMMENT '비밀번호 해시',
     nickname VARCHAR(50) NOT NULL COMMENT '닉네임',
+    role ENUM('user','admin') DEFAULT 'user' COMMENT '사용자 역할: 일반(user) / 관리자(admin)',
     points INT DEFAULT 0 COMMENT '보유 포인트',
     level INT DEFAULT 1 COMMENT '사용자 레벨',
     profile_image VARCHAR(255) COMMENT '프로필 사진 URL',
@@ -12,6 +13,8 @@ CREATE TABLE Users (
     email_verified TINYINT(1) DEFAULT 0 COMMENT '이메일 인증 여부 (0=미인증, 1=인증 완료)',
     email_verification_token VARCHAR(255) COMMENT '이메일 인증 토큰',
     email_token_expires DATETIME COMMENT '이메일 인증 토큰 만료 시간',
+    
+    status ENUM('active','inactive','deleted') DEFAULT 'active' COMMENT '사용자 상태: active=정상, inactive=휴면, deleted=삭제',
     
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '가입일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '정보 수정일'
@@ -49,7 +52,8 @@ CREATE TABLE Votes (
     vote_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '투표 고유 ID',
     issue_id INT NOT NULL COMMENT '연결된 이슈 ID',
     title VARCHAR(255) NOT NULL COMMENT '투표 제목',
-    status ENUM('ongoing','finished') DEFAULT 'ongoing' COMMENT '투표 상태',
+    status ENUM('ongoing','finished','cancelled') DEFAULT 'ongoing' COMMENT '투표 상태: 진행중/종료/중단',
+    cancellation_reason VARCHAR(500) COMMENT '투표 중단 사유',
     total_points INT DEFAULT 0 COMMENT '총 배팅 포인트',
     total_participants INT DEFAULT 0 COMMENT '총 참여자 수',
     ai_progress_summary TEXT COMMENT 'AI가 생성한 투표 진행 상황 요약',
@@ -126,7 +130,6 @@ CREATE TABLE Comments (
     content TEXT NOT NULL COMMENT '댓글 내용',
     position ENUM('찬성','반대','중립') DEFAULT '중립' COMMENT '찬반/중립 표시',
     user_position VARCHAR(50) COMMENT '댓글 작성자의 포지션 표시 (Vote_Users.position와 연동 가능)',
-    likes INT DEFAULT 0 COMMENT '좋아요 수',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '작성일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
     FOREIGN KEY (issue_id) REFERENCES Issues(issue_id),
@@ -154,7 +157,6 @@ CREATE TABLE Community_Comments (
     user_id INT NOT NULL COMMENT '댓글 작성자 ID',
     parent_id INT DEFAULT NULL COMMENT '대댓글 연결 ID (NULL이면 게시글 댓글)',
     content TEXT NOT NULL COMMENT '댓글 내용',
-    likes INT DEFAULT 0 COMMENT '좋아요 수',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '작성일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
     FOREIGN KEY (post_id) REFERENCES Community_Posts(post_id),
