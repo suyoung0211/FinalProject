@@ -89,12 +89,14 @@ CREATE TABLE Vote_Option_Choices (
 -- 7. Vote_Users 테이블
 CREATE TABLE Vote_Users (
     vote_user_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '투표 참여 고유 ID',
+    vote_id INT NOT NULL COMMENT '투표 ID',
     user_id INT NOT NULL COMMENT '참여한 사용자 ID',
     option_id INT NOT NULL COMMENT '투표 옵션 ID',
     choice_id INT NOT NULL COMMENT '선택한 선택지 ID',
     points_bet INT DEFAULT 0 COMMENT '배팅한 포인트',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '참여 시간',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
+    FOREIGN KEY (vote_id) REFERENCES Votes(vote_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (option_id) REFERENCES Vote_Options(option_id),
     FOREIGN KEY (choice_id) REFERENCES Vote_Option_Choices(choice_id)
