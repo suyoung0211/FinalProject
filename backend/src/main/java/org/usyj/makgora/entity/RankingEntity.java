@@ -6,32 +6,38 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Rankings")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RankingEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long rankingId;
+    @Column(name = "ranking_id")
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    private UserEntity user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ranking_type", nullable = false)
     private RankingType rankingType;
 
+    @Column(name = "rank")
     private Integer rank;
 
+    @Column(name = "score")
     private Integer score;
 
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    @PreUpdate
-    public void updateTime() {
-        this.updatedAt = LocalDateTime.now();
+    public enum RankingType {
+        POINTS, // 포인트 랭킹
+        WINRATE, // 승률(정답률, accuracy)
+        STREAK // 연승 랭킹
     }
 }

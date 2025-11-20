@@ -22,7 +22,7 @@ public class VoteOptionEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "vote_id", nullable = false)
-  private Vote vote;
+  private VoteEntity vote;
 
   @Column(name = "option_title", nullable = false)
   private String optionTitle;
@@ -34,15 +34,18 @@ public class VoteOptionEntity {
   private LocalDate endDate;
 
   @Column(name = "created_at")
+  @Builder.Default
   private LocalDateTime createdAt = LocalDateTime.now();
 
   @Column(name = "updated_at")
+  @Builder.Default
   private LocalDateTime updatedAt = LocalDateTime.now();
 
   @OneToMany(mappedBy = "option", cascade = CascadeType.ALL)
   private List<VoteOptionChoiceEntity> choices;
 
   @Column(name = "is_deleted")
+  @Builder.Default
   private Boolean isDeleted = false;
 
 }
