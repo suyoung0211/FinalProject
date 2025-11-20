@@ -1,4 +1,4 @@
-11 / 20 수영
+11 / 20
 테이블 추가
 RSS_Articles - 기사 저장 테이블
 Article_Categories - 카테고리(장르) 테이블
@@ -27,3 +27,6 @@ Store_Items 테이블 수정
 category ENUM('avatar','background','skin','badge') NOT NULL COMMENT '아이템 종류'
 
 -> 기본 avatar 로 들어가게 설정되어있었는데 아이템 종류 선택하도록 변경
+
+Rankings 테이블 수정
+ranking_type ENUM('points','winrate', 'streak') NOT NULL COMMENT '랭킹 종류'
