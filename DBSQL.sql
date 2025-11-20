@@ -33,18 +33,28 @@ CREATE TABLE RSS_Feeds (
 -- 3. Issues 테이블
 CREATE TABLE Issues (
     issue_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '이슈 고유 ID',
-    feed_id INT COMMENT '연결된 RSS 피드 ID (없으면 NULL)',
-    feed_article_id VARCHAR(255) COMMENT 'RSS 기사 고유 ID (없으면 NULL)',
+
+    article_id INT NULL COMMENT '연결된 기사 ID', 
+    community_post_id INT NULL COMMENT '연결된 커뮤니티 글 ID',
+
     title VARCHAR(255) NOT NULL COMMENT '이슈 제목',
     thumbnail VARCHAR(255) COMMENT '썸네일 이미지 URL',
     content TEXT COMMENT '이슈 상세 내용',
     source VARCHAR(255) COMMENT '출처 URL/정보',
+
     ai_summary TEXT COMMENT 'AI 요약 내용',
-    ai_points JSON COMMENT 'AI 평가: 논쟁 포인트, 중요도, 추천 수 등',
-    status ENUM('pending','approved','rejected') DEFAULT 'pending' COMMENT '이슈 상태: 대기/승인/거절',
+    ai_points JSON COMMENT 'AI 평가: 논쟁 포인트, 중요도 등',
+
+    status ENUM('pending','approved','rejected') DEFAULT 'pending' COMMENT '승인 상태',
+    approved_at DATETIME COMMENT '승인 시각',
+    rejected_at DATETIME COMMENT '거절 시각',
+
+    created_by ENUM('system','admin','ai') DEFAULT 'ai' COMMENT '이슈 생성 주체',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
-    FOREIGN KEY (feed_id) REFERENCES RSS_Feeds(feed_id)
+
+    FOREIGN KEY (article_id) REFERENCES Articles(article_id) ON DELETE SET NULL,
+    FOREIGN KEY (community_post_id) REFERENCES Community_Posts(post_id) ON DELETE SET NULL
 );
 
 -- 4. Votes 테이블
@@ -53,10 +63,11 @@ CREATE TABLE Votes (
     issue_id INT NOT NULL COMMENT '연결된 이슈 ID',
     title VARCHAR(255) NOT NULL COMMENT '투표 제목',
     status ENUM('ongoing','finished','cancelled') DEFAULT 'ongoing' COMMENT '투표 상태: 진행중/종료/중단',
-    cancellation_reason VARCHAR(500) COMMENT '투표 중단 사유',
+    cancellation_reason VARCHAR(500) DEFAULT NULL COMMENT '투표 중단 사유',
     total_points INT DEFAULT 0 COMMENT '총 배팅 포인트',
     total_participants INT DEFAULT 0 COMMENT '총 참여자 수',
     ai_progress_summary TEXT COMMENT 'AI가 생성한 투표 진행 상황 요약',
+    fee_rate DECIMAL(5,2) DEFAULT 0.10 COMMENT '투표 수수료율',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '투표 생성일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '정보 수정일',
     FOREIGN KEY (issue_id) REFERENCES Issues(issue_id)
@@ -210,4 +221,51 @@ CREATE TABLE Rankings (
     score INT COMMENT '점수/포인트',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 갱신일',
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
+);
+
+-- 17. 기사 저장 테이블 (RSS Articles)
+CREATE TABLE RSS_Articles (
+    article_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '기사 ID',
+    feed_id INT NOT NULL COMMENT 'RSS 피드 ID',
+    
+    title VARCHAR(500) NOT NULL COMMENT '기사 제목',
+    link VARCHAR(500) NOT NULL UNIQUE COMMENT '기사 원문 링크',
+    content LONGTEXT COMMENT '기사 본문',
+    published_at DATETIME COMMENT '기사 게시 시간',
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
+    
+    FOREIGN KEY (feed_id) REFERENCES RSS_Feeds(feed_id)
+);
+
+-- 18. 카테고리(장르) 테이블
+CREATE TABLE Article_Categories (
+    category_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '카테고리 ID',
+    name VARCHAR(100) NOT NULL UNIQUE COMMENT '카테고리명',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일'
+);
+
+-- 19. N:N 매핑 테이블 (기사 ↔ 카테고리)
+CREATE TABLE Article_Category_Map (
+    article_id INT NOT NULL COMMENT '기사 ID',
+    category_id INT NOT NULL COMMENT '카테고리 ID',
+
+    PRIMARY KEY (article_id, category_id),
+
+    FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES Article_Categories(category_id) ON DELETE CASCADE
+);
+
+-- 20. 기사 AI 요약 테이블
+CREATE TABLE Article_Summaries (
+    summary_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '요약 ID',
+    article_id INT NOT NULL COMMENT '기사 ID',
+
+    summary_text LONGTEXT NOT NULL COMMENT 'AI 요약 내용',
+    model_name VARCHAR(100) COMMENT 'LLM 모델명 (예: gpt-4.1-mini)',
+    
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '요약 생성일',
+
+    FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE CASCADE
 );
