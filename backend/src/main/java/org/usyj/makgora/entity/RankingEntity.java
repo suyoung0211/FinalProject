@@ -4,10 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+import org.usyj.makgora.enums.RankingType;
+
 @Entity
 @Table(name = "Rankings")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RankingEntity {
 
     @Id
@@ -16,7 +21,7 @@ public class RankingEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    private UserEntity user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ranking_type", nullable = false)
