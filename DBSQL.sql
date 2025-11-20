@@ -53,7 +53,7 @@ CREATE TABLE Issues (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
 
-    FOREIGN KEY (article_id) REFERENCES Articles(article_id) ON DELETE SET NULL,
+    FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE SET NULL,
     FOREIGN KEY (community_post_id) REFERENCES Community_Posts(post_id) ON DELETE SET NULL
 );
 
@@ -182,7 +182,7 @@ CREATE TABLE Store_Items (
     item_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '상점 아이템 ID',
     name VARCHAR(255) NOT NULL COMMENT '아이템 이름',
     type ENUM('point','cash') NOT NULL COMMENT '포인트 구매 / 현금 구매',
-    category ENUM('avatar','background','skin','badge') DEFAULT 'avatar' COMMENT '아이템 종류',
+    category ENUM('avatar','background','skin','badge') NOT NULL COMMENT '아이템 종류',
     price INT NOT NULL COMMENT '가격',
     stock INT DEFAULT 0 COMMENT '재고 수량',
     image VARCHAR(255) COMMENT '이미지 URL',

@@ -22,3 +22,8 @@ fee_rate 추가
 
 -> 수수료 기록용으로 추가(투표별 얼마인지 기록 가능)
 -> 하드 코딩하는것보다 찾기 쉬움
+
+Store_Items 테이블 수정
+category ENUM('avatar','background','skin','badge') NOT NULL COMMENT '아이템 종류'
+
+-> 기본 avatar 로 들어가게 설정되어있었는데 아이템 종류 선택하도록 변경

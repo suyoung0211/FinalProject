@@ -20,7 +20,7 @@ public class VoteRuleEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "vote_id", nullable = false)
-  private Vote vote;
+  private VoteEntity vote;
 
   @Column(name = "rule_type", nullable = false)
   private String ruleType;
@@ -29,8 +29,10 @@ public class VoteRuleEntity {
   private String ruleDescription;
 
   @Column(name = "created_at")
+  @Builder.Default
   private LocalDateTime createdAt = LocalDateTime.now();
 
   @Column(name = "updated_at")
+  @Builder.Default
   private LocalDateTime updatedAt = LocalDateTime.now();
 }
