@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.usyj.makgora.entity.RankingEntity;
-import org.usyj.makgora.enums.RankingType;
+import org.usyj.makgora.entity.enums.RankingType;
 
 public interface RankingRepository extends JpaRepository<RankingType, Long> {
 

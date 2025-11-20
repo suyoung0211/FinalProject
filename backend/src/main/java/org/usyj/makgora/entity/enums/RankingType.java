@@ -1,4 +1,4 @@
-package org.usyj.makgora.enums;
+package org.usyj.makgora.entity.enums;
 
 public enum RankingType {
     POINTS,        // 포인트 랭킹

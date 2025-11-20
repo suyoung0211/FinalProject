@@ -1,4 +1,4 @@
-package org.usyj.makgora.enums;
+package org.usyj.makgora.entity.enums;
 // 아이템 종류
 public enum ItemCategory {
     AVATAR, BACKGROUND, SKIN, BADGE
