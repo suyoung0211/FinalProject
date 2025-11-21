@@ -216,7 +216,11 @@ CREATE TABLE Admin_Actions (
 CREATE TABLE Rankings (
     ranking_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '랭킹 ID',
     user_id INT NOT NULL COMMENT '사용자 ID',
+<<<<<<< HEAD
+    ranking_type ENUM('points', 'winrate', 'streak') NOT NULL COMMENT '랭킹 종류',,
+=======
     ranking_type ENUM('points','winrate', 'streak') NOT NULL COMMENT '랭킹 종류',
+>>>>>>> d61b4995130018db29b62f581af10d9681104725
     rank INT COMMENT '순위',
     score INT COMMENT '점수/포인트',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 갱신일',
