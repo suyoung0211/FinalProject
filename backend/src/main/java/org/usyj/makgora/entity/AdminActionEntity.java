@@ -16,7 +16,7 @@ public class AdminActionEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_id", nullable = false)
-    private Users admin;  // Users 엔티티 필요
+    private UserEntity admin;
 
     @Column(nullable = false)
     private String actionType;

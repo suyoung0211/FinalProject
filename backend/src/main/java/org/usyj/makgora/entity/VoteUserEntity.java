@@ -20,26 +20,29 @@ public class VoteUserEntity {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "vote_id", nullable = false)
-  private Vote vote;
+  private VoteEntity vote;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  private UserEntity user;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "option_id", nullable = false)
-  private VoteOption option;
+  private VoteOptionEntity option;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "choice_id", nullable = false)
-  private VoteOptionChoice choice;
+  private VoteOptionChoiceEntity choice;
 
   @Column(name = "points_bet")
+  @Builder.Default
   private Integer pointsBet = 0;
 
   @Column(name = "created_at")
+  @Builder.Default
   private LocalDateTime createdAt = LocalDateTime.now();
 
   @Column(name = "updated_at")
+  @Builder.Default
   private LocalDateTime updatedAt = LocalDateTime.now();
 }

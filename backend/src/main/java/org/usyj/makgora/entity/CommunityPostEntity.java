@@ -19,7 +19,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @ToString(exclude = {"user", "comments"})
-public class CommunityPostsEntity {
+public class CommunityPostEntity {
 
     /** 게시글 고유 ID (PK) */
     @Id
@@ -30,7 +30,7 @@ public class CommunityPostsEntity {
     /** 작성자 정보 (FK: Users.user_id) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private UsersEntity user;
+    private UserEntity user;
 
     /** 게시글 제목 */
     @Column(name = "title", length = 255)
@@ -59,7 +59,7 @@ public class CommunityPostsEntity {
     /** 해당 게시글에 달린 댓글 목록 */
     @Builder.Default
     @OneToMany(mappedBy = "post")
-    private List<CommunityCommentsEntity> comments = new ArrayList<>();
+    private List<CommunityCommentEntity> comments = new ArrayList<>();
 
     /** INSERT 시 기본값 자동 설정 */
     @PrePersist

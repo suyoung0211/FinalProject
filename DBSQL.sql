@@ -53,7 +53,7 @@ CREATE TABLE Issues (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
 
-    FOREIGN KEY (article_id) REFERENCES Articles(article_id) ON DELETE SET NULL,
+    FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE SET NULL,
     FOREIGN KEY (community_post_id) REFERENCES Community_Posts(post_id) ON DELETE SET NULL
 );
 
@@ -182,7 +182,7 @@ CREATE TABLE Store_Items (
     item_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '상점 아이템 ID',
     name VARCHAR(255) NOT NULL COMMENT '아이템 이름',
     type ENUM('point','cash') NOT NULL COMMENT '포인트 구매 / 현금 구매',
-    category ENUM('avatar','background','skin','badge') DEFAULT 'avatar' COMMENT '아이템 종류',
+    category ENUM('avatar','background','skin','badge') NOT NULL COMMENT '아이템 종류',
     price INT NOT NULL COMMENT '가격',
     stock INT DEFAULT 0 COMMENT '재고 수량',
     image VARCHAR(255) COMMENT '이미지 URL',
@@ -216,7 +216,11 @@ CREATE TABLE Admin_Actions (
 CREATE TABLE Rankings (
     ranking_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '랭킹 ID',
     user_id INT NOT NULL COMMENT '사용자 ID',
+<<<<<<< HEAD
     ranking_type ENUM('points', 'winrate', 'streak') NOT NULL COMMENT '랭킹 종류',,
+=======
+    ranking_type ENUM('points','winrate', 'streak') NOT NULL COMMENT '랭킹 종류',
+>>>>>>> d61b4995130018db29b62f581af10d9681104725
     rank INT COMMENT '순위',
     score INT COMMENT '점수/포인트',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '마지막 갱신일',

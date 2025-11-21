@@ -26,15 +26,19 @@ public class VoteOptionChoiceEntity {
   private String choiceText;
 
   @Column(name = "points_total")
+  @Builder.Default
   private Integer pointsTotal = 0;
 
   @Column(name = "participants_count")
+  @Builder.Default
   private Integer participantsCount = 0;
 
   @Column(name = "created_at")
+  @Builder.Default
   private LocalDateTime createdAt = LocalDateTime.now();
 
   @Column(name = "updated_at")
+  @Builder.Default
   private LocalDateTime updatedAt = LocalDateTime.now();
 
   @Column(name = "odds")
