@@ -1,14 +1,14 @@
 {
-    "configurations": [
-        {
-            "type": "java",
-            "name": "Spring Boot-MakgoraApplication<makgora>",
-            "request": "launch",
-            "cwd": "${workspaceFolder}",
-            "mainClass": "org.usyj.makgora.MakgoraApplication",
-            "projectName": "makgora",
-            "args": "",
-            "envFile": "${workspaceFolder}/.env"
-        }
-    ]
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-MakgoraApplication<makgora>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "org.usyj.makgora.MakgoraApplication",
+      "projectName": "makgora",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
 }

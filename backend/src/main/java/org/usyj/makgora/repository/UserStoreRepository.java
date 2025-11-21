@@ -7,7 +7,7 @@ import org.usyj.makgora.entity.UserStoreEntity;
 
 public interface UserStoreRepository extends JpaRepository<UserStoreEntity, Long> {
 
-    List<UserStoreEntity> findByUserId(Long userId);
+    List<UserStoreEntity> findByUserId(Integer userId);
 
     List<UserStoreEntity> findByItemId(Long itemId);
 }
