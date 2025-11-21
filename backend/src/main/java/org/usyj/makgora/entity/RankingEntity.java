@@ -27,7 +27,7 @@ public class RankingEntity {
     private RankingType rankingType;
 
     @Column(name = "ranking")
-    private Integer rank;
+    private Integer ranking;
 
     @Column(name = "score")
     private Integer score;

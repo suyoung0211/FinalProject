@@ -4,9 +4,9 @@ import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.dto.LoginRequest;
-import org.usyj.makgora.dto.LoginResponse;
-import org.usyj.makgora.dto.RegisterRequest;
+import org.usyj.makgora.dto.request.LoginRequest;
+import org.usyj.makgora.dto.request.RegisterRequest;
+import org.usyj.makgora.dto.response.LoginResponse;
 import org.usyj.makgora.entity.RefreshTokenEntity;
 import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.repository.RefreshTokenRepository;
