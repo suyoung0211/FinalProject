@@ -1,22 +1,28 @@
+// src/context/AuthContext.tsx
 import { createContext, useState, useEffect } from "react";
 import { logoutApi, getMyInfoApi } from "../api/authApi";
 
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
 
-  // ⭐ 앱 시작 시 저장된 토큰 복원
+  // ⭐ 앱 시작 시 저장된 토큰 복원 + 최신 유저 정보 조회
   useEffect(() => {
     const savedAccess = localStorage.getItem("accessToken");
     const savedRefresh = localStorage.getItem("refreshToken");
-    const savedUser = localStorage.getItem("user");
 
-    if (savedAccess) setToken(savedAccess);
-    if (savedRefresh) setRefreshToken(savedRefresh);
-    if (savedUser) setUser(JSON.parse(savedUser));
+    if (savedAccess) {
+      setToken(savedAccess);
+      setRefreshToken(savedRefresh);
+
+      // 📌 서버에서 최신 유저 정보 가져오기
+      getMyInfoApi(savedAccess)
+        .then((res) => setUser(res))
+        .catch(() => logout());
+    }
   }, []);
 
   // ⭐ 로그인
@@ -27,16 +33,13 @@ export function AuthProvider({ children }) {
 
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("refreshToken", newRefreshToken);
-    localStorage.setItem("user", JSON.stringify(userData));
   };
 
-  // ⭐ 로그아웃 — 서버 + 클라이언트
+  // ⭐ 로그아웃
   const logout = async () => {
     try {
       if (token) await logoutApi(token);
-    } catch (e) {
-      console.log("⚠ 로그아웃 API 에러:", e);
-    }
+    } catch (_) {}
 
     setUser(null);
     setToken(null);
@@ -44,7 +47,6 @@ export function AuthProvider({ children }) {
 
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    localStorage.removeItem("user");
   };
 
   return (

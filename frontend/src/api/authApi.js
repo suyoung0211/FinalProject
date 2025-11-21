@@ -1,42 +1,26 @@
+// src/api/authApi.ts
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8080";
+const API = axios.create({
+  baseURL: "http://localhost:8080/api",
+});
 
-export const loginApi = async (email, password) => {
-  const response = await axios.post(`${BASE_URL}/api/auth/login`, {
-    email,
-    password,
+// 회원가입 API
+export const signupApi = (body) => API.post("/auth/signup", body);
+
+// 로그인 API
+export const loginApi = (body) => API.post("/auth/login", body);
+
+// 내 정보 조회
+export const getMyInfoApi = (token) =>
+  API.get("/users/me", {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  return response.data;
-};
 
-// ⭐ 로그아웃 API 추가
-export const logoutApi = async (token) => {
-  return await axios.post(
-    `${BASE_URL}/api/auth/logout`,
+// 로그아웃 API (refresh-token 블랙리스트)
+export const logoutApi = (token) =>
+  API.post(
+    "/auth/logout",
     {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
-};
-
-export const getMyInfoApi = async (token) => {
-  const response = await axios.get(`${BASE_URL}/api/user/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-export const registerApi = async (email, password, nickname) => {
-  const res = await axios.post(`${BASE_URL}/api/auth/register`, {
-    email,
-    password,
-    nickname,
-  });
-  return res.data;
-};
