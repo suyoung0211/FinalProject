@@ -1,5 +1,7 @@
 package org.usyj.makgora.service;
 
+import java.util.Optional;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.dto.LoginRequest;
@@ -82,4 +84,5 @@ public class AuthService {
   public void logout(Integer userId) {
     tokenRepo.deleteByUserId(userId);
   }
+
 }
