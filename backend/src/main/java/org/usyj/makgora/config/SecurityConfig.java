@@ -30,35 +30,34 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .formLogin(login -> login.disable())
-                .httpBasic(basic -> basic.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .formLogin(login -> login.disable())
+            .httpBasic(basic -> basic.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                .authorizeHttpRequests(auth -> auth
-                        // Swagger 허용
-                        .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**"
-                        ).permitAll()
+            .authorizeHttpRequests(auth -> auth
+                // Swagger 허용
+                .requestMatchers(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**"
+                ).permitAll()
 
-                        // 로그인 / 회원가입 허용
-                        .requestMatchers("/api/auth/**").permitAll()
+                // 로그인, 회원가입만 허용
+                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
 
-                        // ⭐ 유저 API는 인증 필요
-                        .requestMatchers("/api/user/**").authenticated()
+                // 유저 인증 필요
+                .requestMatchers("/api/user/**").authenticated()
 
-                        // 나머지는 인증 필요
-                        .anyRequest().authenticated()
-                )
+                // 그 외 모두 인증 필요
+                .anyRequest().authenticated()
+            )
 
-                // JWT 필터 등록
-                .addFilterBefore(
-                        new JwtAuthFilter(jwtTokenProvider, userDetailsService),
-                        UsernamePasswordAuthenticationFilter.class
-                );
+            .addFilterBefore(
+                new JwtAuthFilter(jwtTokenProvider, userDetailsService),
+                UsernamePasswordAuthenticationFilter.class
+            );
 
         return http.build();
     }

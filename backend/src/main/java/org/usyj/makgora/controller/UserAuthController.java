@@ -34,4 +34,5 @@ public class UserAuthController {
 
         return ResponseEntity.ok(user);
     }
+    
 }

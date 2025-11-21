@@ -65,6 +65,9 @@ public class UserEntity {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @Column(length = 500)
+    private String refreshToken;
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
