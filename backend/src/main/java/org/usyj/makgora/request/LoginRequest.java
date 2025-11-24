@@ -1,4 +1,4 @@
-package org.usyj.makgora.dto.request;
+package org.usyj.makgora.request;
 
 import lombok.Data;
 

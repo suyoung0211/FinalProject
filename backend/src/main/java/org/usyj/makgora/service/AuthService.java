@@ -2,9 +2,6 @@ package org.usyj.makgora.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.dto.request.LoginRequest;
-import org.usyj.makgora.dto.request.RegisterRequest;
-import org.usyj.makgora.dto.response.LoginResponse;
 import org.usyj.makgora.entity.EmailVerificationEntity;
 import org.usyj.makgora.entity.RefreshTokenEntity;
 import org.usyj.makgora.entity.UserEntity;
@@ -12,6 +9,9 @@ import org.usyj.makgora.entity.UserEntity.Status;
 import org.usyj.makgora.repository.EmailVerificationRepository;
 import org.usyj.makgora.repository.RefreshTokenRepository;
 import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.request.LoginRequest;
+import org.usyj.makgora.request.RegisterRequest;
+import org.usyj.makgora.response.LoginResponse;
 import org.usyj.makgora.security.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;

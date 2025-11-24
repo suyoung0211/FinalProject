@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.usyj.makgora.dto.request.EmailSendRequest;
-import org.usyj.makgora.dto.request.EmailVerifyRequest;
 import org.usyj.makgora.entity.EmailVerificationEntity;
+import org.usyj.makgora.request.EmailSendRequest;
+import org.usyj.makgora.request.EmailVerifyRequest;
 import org.usyj.makgora.service.EmailService;
 
 import java.time.LocalDateTime;
