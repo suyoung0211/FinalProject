@@ -92,3 +92,15 @@ userentity 수정 => refreshToken 값 저장
 ### RSS_Feeds 테이블(칼럼 추가)
 - category_id 추가
     -> 맵핑시키는 테이블이랑 합침
+
+11/24 19:40
+프론트 형식
+app.tsx통한 라우터 형식으로 변경(아직 pages폴더에 main, login만 있고components/ui에 남은 page있음 )
+
+이메일 인증 추가로 controller, dto, service, response, request 추가
+
+pom.xml에 이메일인증관련 추가
+
+UserEntity 이메일인증 분리 (EmailVerificationEntity로 분리) 
+
+dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response, request에 정리

@@ -38,22 +38,14 @@ public class EmailController {
 
     /** 2) 인증코드 검증 */
     @PostMapping("/verify")
-    public ResponseEntity<?> verify(@RequestBody EmailVerifyRequest req) {
+public ResponseEntity<?> verify(@RequestBody EmailVerifyRequest req) {
 
-        EmailVerificationEntity data = emailService.getLatest(req.getEmail());
+    boolean ok = emailService.verifyCode(req.getEmail(), req.getCode());
 
-        if (data == null)
-            return ResponseEntity.badRequest().body("인증 요청 없음");
+    if (!ok) return ResponseEntity.badRequest().body("인증 실패");
 
-        if (data.getExpiresAt().isBefore(LocalDateTime.now()))
-            return ResponseEntity.badRequest().body("인증코드 만료");
+    emailService.markVerified(req.getEmail());
 
-        if (!data.getCode().equals(req.getCode()))
-            return ResponseEntity.badRequest().body("인증코드 불일치");
-
-        // ⭐ 인증 성공 → verified = true 로 업데이트
-        emailService.markVerified(req.getEmail());
-
-        return ResponseEntity.ok("인증 성공");
-    }
+    return ResponseEntity.ok("인증 성공");
+}
 }
