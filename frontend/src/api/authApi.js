@@ -1,42 +1,14 @@
-import axios from "axios";
+// src/api/authApi.js
+import api from "./api";
 
-const BASE_URL = "http://localhost:8080";
+// 회원가입
+export const signupApi = (body) => api.post("/auth/register", body);
 
-export const loginApi = async (email, password) => {
-  const response = await axios.post(`${BASE_URL}/api/auth/login`, {
-    email,
-    password,
-  });
-  return response.data;
-};
+// 로그인
+export const loginApi = (body) => api.post("/auth/login", body);
 
-// ⭐ 로그아웃 API 추가
-export const logoutApi = async (token) => {
-  return await axios.post(
-    `${BASE_URL}/api/auth/logout`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
-};
+// 내 정보 조회
+export const getMyInfoApi = () => api.get("/users/me");
 
-export const getMyInfoApi = async (token) => {
-  const response = await axios.get(`${BASE_URL}/api/user/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-export const registerApi = async (email, password, nickname) => {
-  const res = await axios.post(`${BASE_URL}/api/auth/register`, {
-    email,
-    password,
-    nickname,
-  });
-  return res.data;
-};
+// 로그아웃
+export const logoutApi = () => api.post("/auth/logout");

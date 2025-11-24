@@ -43,6 +43,43 @@
 -category_id
     -> feed에서 가져온 카테고리 직접 저장
 
+Rankings 테이블 수정
+ranking_type ENUM('points','winrate', 'streak') NOT NULL COMMENT '랭킹 종류'
+
+11/20 3:31
+vote_users에 vote_id 추가 => 마이페이지 조회시 자신이 한 투표 확인하려고
+-----------------------------
+
+VoteOptionEntity에 
+  @Column(name = "is_deleted")
+  private Boolean isDeleted = false;
+추가 => 소프트 딜리트용(임시 숨김, 비활성용)
+
+voteOptionChoiceEntit에
+  @Column(name = "odds")
+  private Double odds;
+추가 => 선택지 배당률
+
+VoteOptionRepository
+@Query("SELECT o FROM VoteOptionEntity o LEFT JOIN FETCH o.choices WHERE o.vote.id = :voteId")
+List<VoteOptionEntity> findAllWithChoicesByVoteId(Long voteId);
+추가 => 옵션+선택지 한번에 가져오기
+
+VoteOptionChoiceRepository
+List<VoteOptionChoiceEntity> findByOptionIdOrderByPointsTotalDesc(Long optionId);
+추가 => 인기 선택지 순으로 가져오기
+
+VoteUserRepository
+Optional<VoteUserEntity> findByUserIdAndVoteId(Long userId, Long voteId);
+추가 => 유저가 어떤 선택지 골랐는지
+int countByOptionId(Long optionId);
+추가 => 옵션 참여자 수 계산
+
+11/21 10:15
+pom.xml에 보안관련3개+swagger확인용 1개 추가
+http://localhost:8080/swagger-ui/index.html
+
+userentity 수정 => refreshToken 값 저장
 ### Vote_Users 테이블(유니크 추가, 칼럼 추가)
 - unique_vote_user_option
     -> 중복 투표 방지용으로 추가

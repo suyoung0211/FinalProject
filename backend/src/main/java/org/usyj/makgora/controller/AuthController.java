@@ -8,10 +8,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import org.usyj.makgora.dto.*;
 import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.request.LoginRequest;
+import org.usyj.makgora.request.RegisterRequest;
+import org.usyj.makgora.response.LoginResponse;
 import org.usyj.makgora.security.JwtTokenProvider;
 
 @RequiredArgsConstructor
@@ -95,6 +96,10 @@ public class AuthController {
 
         // 비밀번호 암호화
         user.setPassword(passwordEncoder.encode(req.getPassword()));
+
+         // 🔥 이메일 인증 정보 저장
+    user.setEmailVerified(true);             // 인증 완료 상태로 저장
+    user.setVerificationEmail(req.getEmail()); // 인증 시 사용한 이메일 저장
 
         // ⭐ refreshToken은 로그인시에만 저장
         user.setRefreshToken(null);

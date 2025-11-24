@@ -23,39 +23,41 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         String path = req.getRequestURI();
-        System.out.println("\n==============================");
-        System.out.println("🔎 [JwtAuthFilter] 요청 URL : " + path);
+        System.out.println("🔎 요청 URL : " + path);
 
-        // 로그인, 회원가입만 JWT 검사 생략
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
-            System.out.println("➡ LOGIN/REGISTER → JWT 검사 생략");
+        // 🔹 JWT 검사를 생략할 URL만 명확히 지정
+        boolean skip =
+                path.equals("/api/auth/login") ||
+                path.equals("/api/auth/register") ||
+                path.equals("/api/auth/refresh") ||
+                path.startsWith("/api/email");
+
+        if (skip) {
+            System.out.println("➡ JWT 검사 생략 URL → " + path);
             chain.doFilter(req, res);
             return;
         }
 
+        // 🔹 그 외 모든 API는 JWT 검사
         String header = req.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
-            System.out.println("📌 JWT 추출됨: " + token);
 
             if (jwtTokenProvider.validate(token)) {
-                System.out.println("✅ JWT 검증 성공");
 
                 String email = jwtTokenProvider.getEmail(token);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                                userDetails, null, userDetails.getAuthorities()
+                        );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
-
-                System.out.println("🔐 SecurityContext 인증 세팅 완료");
             }
         }
 
         chain.doFilter(req, res);
-        System.out.println("==============================\n");
     }
 }

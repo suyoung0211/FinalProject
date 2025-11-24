@@ -9,36 +9,15 @@ import {
   DollarSign,
   Search,
   Filter,
-  ShoppingBag,
   User,
-  Coins,
   ChevronDown,
-  LogOut,
 } from "lucide-react";
 
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { useState } from "react";
-
-interface UserProfile {
-  username: string;
-  name: string;
-  email: string;
-  points: number;
-  avatar?: string;
-}
-
-interface MainPageProps {
-  onStart: () => void;
-  onLogin: () => void;
-  onSignup?: () => void;
-  onLogout?: () => void;
-  onMarketClick?: (marketId: string) => void;
-  onPointsShop?: () => void;
-  onProfile?: () => void;
-  onLeaderboard?: () => void;
-  user?: UserProfile | null;
-}
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 interface Market {
   id: string;
@@ -51,20 +30,12 @@ interface Market {
   trending?: boolean;
 }
 
-export function MainPage({
-  onStart,
-  onLogin,
-  onSignup,
-  onLogout,
-  onMarketClick,
-  onPointsShop,
-  onProfile,
-  onLeaderboard,
-  user,
-}: MainPageProps) {
+export function MainPage() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const categories = [
     { id: "all", label: "전체", icon: Globe },
@@ -136,7 +107,8 @@ export function MainPage({
   ];
 
   const filteredMarkets = markets.filter((m) => {
-    const matchCategory = selectedCategory === "all" || m.category === selectedCategory;
+    const matchCategory =
+      selectedCategory === "all" || m.category === selectedCategory;
     const matchSearch = m.question.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
   });
@@ -145,9 +117,11 @@ export function MainPage({
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* HEADER — Full width */}
+      {/* HEADER */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
         <div className="w-full max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
+
+          {/* LOGO */}
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-white" />
@@ -158,32 +132,53 @@ export function MainPage({
           {/* NAV */}
           <nav className="hidden md:flex gap-6 items-center text-gray-300">
             <button className="hover:text-white transition">커뮤니티</button>
-            <button onClick={() => (user ? onLeaderboard?.() : onLogin?.())} className="hover:text-white transition">
+
+            <button
+              onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))}
+              className="hover:text-white transition"
+            >
               리더보드
             </button>
-            <button onClick={() => (user ? onPointsShop?.() : onLogin?.())} className="hover:text-white transition">
+
+            <button
+              onClick={() => (user ? navigate("/shop") : navigate("/login"))}
+              className="hover:text-white transition"
+            >
               포인트 상점
             </button>
           </nav>
 
-          {/* USER */}
-          {user ? (
-            <UserDropdown user={user} onPointsShop={onPointsShop} onProfile={onProfile} onLogout={onLogout} />
-          ) : (
-            <div className="flex items-center gap-2">
-              <button onClick={() => onSignup?.()} className="text-gray-300 hover:text-white px-4 py-2">
-                회원가입
-              </button>
-              <div className="w-px h-4 bg-gray-600" />
-              <button onClick={onLogin} className="text-gray-300 hover:text-white px-4 py-2">
-                로그인
-              </button>
-            </div>
-          )}
+          {/* USER AREA */}
+          <div>
+            {!user ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="text-gray-300 hover:text-white px-4 py-2"
+                >
+                  회원가입
+                </button>
+                <div className="w-px h-4 bg-gray-600" />
+                <button
+                  onClick={() => navigate("/login")}
+                  className="text-gray-300 hover:text-white px-4 py-2"
+                >
+                  로그인
+                </button>
+              </div>
+            ) : (
+              <UserDropdown
+                user={user}
+                onLogout={logout}
+                onProfile={() => navigate("/profile")}
+                onPointsShop={() => navigate("/shop")}
+              />
+            )}
+          </div>
         </div>
       </header>
 
-      {/* HERO SECTION — ★ Full width -> 내부만 max-w */}
+      {/* HERO */}
       <section className="w-full pt-32 pb-16 px-6">
         <div className="max-w-[1440px] mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-full mb-6">
@@ -224,7 +219,7 @@ export function MainPage({
         </div>
       </section>
 
-      {/* CATEGORIES — ★ Full width */}
+      {/* CATEGORIES */}
       <section className="w-full px-6 pb-12">
         <div className="max-w-[1440px] mx-auto flex flex-wrap gap-3 justify-center">
           {categories.map((cat) => {
@@ -239,7 +234,7 @@ export function MainPage({
                   ${
                     active
                       ? "bg-gradient-to-r from-[#FF4EC7] to-[#A548FF] text-white shadow-lg shadow-pink-500/30"
-                        : "bg-white/10 text-gray-300 border border-white/20 backdrop-blur-sm hover:bg-white/20"
+                      : "bg-white/10 text-gray-300 border border-white/20 backdrop-blur-sm hover:bg-white/20"
                   }`}
               >
                 <Icon className="w-4 h-4" />
@@ -250,7 +245,7 @@ export function MainPage({
         </div>
       </section>
 
-      {/* TRENDING — ★ Full width */}
+      {/* TRENDING */}
       {selectedCategory === "all" && (
         <section className="w-full px-6 mb-16">
           <div className="max-w-[1440px] mx-auto">
@@ -261,14 +256,14 @@ export function MainPage({
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {trendingMarkets.map((m) => (
-                <MarketCard key={m.id} market={m} featured onClick={() => onMarketClick?.(m.id)} />
+                <MarketCard key={m.id} market={m} featured onClick={() => navigate(`/market/${m.id}`)} />
               ))}
             </div>
           </div>
         </section>
       )}
 
-      {/* ALL MARKETS — ★ Full width */}
+      {/* ALL MARKETS */}
       <section className="w-full px-6">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-center gap-2 mb-6 text-white">
@@ -283,13 +278,13 @@ export function MainPage({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredMarkets.map((m) => (
-              <MarketCard key={m.id} market={m} onClick={() => onMarketClick?.(m.id)} />
+              <MarketCard key={m.id} market={m} onClick={() => navigate(`/market/${m.id}`)} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* STATS — ★ Full width */}
+      {/* STATS */}
       <section className="w-full px-6 mt-20 pb-20">
         <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatsBox value="$8.2M" label="총 거래량" />
@@ -300,10 +295,6 @@ export function MainPage({
     </div>
   );
 }
-
-/* ============================================================
-    SUB COMPONENTS
-============================================================ */
 
 function StatsBox({ value, label }: { value: string; label: string }) {
   return (
@@ -327,11 +318,13 @@ function MarketCard({
     <div
       onClick={onClick}
       className={`bg-white/5 border border-white/10 rounded-2xl p-6 transition cursor-pointer hover:bg-white/10 
-      ${featured ? "ring-2 ring-purple-500/40" : ""}`}
+        ${featured ? "ring-2 ring-purple-500/40" : ""}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">{market.question}</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {market.question}
+          </h3>
           <div className="flex items-center gap-2 text-gray-400 text-sm">
             <Clock className="w-4 h-4" />
             {market.endDate}
@@ -356,7 +349,9 @@ function MarketCard({
           <DollarSign className="w-4 h-4" />
           거래량: {market.volume}
         </div>
-        <button className="text-purple-400 hover:text-purple-300">자세히 보기 →</button>
+        <button className="text-purple-400 hover:text-purple-300">
+          자세히 보기 →
+        </button>
       </div>
     </div>
   );
@@ -367,13 +362,15 @@ function VoteBtn({ type, value }: { type: "yes" | "no"; value: number }) {
   return (
     <button
       className={`p-4 rounded-xl transition group 
-      ${
-        isYes
-          ? "bg-green-500/20 border border-green-500/30 hover:bg-green-500/30"
-          : "bg-red-500/20 border border-red-500/30 hover:bg-red-500/30"
-      }`}
+        ${
+          isYes
+            ? "bg-green-500/20 border border-green-500/30 hover:bg-green-500/30"
+            : "bg-red-500/20 border border-red-500/30 hover:bg-red-500/30"
+        }`}
     >
-      <div className={isYes ? "text-green-400" : "text-red-400"}>{isYes ? "YES" : "NO"}</div>
+      <div className={isYes ? "text-green-400" : "text-red-400"}>
+        {isYes ? "YES" : "NO"}
+      </div>
       <div className="text-2xl text-white font-bold">{value}%</div>
       <div
         className={`text-xs mt-1 opacity-0 group-hover:opacity-100 transition ${
@@ -388,14 +385,14 @@ function VoteBtn({ type, value }: { type: "yes" | "no"; value: number }) {
 
 function UserDropdown({
   user,
+  onLogout,
   onProfile,
   onPointsShop,
-  onLogout,
 }: {
-  user: UserProfile;
+  user: any;
+  onLogout?: () => void;
   onProfile?: () => void;
   onPointsShop?: () => void;
-  onLogout?: () => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -408,7 +405,7 @@ function UserDropdown({
         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
           <User className="w-5 h-5 text-white" />
         </div>
-        <span className="hidden sm:block text-white">{user.name}</span>
+        <span className="hidden sm:block text-white">{user?.nickname || user?.name}</span>
         <ChevronDown className={`w-4 h-4 text-gray-400 ${open ? "rotate-180" : ""}`} />
       </button>
 
@@ -423,6 +420,7 @@ function UserDropdown({
           >
             프로필
           </button>
+
           <button
             onClick={() => {
               setOpen(false);
