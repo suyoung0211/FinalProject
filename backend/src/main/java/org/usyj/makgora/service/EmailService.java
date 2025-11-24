@@ -7,6 +7,7 @@ import org.usyj.makgora.entity.EmailVerificationEntity;
 import org.usyj.makgora.repository.EmailVerificationRepository;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 
 import java.time.LocalDateTime;
 
@@ -71,18 +72,21 @@ public class EmailService {
         emailRepo.save(entity);
     }
 
-    /** 인증코드 이메일 발송 */
-    public boolean sendMail(String email, String code) {
+   /** ⭐ 비동기 이메일 발송 */
+    @Async
+    public void sendMailAsync(String email, String code) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setTo(email);
             message.setSubject("이메일 인증코드");
             message.setText("인증코드: " + code);
+
+            System.out.println("📨 이메일 비동기 발송 시작...");
             mailSender.send(message);
-            return true;
+            System.out.println("📨 이메일 발송 완료!");
+
         } catch (Exception e) {
             System.out.println("메일 발송 오류: " + e.getMessage());
-            return false;
         }
     }
 }

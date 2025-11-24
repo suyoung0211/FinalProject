@@ -16,11 +16,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
-
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.usyj.makgora.config.JwtAuthFilter;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
+@EnableAsync
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
