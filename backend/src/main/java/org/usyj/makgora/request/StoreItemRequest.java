@@ -1,0 +1,17 @@
+package org.usyj.makgora.request;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+
+public class StoreItemRequest {
+    private String name;
+    private String type;       // POINT or CASH
+    private String category;   // AVATAR / BACKGROUND / SKIN / BADGE
+    private Integer price;
+    private Integer stock;
+    private String image;
+} 
+

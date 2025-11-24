@@ -4,11 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "RSS_Articles")
+@Table(name = "rss_articles")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,10 +20,15 @@ public class RssArticleEntity {
     @Column(name = "article_id")
     private Integer id;
 
-    // 연관 관계: RSS 피드
-    @ManyToOne
-    @JoinColumn(name = "feed_id", referencedColumnName = "feed_id", foreignKey = @ForeignKey(name = "fk_article_feed"))
+    // 어느 피드에서 수집되었는지
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "feed_id", nullable = false)
     private RssFeedEntity feed;
+
+    // 기사 카테고리 (feed와 동일)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private ArticleCategoryEntity category;
 
     @Column(nullable = false, length = 500)
     private String title;
@@ -35,11 +39,20 @@ public class RssArticleEntity {
     @Lob
     private String content;
 
+    @Column(length = 500)
+    private String thumbnailUrl;
+
     private LocalDateTime publishedAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
     @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 }

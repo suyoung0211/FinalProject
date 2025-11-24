@@ -20,14 +20,20 @@ CREATE TABLE Users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '정보 수정일'
 );
 
--- 2. RSS_Feeds 테이블
+-- 2. RSS_Feeds 테이블 (수정: category_id 추가)
 CREATE TABLE RSS_Feeds (
     feed_id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'RSS 피드 ID',
     url VARCHAR(255) NOT NULL COMMENT 'RSS URL',
+    
+    -- 수정된 부분: 카테고리 연결
+    category_id INT NOT NULL COMMENT '카테고리 ID',
+
     last_fetched DATETIME COMMENT '마지막 수집 시간',
     status ENUM('active','inactive') DEFAULT 'active' COMMENT '활성 상태',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일'
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
+
+    FOREIGN KEY (category_id) REFERENCES Article_Categories(category_id)
 );
 
 -- 3. Issues 테이블
@@ -105,13 +111,17 @@ CREATE TABLE Vote_Users (
     option_id INT NOT NULL COMMENT '투표 옵션 ID',
     choice_id INT NOT NULL COMMENT '선택한 선택지 ID',
     points_bet INT DEFAULT 0 COMMENT '배팅한 포인트',
+    is_cancelled TINYINT(1) DEFAULT 0 COMMENT '투표 취소 여부',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '참여 시간',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정 시간',
     FOREIGN KEY (vote_id) REFERENCES Votes(vote_id),
     FOREIGN KEY (user_id) REFERENCES Users(user_id),
     FOREIGN KEY (option_id) REFERENCES Vote_Options(option_id),
-    FOREIGN KEY (choice_id) REFERENCES Vote_Option_Choices(choice_id)
+    FOREIGN KEY (choice_id) REFERENCES Vote_Option_Choices(choice_id),
+    -- 옵션별 중복 투표 방지: 하나의 사용자가 하나의 옵션에 대해 1회만 투표 가능
+    CONSTRAINT unique_vote_user_option UNIQUE (vote_id, user_id, option_id)
 );
+
 
 -- 8. Vote_Rules 테이블
 CREATE TABLE Vote_Rules (
@@ -223,20 +233,29 @@ CREATE TABLE Rankings (
     FOREIGN KEY (user_id) REFERENCES Users(user_id)
 );
 
--- 17. 기사 저장 테이블 (RSS Articles)
+-- 17. 기사 저장 테이블 (RSS_Articles) 
 CREATE TABLE RSS_Articles (
     article_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '기사 ID',
     feed_id INT NOT NULL COMMENT 'RSS 피드 ID',
-    
+
+    -- 수정된 부분: feed에서 가져온 카테고리 직접 저장
+    category_id INT NOT NULL COMMENT '카테고리 ID',
+
     title VARCHAR(500) NOT NULL COMMENT '기사 제목',
     link VARCHAR(500) NOT NULL UNIQUE COMMENT '기사 원문 링크',
     content LONGTEXT COMMENT '기사 본문',
+
+    -- 수정된 부분: 기사 썸네일 저장
+    thumbnail_url VARCHAR(500) COMMENT '기사 대표 이미지 URL',
+
     published_at DATETIME COMMENT '기사 게시 시간',
+    is_deleted TINYINT(1) DEFAULT 0 COMMENT '삭제 여부 (0=활성, 1=삭제)',
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '등록일',
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일',
-    
-    FOREIGN KEY (feed_id) REFERENCES RSS_Feeds(feed_id)
+
+    FOREIGN KEY (feed_id) REFERENCES RSS_Feeds(feed_id),
+    FOREIGN KEY (category_id) REFERENCES Article_Categories(category_id)
 );
 
 -- 18. 카테고리(장르) 테이블
@@ -244,17 +263,6 @@ CREATE TABLE Article_Categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '카테고리 ID',
     name VARCHAR(100) NOT NULL UNIQUE COMMENT '카테고리명',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일'
-);
-
--- 19. N:N 매핑 테이블 (기사 ↔ 카테고리)
-CREATE TABLE Article_Category_Map (
-    article_id INT NOT NULL COMMENT '기사 ID',
-    category_id INT NOT NULL COMMENT '카테고리 ID',
-
-    PRIMARY KEY (article_id, category_id),
-
-    FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE CASCADE,
-    FOREIGN KEY (category_id) REFERENCES Article_Categories(category_id) ON DELETE CASCADE
 );
 
 -- 20. 기사 AI 요약 테이블

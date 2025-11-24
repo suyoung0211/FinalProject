@@ -2,14 +2,17 @@ package org.usyj.makgora.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "rss_feeds")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RssFeedEntity {
 
     @Id
@@ -20,6 +23,11 @@ public class RssFeedEntity {
     @Column(nullable = false, length = 255)
     private String url;
 
+    // RSS 피드가 속한 카테고리
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private ArticleCategoryEntity category;
+
     private LocalDateTime lastFetched;
 
     @Enumerated(EnumType.STRING)
@@ -27,18 +35,13 @@ public class RssFeedEntity {
     @Builder.Default
     private Status status = Status.ACTIVE;
 
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(nullable = false)
-    @Builder.Default
-    private LocalDateTime updatedAt = LocalDateTime.now();
-
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+    private LocalDateTime updatedAt;
 
     public enum Status {
         ACTIVE,
