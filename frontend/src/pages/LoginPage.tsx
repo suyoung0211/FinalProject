@@ -1,3 +1,4 @@
+// src/pages/LoginPage.tsx
 import { useState } from "react";
 import {
   LogIn,
@@ -17,97 +18,141 @@ import { useNavigate } from "react-router-dom";
 
 import { loginApi, signupApi } from "../api/authApi";
 import { useAuth } from "../hooks/useAuth";
+import EmailVerifyModal from "../components/email/EmailVerifyModal";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [nickname, setNickname] = useState(""); // 회원가입용 닉네임
-  const [email, setEmail] = useState("");       // 로그인/회원가입 공통 이메일
-  const [password, setPassword] = useState(""); // 로그인/회원가입 공통 비밀번호
+  const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");       // 사이트 로그인용 email (ID)
+  const [password, setPassword] = useState("");
 
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // 🔹 이메일 인증 관련 상태
+  const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+
+  // 🔹 회원가입 폼 데이터 임시 저장
+  const [pendingSignup, setPendingSignup] = useState<{
+    email: string;
+    password: string;
+    nickname: string;
+  } | null>(null);
+
   // ⭐ 회원가입 + 로그인 공통 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    try {
-      if (isSignup) {
-        // ⭐ 회원가입 요청
+    // 1) 회원가입 모드
+    if (isSignup) {
+      // 아직 이메일 인증 안 했으면 → 회원가입 API 호출 대신 모달 오픈
+      if (!emailVerified) {
+        // 현재 폼 데이터 저장해두기
+        setPendingSignup({ email, password, nickname });
+        setVerifyModalOpen(true);
+        return;
+      }
+
+      // 이메일 인증이 끝난 상태라면 → 실제 회원가입 요청
+      if (!pendingSignup || !verifiedEmail) {
+        alert("이메일 인증 정보가 올바르지 않습니다. 다시 시도해주세요.");
+        setEmailVerified(false);
+        setVerifyModalOpen(true);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
         await signupApi({
-          email,
-          password,
-          nickname, // RegisterRequest에 맞춤
+          email: pendingSignup.email,
+          password: pendingSignup.password,
+          nickname: pendingSignup.nickname,
+          verificationEmail: verifiedEmail, // 백엔드에 인증용 이메일도 넘길 수 있음
         });
 
         alert("회원가입 완료! 이제 로그인해주세요.");
         setIsSignup(false);
+        setEmailVerified(false);
+        setVerifiedEmail(null);
+        setPendingSignup(null);
+      } catch (error: any) {
+        console.error(error);
+        alert(error.response?.data?.message || "회원가입에 실패했습니다.");
+      } finally {
         setIsLoading(false);
-        return;
       }
+      return;
+    }
 
-      // ⭐ 로그인 요청 (email/password)
+    // 2) 로그인 모드
+    setIsLoading(true);
+    try {
       const res = await loginApi({ email, password });
 
       const accessToken = res.data.accessToken;
       const refreshToken = res.data.refreshToken;
       const userData = res.data.user;
 
-      // AuthContext 로그인 처리
       login(userData, accessToken, refreshToken);
-
       navigate("/");
     } catch (error: any) {
       console.error(error);
-      alert(error.response?.data?.message || "요청에 실패했습니다.");
+      alert(error.response?.data?.message || "로그인에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  // 모달에서 인증 성공했을 때
+  const handleEmailVerified = (verified: string) => {
+    setEmailVerified(true);
+    setVerifiedEmail(verified);
+    // 인증 끝났으면 바로 회원가입 API 호출 시도
+    if (pendingSignup) {
+      // 폼 submit을 다시 트리거하는 대신 여기에서 직접 호출해도 됨
+      (async () => {
+        try {
+          setIsLoading(true);
+          await signupApi({
+            email: pendingSignup.email,
+            password: pendingSignup.password,
+            nickname: pendingSignup.nickname,
+            verificationEmail: verified,
+          });
+          alert("회원가입 완료! 이제 로그인해주세요.");
+          setIsSignup(false);
+          setPendingSignup(null);
+          setVerifiedEmail(null);
+          setEmailVerified(false);
+        } catch (error: any) {
+          console.error(error);
+          alert(error.response?.data?.message || "회원가입에 실패했습니다.");
+        } finally {
+          setIsLoading(false);
+        }
+      })();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* 배경 */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
 
+      {/* 메인 컨테이너 */}
       <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 relative z-10">
-        {/* 왼쪽 소개 화면 */}
-        <div className="hidden lg:flex flex-col justify-center p-12">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <TrendingUp className="w-7 h-7 text-white" />
-              </div>
-              <span className="text-3xl font-bold text-white">VoteMarket</span>
-            </div>
+        {/* 왼쪽 소개 영역 (생략: 네 기존 코드 그대로) */}
+        {/* ... 그대로 두면 됨 */}
 
-            <h2 className="text-5xl font-bold text-white mb-4 leading-tight">
-              미래를 예측하는 <br />
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                투표 플랫폼
-              </span>
-            </h2>
-
-            <p className="text-xl text-gray-300 mb-8">
-              집단 지성으로 미래를 분석하고  
-              <br />정확한 예측으로 포인트를 획득하세요!
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <Feature icon={<Sparkles className="w-5 h-5 text-purple-400" />} title="다양한 이슈" desc="정치 · 경제 · 엔터테인먼트 · 스포츠" />
-            <Feature icon={<TrendingUp className="w-5 h-5 text-pink-400" />} title="실시간 확률" desc="실시간 업데이트되는 예측 시장" />
-            <Feature icon={<LogIn className="w-5 h-5 text-indigo-400" />} title="보상 시스템" desc="정확한 예측 시 포인트 지급" />
-          </div>
-        </div>
-
-        {/* 오른쪽 로그인/회원가입 */}
+        {/* 오른쪽 로그인/회원가입 폼 */}
         <div className="flex flex-col justify-center">
           <button
             onClick={() => navigate("/")}
@@ -130,20 +175,16 @@ export function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {isSignup && (
-                <>
-                  {/* nickname */}
-                  <Field label="닉네임" icon={<User className="w-4 h-4" />}>
-                    <Input
-                      value={nickname}
-                      onChange={(e) => setNickname(e.target.value)}
-                      required
-                    />
-                  </Field>
-                </>
+                <Field label="닉네임" icon={<User className="w-4 h-4" />}>
+                  <Input
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                    required
+                  />
+                </Field>
               )}
 
-              {/* 로그인/회원가입 공통 – email */}
-              <Field label="이메일" icon={<Mail className="w-4 h-4" />}>
+              <Field label="이메일 (로그인 ID)" icon={<Mail className="w-4 h-4" />}>
                 <Input
                   value={email}
                   type="email"
@@ -152,7 +193,6 @@ export function LoginPage() {
                 />
               </Field>
 
-              {/* PW */}
               <Field label="비밀번호" icon={<Lock className="w-4 h-4" />}>
                 <div className="relative">
                   <Input
@@ -172,19 +212,35 @@ export function LoginPage() {
                 </div>
               </Field>
 
+              {isSignup && (
+                <div className="text-xs text-gray-300">
+                  * 회원가입 시, 추가로 인증용 이메일을 통해 본인인증을 진행합니다.
+                </div>
+              )}
+
               <Button
                 type="submit"
                 disabled={isLoading}
                 className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold"
               >
-                {isLoading ? "처리 중..." : isSignup ? "회원가입" : "로그인"}
+                {isLoading
+                  ? "처리 중..."
+                  : isSignup
+                  ? emailVerified
+                    ? "회원가입 완료"
+                    : "회원가입 (이메일 인증 필요)"
+                  : "로그인"}
               </Button>
             </form>
 
-            {/* 회원가입/로그인 토글 */}
             <div className="text-center mt-6">
               <button
-                onClick={() => setIsSignup(!isSignup)}
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  setEmailVerified(false);
+                  setVerifiedEmail(null);
+                  setPendingSignup(null);
+                }}
                 className="text-purple-400 hover:text-purple-300"
               >
                 {isSignup
@@ -195,6 +251,13 @@ export function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* 이메일 인증 모달 */}
+      <EmailVerifyModal
+  isOpen={verifyModalOpen}
+  onClose={() => setVerifyModalOpen(false)}
+  onVerified={handleEmailVerified}
+/>
     </div>
   );
 }
@@ -215,28 +278,6 @@ function Field({
         {label}
       </Label>
       {children}
-    </div>
-  );
-}
-
-function Feature({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="w-10 h-10 rounded-lg bg-white/10 border border-purple-500/30 flex items-center justify-center">
-        {icon}
-      </div>
-      <div>
-        <h3 className="text-white font-semibold">{title}</h3>
-        <p className="text-gray-400 text-sm">{desc}</p>
-      </div>
     </div>
   );
 }

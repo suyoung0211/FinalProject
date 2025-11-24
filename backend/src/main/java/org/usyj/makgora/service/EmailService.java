@@ -9,6 +9,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,50 +19,38 @@ public class EmailService {
     private final JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
-    private String fromEmail;
+    private String from;
 
-    /** 6자리 인증번호 생성 */
-    public String generateVerificationCode() {
-        return String.format("%06d", (int)(Math.random() * 1000000));
+    public String createCode() {
+        return String.valueOf((int)(Math.random() * 900000 + 100000)); // 6자리 숫자 코드
     }
 
-    /** 5분 만료시간 생성 */
-    public LocalDateTime createExpireTime() {
-        return LocalDateTime.now().plusMinutes(5);
+    public LocalDateTime expires() {
+        return LocalDateTime.now().plusMinutes(10);
     }
 
-    /** 이메일 발송 */
-    public boolean sendVerificationEmail(String email, String code) {
+    public boolean sendMail(String to, String code) {
         try {
+            String html = """
+                <h2>이메일 인증</h2>
+                <p>인증코드: <b>%s</b></p>
+                <p>10분 내로 입력해주세요.</p>
+            """.formatted(code);
+
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            helper.setFrom(fromEmail);
-            helper.setTo(email);
-            helper.setSubject("이메일 인증번호입니다");
-
-            String html = """
-                    <h2>이메일 인증번호</h2>
-                    <p>아래 인증번호를 입력해주세요:</p>
-                    <h1>%s</h1>
-                    <p>인증번호는 5분 후 만료됩니다.</p>
-                    """.formatted(code);
-
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject("회원가입 이메일 인증");
             helper.setText(html, true);
 
             mailSender.send(message);
-
-            log.info("인증 이메일 발송 완료: {} / code={}", email, code);
             return true;
 
         } catch (Exception e) {
-            log.error("이메일 발송 실패: {}", e.getMessage());
+            log.error("메일 전송 오류: {}", e.getMessage());
             return false;
         }
-    }
-
-    /** 인증번호 만료 여부 확인 */
-    public boolean isTokenExpired(LocalDateTime expires) {
-        return expires == null || LocalDateTime.now().isAfter(expires);
     }
 }

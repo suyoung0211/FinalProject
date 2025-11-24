@@ -1,93 +1,80 @@
 import { useState } from "react";
+import { sendEmailCodeApi, verifyEmailCodeApi } from "../../api/emailApi";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import axios from "axios";
+
+interface EmailVerifyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onVerified: (verifiedEmail: string) => void;
+}
 
 export default function EmailVerifyModal({
-  email,
-  onSuccess,
+  isOpen,
   onClose,
-}: {
-  email: string;
-  onSuccess: () => void;
-  onClose: () => void;
-}) {
+  onVerified,
+}: EmailVerifyModalProps) {
+
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+
+  if (!isOpen) return null;
+
+  const sendCode = async () => {
+    try {
+      await sendEmailCodeApi(email);
+      alert("인증 코드가 발송되었습니다!");
+      setSent(true);
+    } catch {
+      alert("이메일 전송 실패");
+    }
+  };
 
   const verifyCode = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.post("http://localhost:8080/api/email/verify", {
-        email,
-        token: code,
-      });
-
-      if (res.data.success) {
-        alert("이메일 인증 완료!");
-        onSuccess();
-      } else {
-        setMessage(res.data.message);
-      }
-    } catch (e: any) {
-      setMessage(e.response?.data?.message || "인증 실패");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resend = async () => {
-    setLoading(true);
-    try {
-      await axios.post(
-        `http://localhost:8080/api/email/resend?email=${email}`
-      );
-      alert("인증번호가 재발송되었습니다.");
-    } catch (e) {
-      alert("재발송 실패");
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await verifyEmailCodeApi(email, code);  // code=token
+    alert("인증 성공!");
+    onVerified(email);
+    onClose();
+  } catch {
+    alert("인증 실패");
+  }
+};
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 w-96 border border-white/20">
-        <h2 className="text-white text-xl font-bold mb-4">이메일 인증</h2>
-        <p className="text-gray-300 mb-4">
-          <strong>{email}</strong>로 전송된 인증번호를 입력하세요.
-        </p>
+      <div className="bg-black rounded-xl p-6 w-96 space-y-4">
+
+        <h2 className="text-xl font-semibold text-center">이메일 인증</h2>
 
         <Input
-          placeholder="6자리 인증번호"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          maxLength={6}
-          className="mb-3"
+          placeholder="인증용 이메일 입력"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
 
-        {message && <p className="text-red-400 text-sm mb-2">{message}</p>}
+        <Button className="w-full bg-purple-600" onClick={sendCode}>
+          인증코드 보내기
+        </Button>
 
-        <div className="flex gap-2">
-          <Button className="flex-1" onClick={verifyCode} disabled={loading}>
-            인증하기
-          </Button>
-          <Button
-            className="flex-1 bg-gray-600"
-            onClick={resend}
-            disabled={loading}
-          >
-            재전송
-          </Button>
-        </div>
+        {sent && (
+          <>
+            <Input
+              placeholder="인증코드 입력"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
 
-        <button
-          onClick={onClose}
-          className="mt-4 w-full text-gray-300 hover:text-white text-sm"
-        >
+            <Button className="w-full bg-pink-600" onClick={verifyCode}>
+              인증 확인
+            </Button>
+          </>
+        )}
+
+        <Button variant="outline" className="w-full" onClick={onClose}>
           닫기
-        </button>
+        </Button>
       </div>
     </div>
   );
