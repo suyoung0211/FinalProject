@@ -98,6 +98,10 @@ public class AuthController {
         // 비밀번호 암호화
         user.setPassword(passwordEncoder.encode(req.getPassword()));
 
+         // 🔥 이메일 인증 정보 저장
+    user.setEmailVerified(true);             // 인증 완료 상태로 저장
+    user.setVerificationEmail(req.getEmail()); // 인증 시 사용한 이메일 저장
+
         // ⭐ refreshToken은 로그인시에만 저장
         user.setRefreshToken(null);
 

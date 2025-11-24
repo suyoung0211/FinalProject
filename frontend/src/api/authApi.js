@@ -1,26 +1,14 @@
-// src/api/authApi.ts
-import axios from "axios";
+// src/api/authApi.js
+import api from "./api";
 
-const API = axios.create({
-  baseURL: "http://localhost:8080/api",
-});
+// 회원가입
+export const signupApi = (body) => api.post("/auth/register", body);
 
-// 회원가입 API
-export const signupApi = (body) => API.post("/auth/register", body);
-
-// 로그인 API
-export const loginApi = (body) => API.post("/auth/login", body);
+// 로그인
+export const loginApi = (body) => api.post("/auth/login", body);
 
 // 내 정보 조회
-export const getMyInfoApi = (token) =>
-  API.get("/users/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export const getMyInfoApi = () => api.get("/users/me");
 
-// 로그아웃 API (refresh-token 블랙리스트)
-export const logoutApi = (token) =>
-  API.post(
-    "/auth/logout",
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+// 로그아웃
+export const logoutApi = () => api.post("/auth/logout");

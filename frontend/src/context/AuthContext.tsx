@@ -1,4 +1,3 @@
-// src/context/AuthContext.tsx
 import { createContext, useState, useEffect, ReactNode } from "react";
 import { logoutApi, getMyInfoApi } from "../api/authApi";
 
@@ -32,26 +31,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(savedAccess);
       setRefreshToken(savedRefresh);
 
-      getMyInfoApi(savedAccess)
-        .then((res) => setUser(res.data))
+      // 🔥 JS module이라 타입을 TS가 모름 → as any 로 처리(가장 안전)
+      (getMyInfoApi as any)(savedAccess)
+        .then((res: any) => {
+          setUser(res.data);
+        })
         .catch(() => logout());
     }
   }, []);
 
-  const login = (userData: UserType, accessToken: string, refreshToken: string) => {
+  const login = (
+    userData: UserType,
+    accessToken: string,
+    newRefreshToken: string
+  ) => {
     setUser(userData);
     setToken(accessToken);
-    setRefreshToken(refreshToken);
+    setRefreshToken(newRefreshToken);
 
     localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", refreshToken);
+    localStorage.setItem("refreshToken", newRefreshToken);
   };
 
   const logout = async () => {
     console.log("logout 호출, token:", token);
+
     try {
-      if (token) await logoutApi(token);
-    } catch (e) {}
+      if (token) await (logoutApi as any)(token);
+    } catch (e) {
+      console.error(e);
+    }
 
     setUser(null);
     setToken(null);

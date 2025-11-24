@@ -15,8 +15,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.http.HttpMethod;   // ⭐⭐⭐ 반드시 필요함 ⭐⭐⭐
+import org.springframework.http.HttpMethod;
 
+import org.usyj.makgora.config.JwtAuthFilter;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
@@ -39,29 +40,29 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-                // ⭐ preflight OPTIONS 허용
+                // ⭐ Preflight 허용
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // swagger
-                .requestMatchers(
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**"
-                ).permitAll()
-
-                // 인증 없이 허용되는 API
+                // ⭐ 비인가 허용되는 엔드포인트
                 .requestMatchers(
                         "/api/auth/login",
                         "/api/auth/register",
+                        "/api/auth/refresh",
                         "/api/email/**"
                 ).permitAll()
 
-                // 인증 필요
+                // ⭐ 로그아웃은 반드시 인증 필요
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+
+                // ⭐ 보호 API
                 .requestMatchers("/api/user/**").authenticated()
+                .requestMatchers("/api/vote/**").authenticated()
+                .requestMatchers("/api/comment/**").authenticated()
 
                 .anyRequest().authenticated()
             )
 
+            // JWT 필터 삽입
             .addFilterBefore(
                 new JwtAuthFilter(jwtTokenProvider, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class

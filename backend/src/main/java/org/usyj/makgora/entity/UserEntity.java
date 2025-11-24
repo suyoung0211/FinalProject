@@ -18,10 +18,7 @@ public class UserEntity {
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 150)
-    private String email;
-
-    @Column(length = 150)
-    private String verificationEmail;
+    private String email;  // 로그인용 이메일
 
     @Column(nullable = false, length = 255)
     private String password;
@@ -50,10 +47,8 @@ public class UserEntity {
     @Builder.Default
     private Boolean emailVerified = false;
 
-    @Column(length = 255)
-    private String emailVerificationToken;
-
-    private LocalDateTime emailTokenExpires;
+    @Column(length = 150)
+    private String verificationEmail;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10, nullable = false)
@@ -68,6 +63,7 @@ public class UserEntity {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    // 🔹 로그인/재발급에 사용하는 refreshToken
     @Column(length = 500)
     private String refreshToken;
 

@@ -25,13 +25,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String path = req.getRequestURI();
         System.out.println("🔎 요청 URL : " + path);
 
-        // 로그인 / 회원가입 / 이메일 API 는 JWT 검사 생략
-        if (path.startsWith("/api/auth") || path.startsWith("/api/email")) {
-            System.out.println("➡ AUTH/EMAIL API → JWT 검사 생략");
+        // 🔹 JWT 검사를 생략할 URL만 명확히 지정
+        boolean skip =
+                path.equals("/api/auth/login") ||
+                path.equals("/api/auth/register") ||
+                path.equals("/api/auth/refresh") ||
+                path.startsWith("/api/email");
+
+        if (skip) {
+            System.out.println("➡ JWT 검사 생략 URL → " + path);
             chain.doFilter(req, res);
             return;
         }
 
+        // 🔹 그 외 모든 API는 JWT 검사
         String header = req.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
@@ -44,7 +51,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
+                                userDetails, null, userDetails.getAuthorities()
+                        );
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
