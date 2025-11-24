@@ -1,20 +1,20 @@
-package org.usyj.makgora.dto;
+package org.usyj.makgora.rssfeed.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-public class RssItemDTO {
+@AllArgsConstructor
+@Builder
+public class RssArticleDTO {
     private String title;
     private String link;
     private String content;
     private LocalDateTime publishedAt;
     private String thumbnailUrl;
+    private List<String> categories;
 }

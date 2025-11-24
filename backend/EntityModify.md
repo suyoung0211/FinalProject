@@ -40,8 +40,10 @@
     -> 기사 소프트 딜리트 추가
 - thumbnail_url
     -> 썸네일 추가
--category_id
+- category_id
     -> feed에서 가져온 카테고리 직접 저장
+- join 테이블 생성
+    -> 기사 카테고리 맵핑용
 
 ### Vote_Users 테이블(유니크 추가, 칼럼 추가)
 - unique_vote_user_option
@@ -49,9 +51,13 @@
 - isCancelled
     -> 투표 취소 기능 추가
 
-###  Article_Category_Map 테이블(테이블 삭제)
+### Article_Category_Map 테이블(테이블 삭제)
     -> 불필요해서 삭제
 
 ### RSS_Feeds 테이블(칼럼 추가)
 - category_id 추가
     -> 맵핑시키는 테이블이랑 합침
+- sourceName 추가
+    -> 언론사 확인용
+- join 테이블 생성
+    -> 기사 카테고리 맵핑용
