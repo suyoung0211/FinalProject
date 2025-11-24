@@ -40,8 +40,10 @@
     -> 기사 소프트 딜리트 추가
 - thumbnail_url
     -> 썸네일 추가
--category_id
+- category_id
     -> feed에서 가져온 카테고리 직접 저장
+- join 테이블 생성
+    -> 기사 카테고리 맵핑용
 
 Rankings 테이블 수정
 ranking_type ENUM('points','winrate', 'streak') NOT NULL COMMENT '랭킹 종류'
@@ -86,7 +88,7 @@ userentity 수정 => refreshToken 값 저장
 - isCancelled
     -> 투표 취소 기능 추가
 
-###  Article_Category_Map 테이블(테이블 삭제)
+### Article_Category_Map 테이블(테이블 삭제)
     -> 불필요해서 삭제
 
 ### RSS_Feeds 테이블(칼럼 추가)
@@ -104,3 +106,7 @@ pom.xml에 이메일인증관련 추가
 UserEntity 이메일인증 분리 (EmailVerificationEntity로 분리) 
 
 dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response, request에 정리
+- sourceName 추가
+    -> 언론사 확인용
+- join 테이블 생성
+    -> 기사 카테고리 맵핑용

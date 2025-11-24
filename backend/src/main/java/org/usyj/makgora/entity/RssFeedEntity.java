@@ -1,10 +1,28 @@
 package org.usyj.makgora.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "rss_feeds")
@@ -23,10 +41,19 @@ public class RssFeedEntity {
     @Column(nullable = false, length = 255)
     private String url;
 
-    // RSS 피드가 속한 카테고리
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private ArticleCategoryEntity category;
+    // 언론사 이름
+    @Column(nullable = false, length = 100)
+    private String sourceName;
+
+    // 다대다 카테고리
+    @ManyToMany
+    @JoinTable(
+        name = "rss_feed_categories",
+        joinColumns = @JoinColumn(name = "feed_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    @Builder.Default
+    private Set<ArticleCategoryEntity> categories = new HashSet<>();
 
     private LocalDateTime lastFetched;
 

@@ -3,8 +3,8 @@ package org.usyj.makgora.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "Article_Categories")
@@ -25,4 +25,8 @@ public class ArticleCategoryEntity {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    // 양방향 다대다 매핑: 이 카테고리에 속한 기사들
+    @ManyToMany(mappedBy = "categories")
+    private List<RssArticleEntity> articles;
 }
