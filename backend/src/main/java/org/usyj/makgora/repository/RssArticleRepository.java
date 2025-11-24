@@ -19,4 +19,7 @@ public interface RssArticleRepository extends JpaRepository<RssArticleEntity, In
 
     // 제목으로 기사 검색 (부분 검색은 JPQL이나 @Query 필요)
     List<RssArticleEntity> findByTitleContaining(String keyword);
+
+    // 링크 중복 체크
+    boolean existsByLink(String link);
 }
