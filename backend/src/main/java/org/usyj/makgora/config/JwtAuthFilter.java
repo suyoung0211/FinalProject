@@ -19,43 +19,35 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws IOException, ServletException {
+protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+        throws IOException, ServletException {
 
-        String path = req.getRequestURI();
-        System.out.println("\n==============================");
-        System.out.println("🔎 [JwtAuthFilter] 요청 URL : " + path);
+    String path = req.getRequestURI();
+    System.out.println("🔎 요청 URL : " + path);
 
-        // 로그인, 회원가입만 JWT 검사 생략
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
-            System.out.println("➡ LOGIN/REGISTER → JWT 검사 생략");
-            chain.doFilter(req, res);
-            return;
+    // 로그인/회원가입/리프레시 → JWT 검사 생략
+    if (path.startsWith("/api/auth/login") || path.startsWith("/api/auth/register")) {
+    System.out.println("➡ LOGIN/REGISTER → JWT 검사 생략");
+    chain.doFilter(req, res);
+    return;
+}
+    String header = req.getHeader("Authorization");
+
+    if (header != null && header.startsWith("Bearer ")) {
+        String token = header.substring(7);
+
+        if (jwtTokenProvider.validate(token)) {
+            String email = jwtTokenProvider.getEmail(token);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
-
-        String header = req.getHeader("Authorization");
-
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            System.out.println("📌 JWT 추출됨: " + token);
-
-            if (jwtTokenProvider.validate(token)) {
-                System.out.println("✅ JWT 검증 성공");
-
-                String email = jwtTokenProvider.getEmail(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
-
-                SecurityContextHolder.getContext().setAuthentication(auth);
-
-                System.out.println("🔐 SecurityContext 인증 세팅 완료");
-            }
-        }
-
-        chain.doFilter(req, res);
-        System.out.println("==============================\n");
     }
+
+    chain.doFilter(req, res);
+}
 }

@@ -9,7 +9,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import org.usyj.makgora.dto.*;
 import org.usyj.makgora.dto.request.LoginRequest;
 import org.usyj.makgora.dto.request.RegisterRequest;
 import org.usyj.makgora.dto.response.LoginResponse;

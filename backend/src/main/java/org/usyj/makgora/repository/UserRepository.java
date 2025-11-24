@@ -20,4 +20,5 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
     // 활성 상태인 사용자만 찾기
     Optional<UserEntity> findByEmailAndStatus(String email, UserEntity.Status status);
+    
 }

@@ -6,7 +6,7 @@ const API = axios.create({
 });
 
 // 회원가입 API
-export const signupApi = (body) => API.post("/auth/signup", body);
+export const signupApi = (body) => API.post("/auth/register", body);
 
 // 로그인 API
 export const loginApi = (body) => API.post("/auth/login", body);
