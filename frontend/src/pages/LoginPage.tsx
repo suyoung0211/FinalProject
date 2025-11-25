@@ -28,7 +28,8 @@ export function LoginPage() {
   const [email, setEmail] = useState("");       // 사이트 로그인용 email (ID)
   const [password, setPassword] = useState("");
 
-  const [isSignup, setIsSignup] = useState(false);
+  // ⭐ fix : URL 파라미터로 회원가입 모드 설정
+  const [isSignup, setIsSignup] = useState(new URLSearchParams(location.search).get("mode") === "signup");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 

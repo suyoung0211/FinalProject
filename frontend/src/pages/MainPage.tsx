@@ -153,7 +153,7 @@ export function MainPage() {
             {!user ? (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => navigate("/login")}
+                  onClick={() => navigate("/login?mode=signup")} // ⭐ fix : 회원가입 눌렀을 때 회원가입 폼으로 가게 변경함
                   className="text-gray-300 hover:text-white px-4 py-2"
                 >
                   회원가입
