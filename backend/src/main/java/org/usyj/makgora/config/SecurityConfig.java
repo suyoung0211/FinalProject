@@ -53,7 +53,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // ⭐ 로그아웃은 반드시 인증 필요
-                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
 
                 // ⭐ 보호 API
                 .requestMatchers("/api/user/**").authenticated()
@@ -62,6 +62,7 @@ public class SecurityConfig {
 
                 .anyRequest().authenticated()
             )
+            .logout(logout -> logout.disable())
 
             // JWT 필터 삽입
             .addFilterBefore(

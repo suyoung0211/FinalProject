@@ -54,21 +54,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    console.log("logout 호출, token:", token);
-
-    try {
-      if (token) await (logoutApi as any)(token);
-    } catch (e) {
-      console.error(e);
+  try {
+    if (user?.id) {
+      await logoutApi(user.id); 
     }
+  } catch (e) {
+    console.error("Logout error:", e);
+  }
 
-    setUser(null);
-    setToken(null);
-    setRefreshToken(null);
+  // 반드시 clear 전에 실행하면 X
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
 
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-  };
+  setUser(null);
+  setToken(null);
+  setRefreshToken(null);
+};
+
+
 
   return (
     <AuthContext.Provider value={{ user, token, refreshToken, login, logout }}>

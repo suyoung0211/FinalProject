@@ -40,6 +40,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // 🔹 그 외 모든 API는 JWT 검사
         String header = req.getHeader("Authorization");
+        System.out.println("📌 Authorization 헤더 = " + header);
 
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
