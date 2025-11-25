@@ -1,4 +1,3 @@
-// src/api/api.js
 import axios from "axios";
 
 const api = axios.create({
@@ -6,14 +5,16 @@ const api = axios.create({
   withCredentials: false,
 });
 
-// 🔹 요청 인터셉터 — accessToken 자동 첨부
+// 요청 인터셉터
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
-// 🔹 응답 인터셉터 — accessToken 만료 시 refresh 요청
+// 응답 인터셉터
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -37,11 +38,8 @@ api.interceptors.response.use(
         const newAccessToken = res.data.accessToken;
         localStorage.setItem("accessToken", newAccessToken);
 
-        // axios 기본 헤더 갱신
-        api.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
-        // 원래 요청 재시도
         return api(originalRequest);
       } catch (e) {
         localStorage.clear();
