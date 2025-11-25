@@ -1,4 +1,7 @@
-// src/pages/MainPage.tsx
+// ----------------------------------------------
+// src/pages/MainPage.tsx (핫이슈 섹션 복구 버전)
+// ----------------------------------------------
+
 import {
   TrendingUp,
   Flame,
@@ -21,6 +24,7 @@ import { fetchHomeData, fetchArticlesByCategory } from "../api/homeApi";
 
 import NewsSlider from "../components/home/NewsSlider";
 import LatestNewsSidebar from "../components/home/LatestNewsSidebar";
+import LatestNewsList from "../components/home/LatestNewsList";
 
 // 타입 정의
 interface HotIssue {
@@ -46,39 +50,48 @@ export function MainPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // API 데이터 상태
   const [newsSlides, setNewsSlides] = useState<SlideNews[]>([]);
   const [hotIssues, setHotIssues] = useState<HotIssue[]>([]);
   const [latestIssues, setLatestIssues] = useState<HotIssue[]>([]);
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    { id: "all", label: "전체", icon: Globe },
-    { id: "정치", label: "정치", icon: Users },
-    { id: "경제", label: "경제", icon: Briefcase },
-    { id: "크립토", label: "크립토", icon: DollarSign },
-    { id: "스포츠", label: "스포츠", icon: Zap },
-    { id: "엔터", label: "엔터", icon: Flame },
-  ];
+  { id: "all", label: "전체", icon: Globe },
 
+  { id: "World", label: "세계", icon: Globe },
+  { id: "Business", label: "경제", icon: Briefcase },
+  { id: "Environment", label: "환경", icon: Flame },
+];
+
+  // 초기 로딩
   useEffect(() => {
     loadHomeData();
   }, []);
 
   const loadHomeData = async () => {
-    try {
-      setLoading(true);
-      const res = await fetchHomeData();
+  try {
+    setLoading(true);
+    const res = await fetchHomeData();
 
-      setNewsSlides(res.data.newsSlides || []);
-      setHotIssues(res.data.hotIssues || []);
-      setLatestIssues(res.data.latestIssues || []);
-    } catch (err) {
-      console.error("홈 데이터 불러오기 오류:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log("🔥 홈 데이터 전체:", res.data);
+    console.log("🔥 hotIssues:", res.data.hotIssues);
 
+    res.data.hotIssues?.forEach((item: any) => {
+      console.log("👉 카테고리:", item.categories);
+    });
+
+    setNewsSlides(res.data.newsSlides || []);
+    setHotIssues(res.data.hotIssues || []);
+    setLatestIssues(res.data.latestIssues || []);
+  } catch (err) {
+    console.error("홈 데이터 불러오기 오류:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // 카테고리 변경 시 핫이슈만 갱신
   useEffect(() => {
     if (selectedCategory === "all") {
       loadHomeData();
@@ -116,40 +129,16 @@ export function MainPage() {
           </div>
 
           <nav className="hidden md:flex gap-6 items-center text-gray-300">
-            <button
-              onClick={() => navigate("/community")}   // ⭐ onClick 없어서 추가함.
-              className="hover:text-white transition">커뮤니티</button>
-
-            <button
-              onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))}
-              className="hover:text-white transition"
-            >
-              리더보드
-            </button>
-
-            <button
-              onClick={() => (user ? navigate("/shop") : navigate("/login"))}
-              className="hover:text-white transition"
-            >
-              포인트 상점
-            </button>
+            <button onClick={() => navigate("/community")} className="hover:text-white transition">커뮤니티</button>
+            <button onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))} className="hover:text-white transition">리더보드</button>
+            <button onClick={() => (user ? navigate("/shop") : navigate("/login"))} className="hover:text-white transition">포인트 상점</button>
           </nav>
 
           <div>
             {!user ? (
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate("/login?mode=signup")}
-                  className="text-gray-300 hover:text-white px-4 py-2"
-                >
-                  회원가입
-                </button>
-                <button
-                  onClick={() => navigate("/login")}
-                  className="text-gray-300 hover:text-white px-4 py-2"
-                >
-                  로그인
-                </button>
+                <button onClick={() => navigate("/login?mode=signup")} className="text-gray-300 hover:text-white px-4 py-2">회원가입</button>
+                <button onClick={() => navigate("/login")} className="text-gray-300 hover:text-white px-4 py-2">로그인</button>
               </div>
             ) : (
               <UserDropdown user={user} onLogout={logout} />
@@ -158,20 +147,20 @@ export function MainPage() {
         </div>
       </header>
 
-      {/* SLIDER + SIDEBAR (2:1 레이아웃) */}
-<section className="w-full max-w-[1440px] mx-auto px-6 pt-32">
-  <div className="flex gap-6">
-    {/* LEFT: 슬라이드쇼 (2/3) */}
-    <div className="flex-[2]">
-      <NewsSlider slides={newsSlides} />
-    </div>
+      {/* SLIDER + SIDE (2:1) */}
+      <section className="w-full max-w-[1440px] mx-auto px-6 pt-32">
+        <div className="flex gap-6">
+          {/* LEFT */}
+          <div className="flex-[2]">
+            <NewsSlider slides={newsSlides} />
+          </div>
 
-    {/* RIGHT: 최신 뉴스 사이드바 (1/3) */}
-    <div className="flex-[1]">
-      <LatestNewsSidebar items={latestIssues} />
-    </div>
-  </div>
-</section>
+          {/* RIGHT */}
+          <div className="flex-[1]">
+            <LatestNewsSidebar items={latestIssues} />
+          </div>
+        </div>
+      </section>
 
       {/* CATEGORY */}
       <section className="w-full px-6 mt-8">
@@ -196,7 +185,7 @@ export function MainPage() {
         </div>
       </section>
 
-      {/* 검색 */}
+      {/* SEARCH */}
       <section className="w-full px-6 pt-6">
         <div className="max-w-[700px] mx-auto relative">
           <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -209,29 +198,23 @@ export function MainPage() {
         </div>
       </section>
 
-      {/* HOT ISSUES */}
+      {/* 🔥 HOT ISSUES 섹션 복구됨! */}
       <section className="w-full px-6 mt-10 pb-20">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="text-2xl font-bold text-white mb-6">핫이슈</h2>
 
           {loading && <p className="text-gray-300">불러오는 중...</p>}
-          <LatestNewsSidebar items={filteredIssues} />
+
+          <LatestNewsList items={filteredIssues} />
         </div>
       </section>
     </div>
   );
 }
 
-// User Dropdown
-function UserDropdown({
-  user,
-  onLogout,
-}: {
-  user: any;
-  onLogout?: () => void;
-}) {
+// Dropdown 그대로 유지
+function UserDropdown({ user, onLogout }: { user: any; onLogout?: () => void }) {
   const [open, setOpen] = useState(false);
-
   return (
     <div className="relative">
       <button
@@ -240,9 +223,7 @@ function UserDropdown({
       >
         <User className="w-5 h-5 text-white" />
         <span className="hidden sm:block text-white">{user?.nickname}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-400 ${open ? "rotate-180" : ""}`}
-        />
+        <ChevronDown className={`w-4 h-4 text-gray-400 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
