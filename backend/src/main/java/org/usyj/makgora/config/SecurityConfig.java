@@ -49,7 +49,8 @@ public class SecurityConfig {
                         "/api/auth/login",
                         "/api/auth/register",
                         "/api/auth/refresh",
-                        "/api/email/**"
+                        "/api/email/**",
+                        "/api/home/**"
                 ).permitAll()
 
                 // ⭐ 로그아웃은 반드시 인증 필요
