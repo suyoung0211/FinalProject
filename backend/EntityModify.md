@@ -137,3 +137,7 @@ dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response
         ↪️
         onClick={() => navigate("/community")}
         className="hover:text-white transition">커뮤니티</button>
+  
+### Article_Summaries -> ArticleAiTitle(테이블 변경)
+- 현실적으로 크롤링이 불가능한 부분이 있어서 변경
+- rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경

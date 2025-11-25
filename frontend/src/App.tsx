@@ -1,10 +1,10 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { MainPage } from './pages/MainPage';
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider } from './context/AuthContext';
 import { CommunityPageContainer } from './pages/CommunityPageContainer';
 import { CommunityWritePage } from './components/CommunityWritePage';
+import { AdminPage } from "./pages/AdminPage";
 
 // 라우팅용 래퍼 컴포넌트 (hooks 사용하려고)
 function CommunityWriteRouteWrapper() {
@@ -29,6 +29,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/community" element={<CommunityPageContainer />} />
             <Route path="/community/write" element={<CommunityWriteRouteWrapper />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </div>
       </BrowserRouter>
