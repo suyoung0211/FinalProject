@@ -1,4 +1,4 @@
-package org.usyj.makgora.dto;
+package org.usyj.makgora.dto.home;
 
 import lombok.Builder;
 import lombok.Getter;

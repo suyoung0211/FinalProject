@@ -1,12 +1,12 @@
-package org.usyj.makgora.response;
+package org.usyj.makgora.response.home;
 
 import lombok.*;
 import java.util.List;
 
-import org.usyj.makgora.dto.AiBannerDto;
-import org.usyj.makgora.dto.HotIssueDto;
-import org.usyj.makgora.dto.SlideNewsDto;
-import org.usyj.makgora.dto.TopVoteDto;
+import org.usyj.makgora.dto.home.AiBannerDto;
+import org.usyj.makgora.dto.home.HotIssueDto;
+import org.usyj.makgora.dto.home.SlideNewsDto;
+import org.usyj.makgora.dto.home.TopVoteDto;
 
 @Getter
 @Setter

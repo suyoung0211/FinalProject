@@ -8,20 +8,16 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import org.usyj.makgora.dto.AiBannerDto;
-import org.usyj.makgora.dto.HotIssueDto;
-import org.usyj.makgora.dto.SlideNewsDto;
-import org.usyj.makgora.dto.TopVoteDto;
-
-import org.usyj.makgora.response.HomeResponse;
-
+import org.usyj.makgora.dto.home.AiBannerDto;
+import org.usyj.makgora.dto.home.HotIssueDto;
+import org.usyj.makgora.dto.home.SlideNewsDto;
+import org.usyj.makgora.dto.home.TopVoteDto;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 
 import org.usyj.makgora.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.repository.VoteRepository;
-
+import org.usyj.makgora.response.home.HomeResponse;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 @Service

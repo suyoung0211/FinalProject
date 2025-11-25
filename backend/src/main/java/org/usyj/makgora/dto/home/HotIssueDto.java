@@ -1,15 +1,22 @@
-package org.usyj.makgora.dto;
+package org.usyj.makgora.dto.home;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter @Setter @Builder
-public class SlideNewsDto {
+@Getter
+@Setter
+@Data
+@Builder
+public class HotIssueDto {
     private Integer articleId;
+    private String title;
     private String aiTitle;
     private String thumbnail;
     private LocalDateTime publishedAt;
+    private List<String> categories;
 }

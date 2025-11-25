@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.usyj.makgora.dto.HotIssueDto;
+import org.usyj.makgora.dto.home.HotIssueDto;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.response.HomeResponse;
+import org.usyj.makgora.response.home.HomeResponse;
 import org.usyj.makgora.service.HomeService;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
