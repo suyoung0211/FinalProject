@@ -265,36 +265,35 @@ CREATE TABLE Article_Categories (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일'
 );
 
--- 20. 기사 AI 요약 테이블
-CREATE TABLE Article_Summaries (
-    summary_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '요약 ID',
+-- 20. 기사 AI 제목 재작성 테이블
+CREATE TABLE Article_AiTitles (
+    ai_title_id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'AI 제목 ID',
 
-    article_id INT NOT NULL COMMENT '기사 ID (기사당 1개의 요약만 유지)',
-    
-    -- 🔽 변경: 성공한 경우에만 채워지므로 NOT NULL 제거
-    summary_text LONGTEXT COMMENT 'AI 요약 내용',
+    article_id INT NOT NULL COMMENT '기사 ID (기사당 1개의 AI 제목만 유지)',
+
+    ai_title LONGTEXT COMMENT 'AI가 재작성한 기사 제목',
 
     model_name VARCHAR(100) COMMENT 'LLM 모델명 (예: gpt-4.1-mini)',
-    
-    -- 🔽 추가: 요약 상태(PENDING, PROCESSING, SUCCESS, FAILED) 관리
-    status VARCHAR(20) NOT NULL COMMENT '요약 상태',
 
-    -- 🔽 추가: 실패 또는 재시도 관리
-    try_count INT NOT NULL DEFAULT 0 COMMENT '요약 재시도 횟수',
+    -- 요약 상태(PENDING, PROCESSING, SUCCESS, FAILED) → 제목 생성 상태 관리
+    status VARCHAR(20) NOT NULL COMMENT '제목 생성 상태',
 
-    -- 🔽 추가: 요약 실패 이유 저장
+    -- 실패 또는 재시도 관리
+    try_count INT NOT NULL DEFAULT 0 COMMENT '재시도 횟수',
+
+    -- 실패 이유 저장
     last_error TEXT COMMENT '마지막 오류 메시지',
 
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
-    
-    -- 🔽 추가: 상태 변경 또는 재시도 시 갱신
+
+    -- 상태 변경 또는 재시도 시 갱신
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '최근 업데이트 시각',
 
-    -- 🔽 추가: 요약 성공한 시각
-    last_success_at DATETIME COMMENT '요약 성공 시각',
+    -- 제목 생성 성공 시각
+    last_success_at DATETIME COMMENT 'AI 제목 생성 성공 시각',
 
-    -- 🔽 변경: 기사당 1개의 요약 행 유지 보장
-    UNIQUE KEY uk_article_summary (article_id),
+    -- 기사당 1개의 AI 제목 행 유지 보장
+    UNIQUE KEY uk_article_ai_title (article_id),
 
     FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE CASCADE
-) ENGINE=InnoDB COMMENT='기사 AI 요약 관리';
+) ENGINE=InnoDB COMMENT='기사 AI 제목 재작성 관리';

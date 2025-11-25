@@ -9,10 +9,10 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "Article_Summaries",
+        name = "Article_AiTitles",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_summary_article",
+                        name = "uk_article_ai_title",
                         columnNames = {"article_id"}
                 )
         }
@@ -22,37 +22,37 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ArticleSummaryEntity {
+public class ArticleAiTitleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "summary_id")
+    @Column(name = "ai_title_id")
     private Integer id;
 
-    // 연관 관계: 기사 (기사당 1개의 요약 행을 유지)
+    // 연관 관계: 기사 (기사당 1개의 AI 제목 행을 유지)
     @OneToOne
     @JoinColumn(
             name = "article_id",
             referencedColumnName = "article_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_summary_article")
+            foreignKey = @ForeignKey(name = "fk_ai_title_article")
     )
     private RssArticleEntity article;
 
-    // 요약 결과 (성공한 경우에만 채워짐)
+    // AI가 재작성한 제목 (성공한 경우에만 채워짐)
     @Lob
-    @Column(name = "summary_text")
-    private String summaryText;
+    @Column(name = "ai_title")
+    private String aiTitle;
 
     // AI 모델명 (선택)
     @Column(name = "model_name", length = 100)
     private String modelName;
 
-    // 요약 상태: PENDING / PROCESSING / SUCCESS / FAILED
+    // 제목 생성 상태: PENDING / PROCESSING / SUCCESS / FAILED
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
-    // 요약 재시도 횟수
+    // 제목 생성 재시도 횟수
     @Column(name = "try_count", nullable = false)
     private Integer tryCount;
 

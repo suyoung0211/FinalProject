@@ -100,5 +100,6 @@ userentity 수정 => refreshToken 값 저장
     -> 기사 카테고리 맵핑용
 
 ## 11/25
-### Article_Summaries(칼럼 추가, 수정)
-- sql 에 자삭성해둠
+### Article_Summaries -> ArticleAiTitle(테이블 변경)
+- 현실적으로 크롤링이 불가능한 부분이 있어서 변경
+- rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경
