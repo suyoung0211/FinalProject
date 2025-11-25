@@ -19,7 +19,7 @@ public class EmailVerificationEntity {
     @Column(nullable = false, length = 150)
     private String email;   // 인증 대상 이메일
 
-    @Column(nullable = false, length = 10)
+    @Column(nullable = false, length = 100)
     private String code;    // 6자리 인증코드
 
     private LocalDateTime expiresAt;

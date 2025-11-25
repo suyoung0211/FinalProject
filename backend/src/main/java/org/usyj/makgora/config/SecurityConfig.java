@@ -16,11 +16,12 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
-
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.usyj.makgora.config.JwtAuthFilter;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
+@EnableAsync
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -52,7 +53,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 // ⭐ 로그아웃은 반드시 인증 필요
-                .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
 
                 // ⭐ 보호 API
                 .requestMatchers("/api/user/**").authenticated()
@@ -61,6 +62,7 @@ public class SecurityConfig {
 
                 .anyRequest().authenticated()
             )
+            .logout(logout -> logout.disable())
 
             // JWT 필터 삽입
             .addFilterBefore(
