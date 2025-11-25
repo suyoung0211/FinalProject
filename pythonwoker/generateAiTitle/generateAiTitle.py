@@ -67,41 +67,46 @@ def generate_ai_title(title, content):
     return response.choices[0].message.content.strip()
 
 # ===============================
-# AI 제목 생성 실행 함수
+# AI 제목 생성 실행 함수 (제목 없는 경우만 생성)
 # ===============================
 def run_generate_ai_titles():
     articles = session.query(RssArticleEntity).filter(RssArticleEntity.is_deleted == False).all()
+    
     for article in articles:
-        try:
-            content_for_prompt = article.content if article.content else article.title
-            ai_title_text = generate_ai_title(article.title, content_for_prompt)
-            status = "SUCCESS"
-            last_success_at = datetime.now()
-            last_error = None
-        except Exception as e:
-            ai_title_text = None
-            status = "FAILED"
-            last_error = str(e)
-            last_success_at = None
-
         existing = session.query(ArticleAiTitleEntity).filter_by(article_id=article.article_id).first()
-        if existing:
-            existing.ai_title = ai_title_text
-            existing.status = status
-            existing.last_error = last_error
-            existing.last_success_at = last_success_at
-            existing.updated_at = datetime.now()
-            existing.try_count += 1
-        else:
-            new_ai_title = ArticleAiTitleEntity(
-                article_id=article.article_id,
-                ai_title=ai_title_text,
-                model_name="gpt-4.1-mini",
-                status=status,
-                try_count=1,
-                last_error=last_error,
-                last_success_at=last_success_at
-            )
-            session.add(new_ai_title)
+
+        # 기존 AI 제목이 없거나 비어있을 때만 생성
+        if not existing or not existing.ai_title:
+            try:
+                content_for_prompt = article.content if article.content else article.title
+                ai_title_text = generate_ai_title(article.title, content_for_prompt)
+                status = "SUCCESS"
+                last_success_at = datetime.now()
+                last_error = None
+            except Exception as e:
+                ai_title_text = None
+                status = "FAILED"
+                last_error = str(e)
+                last_success_at = None
+
+            if existing:
+                existing.ai_title = ai_title_text
+                existing.status = status
+                existing.last_error = last_error
+                existing.last_success_at = last_success_at
+                existing.updated_at = datetime.now()
+                existing.try_count += 1
+            else:
+                new_ai_title = ArticleAiTitleEntity(
+                    article_id=article.article_id,
+                    ai_title=ai_title_text,
+                    model_name="gpt-4.1-mini",
+                    status=status,
+                    try_count=1,
+                    last_error=last_error,
+                    last_success_at=last_success_at
+                )
+                session.add(new_ai_title)
+
     session.commit()
     print("AI 제목 생성 완료")

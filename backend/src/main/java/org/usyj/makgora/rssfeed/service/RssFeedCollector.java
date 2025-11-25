@@ -6,12 +6,14 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
 @Component
 @RequiredArgsConstructor
 public class RssFeedCollector {
 
     private final RssFeedService rssFeedService;
+    private final ArticleAiTitleRepository aiTitleRepository;
     private final RestTemplate restTemplate = new RestTemplate(); // API 호출용
 
     // Python AI 제목 생성 API URL
@@ -30,7 +32,9 @@ public class RssFeedCollector {
             // -> pythonwoker>python generate_ai_titles_api.py
             
             var response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
+            long successCount = aiTitleRepository.countByStatus("SUCCESS");
             System.out.println("AI 제목 생성 API 응답: " + response);
+            System.out.println("생성된 AI 제목 개수: " + successCount);
 
         } catch (Exception e) {
             System.err.println("RSS 수집 또는 AI 제목 생성 중 오류 발생: " + e.getMessage());
