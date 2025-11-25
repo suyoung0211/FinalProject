@@ -1,6 +1,7 @@
 package org.usyj.makgora.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.entity.IssueEntity;
@@ -22,4 +23,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
 
     // 제목으로 단일 투표 조회
     Optional<VoteEntity> findByTitle(String title);
+
+    @Query("SELECT v FROM VoteEntity v WHERE v.endAt > CURRENT_TIMESTAMP ORDER BY v.totalPoints DESC")
+    List<VoteEntity> findTop3ByOrderByTotalPointsDesc();
 }

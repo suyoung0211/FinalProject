@@ -29,4 +29,6 @@ public interface IssueRepository extends JpaRepository<IssueEntity, Integer> {
 
     // 제목으로 단일 이슈 조회
     Optional<IssueEntity> findByTitle(String title);
+
+    List<IssueEntity> findTop10ByOrderByCreatedAtDesc();
 }

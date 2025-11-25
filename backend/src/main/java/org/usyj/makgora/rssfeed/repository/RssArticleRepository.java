@@ -32,4 +32,8 @@ public interface RssArticleRepository extends JpaRepository<RssArticleEntity, In
     @Modifying
     @Query("UPDATE RssArticleEntity a SET a.thumbnailUrl = :thumbnail WHERE a.id = :id")
     void updateThumbnail(Integer id, String thumbnail);
+
+    // 카테고리로 기사 조회
+    @Query("SELECT a FROM RssArticleEntity a JOIN a.categories c WHERE c.name = :category")
+List<RssArticleEntity> findByCategory(String category);
 }
