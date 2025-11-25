@@ -112,6 +112,32 @@ dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response
     -> 기사 카테고리 맵핑용
 
 ## 11/25
+* 준우
+프론트
+- MainPage.tsx : 메인에서 회원가입 버튼 눌렀을 때 로그인 폼을 보여줌.
+ 
+    <button
+        onClick={() => navigate("/login")}
+        ↪️
+        onClick={() => navigate("/login?mode=signup")}
+        className="text-gray-300 hover:text-white px-4 py-2"
+    >
+        회원가입
+    </button>
+
+- LoginPage.tsx : URL 파라미터로 회원가입 모드 설정
+
+    const [isSignup, setIsSignup] = useState(false);
+    ↪️
+    const [isSignup, setIsSignup] = useState(new URLSearchParams(location.search).get("mode") === "signup");
+
+- MainPage.tsx : onClick 없어서 추가함.
+
+    <button
+        ↪️
+        onClick={() => navigate("/community")}
+        className="hover:text-white transition">커뮤니티</button>
+  
 ### Article_Summaries -> ArticleAiTitle(테이블 변경)
 - 현실적으로 크롤링이 불가능한 부분이 있어서 변경
 - rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경
