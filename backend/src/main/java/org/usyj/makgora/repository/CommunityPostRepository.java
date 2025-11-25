@@ -11,4 +11,7 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPostEnti
 
     // 특정 사용자가 작성한 게시글 목록 조회
     List<CommunityPostEntity> findByUserOrderByCreatedAtDesc(UserEntity user);
+
+    // ⭐ 전체 게시글 최신순 조회
+    List<CommunityPostEntity> findAllByOrderByCreatedAtDesc();
 }

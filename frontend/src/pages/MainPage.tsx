@@ -116,9 +116,23 @@ export function MainPage() {
           </div>
 
           <nav className="hidden md:flex gap-6 items-center text-gray-300">
-            <button className="hover:text-white transition">커뮤니티</button>
-            <button className="hover:text-white transition">리더보드</button>
-            <button className="hover:text-white transition">포인트 상점</button>
+            <button
+              onClick={() => navigate("/community")}   // ⭐ onClick 없어서 추가함.
+              className="hover:text-white transition">커뮤니티</button>
+
+            <button
+              onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))}
+              className="hover:text-white transition"
+            >
+              리더보드
+            </button>
+
+            <button
+              onClick={() => (user ? navigate("/shop") : navigate("/login"))}
+              className="hover:text-white transition"
+            >
+              포인트 상점
+            </button>
           </nav>
 
           <div>
