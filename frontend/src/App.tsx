@@ -1,7 +1,23 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { MainPage } from "./pages/MainPage";
-import { LoginPage } from "./pages/LoginPage";
-import { AuthProvider } from "./context/AuthContext";
+// src/App.tsx
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { MainPage } from './pages/MainPage';
+import { LoginPage } from './pages/LoginPage';
+import { AuthProvider } from './context/AuthContext';
+import { CommunityPageContainer } from './pages/CommunityPageContainer';
+import { CommunityWritePage } from './components/CommunityWritePage';
+
+// 라우팅용 래퍼 컴포넌트 (hooks 사용하려고)
+function CommunityWriteRouteWrapper() {
+  const navigate = useNavigate();
+
+  return (
+    <CommunityWritePage
+      onBack={() => navigate(-1)}
+      // onSubmit에서 바로 커뮤니티 목록으로 이동
+      onSubmit={() => navigate('/community')}
+    />
+  );
+}
 
 export default function App() {
   return (
@@ -11,6 +27,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<MainPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/community" element={<CommunityPageContainer />} />
+            <Route path="/community/write" element={<CommunityWriteRouteWrapper />} />
           </Routes>
         </div>
       </BrowserRouter>
