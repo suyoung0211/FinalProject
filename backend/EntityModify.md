@@ -98,3 +98,7 @@ userentity 수정 => refreshToken 값 저장
     -> 언론사 확인용
 - join 테이블 생성
     -> 기사 카테고리 맵핑용
+
+## 11/25
+### Article_Summaries(칼럼 추가, 수정)
+- sql 에 자삭성해둠

@@ -1,8 +1,9 @@
 import { ArrowLeft, Shield, Users, Rss, FileCheck, Vote, MessageSquare, ShoppingBag, FileText, BarChart3, Search, Plus, Edit, Trash2, CheckCircle, XCircle, Clock, DollarSign, TrendingUp, Eye, Ban } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar } from './Avatar';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Avatar } from '../components/Avatar';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { useNavigate } from "react-router-dom";
 
 interface AdminPageProps {
   onBack: () => void;
@@ -90,6 +91,7 @@ interface AdminLog {
 }
 
 export function AdminPage({ onBack, currentUser }: AdminPageProps) {
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState<'dashboard' | 'rss-feeds' | 'issues' | 'votes' | 'community' | 'store' | 'logs'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
 
