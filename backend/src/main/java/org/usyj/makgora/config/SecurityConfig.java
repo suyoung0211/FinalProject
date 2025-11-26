@@ -59,7 +59,9 @@ public class SecurityConfig {
                 // ⭐ 보호 API
                 .requestMatchers("/api/user/**").authenticated()
                 .requestMatchers("/api/vote/**").authenticated()
+                .requestMatchers("/api/issues/articles/**").authenticated()
                 .requestMatchers("/api/comment/**").authenticated()
+                
 
                 .anyRequest().authenticated()
             )
