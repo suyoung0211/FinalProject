@@ -36,4 +36,8 @@ public interface RssArticleRepository extends JpaRepository<RssArticleEntity, In
 
     // 특정 feed에서 링크가 존재하는 것만 조회
     List<RssArticleEntity> findByFeedAndLinkIn(RssFeedEntity feed, Set<String> links);
+
+     // 카테고리로 기사 조회
+    @Query("SELECT a FROM RssArticleEntity a JOIN a.categories c WHERE c.name = :category")
+List<RssArticleEntity> findByCategory(String category);
 }

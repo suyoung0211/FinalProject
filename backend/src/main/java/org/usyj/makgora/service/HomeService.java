@@ -15,7 +15,7 @@ import org.usyj.makgora.dto.home.TopVoteDto;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 
-import org.usyj.makgora.repository.ArticleAiTitleRepository;
+import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.repository.VoteRepository;
 import org.usyj.makgora.response.home.HomeResponse;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;

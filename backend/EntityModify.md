@@ -141,3 +141,26 @@ dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response
 ### Article_Summaries -> ArticleAiTitle(테이블 변경)
 - 현실적으로 크롤링이 불가능한 부분이 있어서 변경
 - rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경
+
+------------------
+11/25 11:00
+
+로그인 문제 해결
+새로고침시에도 로그인 유지 / 로그아웃 문제 해결
+
+홈페이지 관련 Home(dto, controller, service, response생성)
+dto 패키지 생성
+dto 내부에 (AiBanner, HotIssue, TopVote 3개 dto생성)
+
+
+voteentity에 endAt 컬럼 추가 (투표 종료 시간)
+
+Issue, Vote Repository에 코드 추가
+
+RssArticleRepository에 카테고리로 기사 조회 추가
+@Query("SELECT a FROM RssArticleEntity a JOIN a.categories c WHERE c.name = :category")
+List<RssArticleEntity> findByCategory(String category);
+
+11/26 18:00
+------------------
+
