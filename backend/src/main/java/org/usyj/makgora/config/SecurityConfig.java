@@ -17,9 +17,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.usyj.makgora.config.JwtAuthFilter;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
+
+import java.util.Arrays;
+import java.util.List;
 
 @EnableAsync
 @Configuration
@@ -52,10 +54,16 @@ public class SecurityConfig {
                         "/api/email/**"
                 ).permitAll()
 
+                // ⭐ 커뮤니티: 조회는 모두 허용, 작성/수정/삭제는 인증 필요
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
+
                 // ⭐ 로그아웃은 반드시 인증 필요
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
 
-                // ⭐ 보호 API
+                // ⭐ 다른 보호 API
                 .requestMatchers("/api/user/**").authenticated()
                 .requestMatchers("/api/vote/**").authenticated()
                 .requestMatchers("/api/comment/**").authenticated()
@@ -79,17 +87,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    // ⭐ 이게 있어야 위에서 corsConfigurationSource()를 쓸 수 있음
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOriginPattern("*");
+        // 필요한 도메인만 넣어도 됨. 개발 단계라 전체 허용
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(Arrays.asList("GET","POST","PUT","DELETE","OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

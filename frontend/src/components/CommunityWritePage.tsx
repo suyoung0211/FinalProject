@@ -1,4 +1,3 @@
-// src/components/CommunityWritePage.tsx
 import {
   ArrowLeft,
   TrendingUp,
@@ -13,17 +12,13 @@ import {
   Bold,
   Italic,
   Underline,
-  Strikethrough,
   Link as LinkIcon,
   Image as ImageIcon,
   List,
   ListOrdered,
   Quote,
-  Code,
-  Type,
-  Palette,
 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -31,22 +26,82 @@ import api from '../api/api';
 
 interface CommunityWritePageProps {
   onBack: () => void;
-  onSubmit?: (post: any) => void;
+  onSubmit: () => void;
+  mode?: 'create' | 'edit';
+  initialPost?: {
+    postId: number;
+    title: string;
+    content: string;
+    postType: string;   // 백엔드 기준: '일반' | '이슈추천' | '포인트자랑'
+    tags: string[];
+  };
 }
 
-export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps) {
-  const [newPostTitle, setNewPostTitle] = useState('');
-  const [newPostContent, setNewPostContent] = useState('');
-  const [newPostCategory, setNewPostCategory] = useState('free');
-  const [newPostTags, setNewPostTags] = useState('');
+export function CommunityWritePage({
+  onBack,
+  onSubmit,
+  mode = 'create',
+  initialPost,
+}: CommunityWritePageProps) {
+  console.log('현재 모드:', mode);
+
+  /** 🔁 postType(백엔드 문자열) → 프론트 카테고리 id 매핑 */
+  const mapPostTypeToCategory = (postType: string): string => {
+    switch (postType) {
+      case '이슈추천':
+        return 'prediction';
+      case '포인트자랑':
+        return 'strategy';
+      default:
+        return 'free';
+    }
+  };
+
+  /** 🔁 프론트 카테고리 id → postType(백엔드 문자열) 매핑
+   *
+   * 프론트: 'free', 'prediction', 'strategy', ...
+   * 백엔드: '일반', '이슈추천', '포인트자랑'
+   */
+  const mapCategoryToPostType = (category: string): string => {
+    const categoryMap: Record<string, string> = {
+      prediction: '이슈추천', // 예측 분석 → 이슈추천
+      strategy: '포인트자랑', // 전략 공유 → 포인트자랑
+      // 나머지는 일반
+      free: '일반',
+      politics: '일반',
+      business: '일반',
+      crypto: '일반',
+      sports: '일반',
+      entertainment: '일반',
+    };
+    return categoryMap[category] || '일반';
+  };
+
+  // ----------------- 상태 초기값 (수정 모드면 initialPost로 채우기) -----------------
+  const [newPostTitle, setNewPostTitle] = useState(initialPost?.title ?? '');
+  const [newPostContent, setNewPostContent] = useState(initialPost?.content ?? '');
+  const [newPostCategory, setNewPostCategory] = useState(
+    initialPost ? mapPostTypeToCategory(initialPost.postType) : 'free',
+  );
+  const [newPostTags, setNewPostTags] = useState(
+    initialPost?.tags?.join(', ') ?? '',
+  );
+
+  // 수정 모드에서 initialPost가 나중에 도착할 수도 있으니 한 번 더 동기화
+  useEffect(() => {
+    if (initialPost) {
+      setNewPostTitle(initialPost.title);
+      setNewPostContent(initialPost.content);
+      setNewPostCategory(mapPostTypeToCategory(initialPost.postType));
+      setNewPostTags(initialPost.tags ? initialPost.tags.join(', ') : '');
+    }
+  }, [initialPost]);
+
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [fontSize, setFontSize] = useState('16');
-  const [textColor, setTextColor] = useState('#FFFFFF');
-  const [showColorPicker, setShowColorPicker] = useState(false);
   const [imageUploadTab, setImageUploadTab] = useState<'url' | 'file'>('url');
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -66,7 +121,7 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
     { id: 'free', label: '자유', icon: MessageSquare },
   ];
 
-  // 커서 위치에 텍스트 삽입
+  // ====== 마크다운 유틸 ======
   const insertAtCursor = (before: string, after: string = '') => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -74,6 +129,7 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = newPostContent.substring(start, end);
+
     const newText =
       newPostContent.substring(0, start) +
       before +
@@ -117,136 +173,102 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
     }
   };
 
-  /**
-   * 프론트엔드 카테고리 ID를 백엔드 postType으로 변환
-   * 
-   * 프론트엔드: 'free', 'prediction', 'strategy' 등
-   * 백엔드: '일반', '이슈추천', '포인트자랑'
-   * 
-   * 매핑 규칙:
-   * - free, politics, business, crypto, sports, entertainment → '일반'
-   * - prediction → '이슈추천' (예측 관련)
-   * - strategy → '포인트자랑' (전략/성과 공유)
-   */
-  const mapCategoryToPostType = (category: string): string => {
-    const categoryMap: Record<string, string> = {
-      'prediction': '이슈추천',  // 예측 분석 → 이슈 추천
-      'strategy': '포인트자랑',  // 전략 공유 → 포인트 자랑
-      // 나머지는 모두 '일반'으로 매핑
-      'free': '일반',
-      'politics': '일반',
-      'business': '일반',
-      'crypto': '일반',
-      'sports': '일반',
-      'entertainment': '일반',
-    };
-    
-    return categoryMap[category] || '일반';
-  };
-
-  /**
-   * 게시글 작성 핸들러
-   * 
-   * 처리 흐름:
-   * 1. 유효성 검사 (제목, 내용 필수)
-   * 2. 카테고리 → postType 변환
-   * 3. API 호출 (api.js 사용 - 토큰 자동 처리)
-   * 4. 성공 시 폼 초기화 및 페이지 이동
-   * 5. 실패 시 에러 메시지 표시
-   */
+  // ====== 작성 / 수정 submit ======
   const handleSubmit = async () => {
-    // 유효성 검사
-    if (!newPostTitle || !newPostContent) {
+    if (!newPostTitle.trim() || !newPostContent.trim()) {
       alert('제목과 내용을 모두 입력해주세요.');
       return;
     }
 
-    // 토큰 확인
+    // 토큰 확인 (프론트에서 한 번 더 체크)
     const token = localStorage.getItem('accessToken');
     if (!token) {
       alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
-      // 로그인 페이지로 이동하는 로직이 있다면 여기서 호출
+      window.location.href = '/login';
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      // 카테고리 → postType 변환
       const postType = mapCategoryToPostType(newPostCategory);
 
-      // 백엔드 DTO에 맞춘 요청 데이터
       const requestBody = {
         title: newPostTitle.trim(),
         content: newPostContent.trim(),
-        postType: postType,
+        postType,
+        // TODO: tags를 백엔드에 저장하게 되면 여기서 같이 전송
+        // tags: newPostTags
+        //   .split(',')
+        //   .map((t) => t.trim())
+        //   .filter((t) => t.length > 0),
       };
 
-      console.log('📤 게시글 작성 요청:', {
-        url: '/community/posts',
-        hasToken: !!token,
-        tokenLength: token.length,
-      });
-
-      // api.js 사용 - 토큰 자동 추가, 리프레시 토큰 자동 처리
-      const response = await api.post('/community/posts', requestBody);
-
-      console.log('✅ 게시글 작성 성공:', response.data);
-
-      // 성공 콜백 호출 (부모 컴포넌트에서 처리 가능)
-      if (onSubmit) {
-        onSubmit(response.data);
-      }
-
-      // 폼 초기화
-      setNewPostTitle('');
-      setNewPostContent('');
-      setNewPostCategory('free');
-      setNewPostTags('');
-
-      // 커뮤니티 페이지로 돌아가기
-      // onBack();
-    } catch (error: any) {
-      console.error('❌ 게시글 작성 실패:', error);
-      
-      // 에러 메시지 추출
-      let errorMessage = '게시글 작성에 실패했습니다.';
-      
-      if (error.response) {
-        // 서버에서 반환한 에러
-        const status = error.response.status;
-        const message = error.response.data?.message || error.response.data;
-        
-        if (status === 401) {
-          errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
-          // 토큰 삭제 및 로그인 페이지로 이동
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 1500);
-        } else if (status === 403) {
-          errorMessage = '권한이 없습니다. 로그인 상태를 확인해주세요. (토큰이 만료되었을 수 있습니다)';
-          // 토큰 삭제 및 로그인 페이지로 이동
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 2000);
-        } else if (status === 400) {
-          errorMessage = message || '입력한 정보를 확인해주세요.';
-        } else {
-          errorMessage = message || `서버 오류가 발생했습니다. (${status})`;
+      let res;
+      if (mode === 'edit') {
+        if (!initialPost?.postId) {
+          alert('수정할 게시글 ID가 없습니다.');
+          return;
         }
-      } else if (error.request) {
-        // 요청은 보냈지만 응답을 받지 못함
-        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.';
+        console.log('✏️ 게시글 수정 요청:', {
+          url: `/community/posts/${initialPost.postId}`,
+          body: requestBody,
+        });
+        res = await api.put(`/community/posts/${initialPost.postId}`, requestBody);
+      } else {
+        console.log('📝 게시글 작성 요청:', {
+          url: '/community/posts',
+          body: requestBody,
+        });
+        res = await api.post('/community/posts', requestBody);
       }
-      
-      alert(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+
+      console.log('✅ 성공 응답:', res.data);
+
+      // 부모 콜백 호출 (ex. 커뮤니티 목록으로 이동)
+      onSubmit();
+
+      // 새 글 작성 모드일 때만 폼 리셋
+      if (mode === 'create') {
+        setNewPostTitle('');
+        setNewPostContent('');
+        setNewPostCategory('free');
+        setNewPostTags('');
+      }
+    } catch (error: any) {
+  console.error('❌ 게시글 작성/수정 실패:', error);
+
+  let errorMessage = '게시글 처리에 실패했습니다.';
+
+  if (error.response) {
+    const status = error.response.status;
+    const message = error.response.data?.message || error.response.data;
+
+    if (status === 401) {
+      errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
+      // ✅ 401일 때만 토큰 삭제 + 로그인 이동
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1500);
+    } else if (status === 403) {
+      // ✅ 403에서는 토큰 삭제/리다이렉트 하지 말고 메시지만
+      errorMessage =
+        message || '이 게시글을 수정할 권한이 없습니다. (작성자만 수정 가능)';
+    } else if (status === 400) {
+      errorMessage = message || '입력한 정보를 확인해주세요.';
+    } else {
+      errorMessage = message || `서버 오류가 발생했습니다. (${status})`;
     }
+  } else if (error.request) {
+    errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.';
+  }
+
+  alert(errorMessage);
+} finally {
+  setIsSubmitting(false);
+}
   };
 
   return (
@@ -262,18 +284,18 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
               <ArrowLeft className="w-5 h-5" />
               <span>돌아가기</span>
             </button>
-            <h1 className="text-xl font-bold text-white">새 게시글 작성</h1>
+            <h1 className="text-xl font-bold text-white">
+              {mode === 'edit' ? '게시글 수정' : '새 게시글 작성'}
+            </h1>
             <div className="w-24" />
           </div>
         </div>
       </header>
 
-      {/* 나머지 UI는 기존 그대로, 마지막 "작성 완료" 버튼만 handleSubmit 연결 */}
+      {/* Body */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8">
-            {/* ... (중간 UI는 그대로, 제목/카테고리/툴바/내용/태그) ... */}
-
             {/* 제목 */}
             <div className="space-y-6">
               <div>
@@ -298,6 +320,7 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                     return (
                       <button
                         key={category.id}
+                        type="button"
                         onClick={() => setNewPostCategory(category.id)}
                         className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all ${
                           newPostCategory === category.id
@@ -313,10 +336,10 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                 </div>
               </div>
 
-              {/* 내용 입력 영역 */}
+              {/* 내용 */}
               <div>
                 <label className="block font-medium text-white mb-3">내용</label>
-                
+
                 {/* 툴바 */}
                 <div className="flex items-center gap-2 p-3 bg-white/5 border border-white/10 rounded-t-xl flex-wrap">
                   <button
@@ -397,7 +420,6 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                   rows={12}
                 />
 
-                {/* 글자수 표시 */}
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-sm text-gray-400">
                     {newPostContent.length}자
@@ -419,21 +441,24 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     {newPostTags
                       .split(',')
-                      .map((tag, index) => tag.trim() && (
-                        <span
-                          key={index}
-                          className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 font-medium"
-                        >
-                          #{tag.trim()}
-                        </span>
-                      ))}
+                      .map((tag, index) =>
+                        tag.trim() ? (
+                          <span
+                            key={index}
+                            className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30 font-medium"
+                          >
+                            #{tag.trim()}
+                          </span>
+                        ) : null,
+                      )}
                   </div>
                 )}
               </div>
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
                 <p className="text-sm text-blue-400">
-                  💡 <strong>TIP:</strong> 작성 중인 내용은 자동으로 저장되지 않습니다. 주기적으로 복사해 두세요.
+                  💡 <strong>TIP:</strong> 작성 중인 내용은 자동으로 저장되지 않습니다.
+                  중요한 내용은 주기적으로 복사해 두세요.
                 </p>
               </div>
             </div>
@@ -449,6 +474,7 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
 
               <div className="flex items-center gap-3">
                 <Button
+                  type="button"
                   onClick={() => {
                     console.log('임시 저장 (TODO)');
                   }}
@@ -462,7 +488,13 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white h-12 px-8 shadow-lg shadow-purple-500/50"
                 >
                   <Plus className="w-5 h-5 mr-2" />
-                  {isSubmitting ? '작성 중...' : '작성 완료'}
+                  {isSubmitting
+                    ? mode === 'edit'
+                      ? '수정 중...'
+                      : '작성 중...'
+                    : mode === 'edit'
+                    ? '수정 완료'
+                    : '작성 완료'}
                 </Button>
               </div>
             </div>
@@ -477,7 +509,9 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
             <h3 className="text-xl font-bold text-white mb-4">링크 삽입</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">URL</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  URL
+                </label>
                 <Input
                   type="url"
                   placeholder="https://..."
@@ -487,7 +521,9 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">링크 텍스트 (선택사항)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  링크 텍스트 (선택사항)
+                </label>
                 <Input
                   type="text"
                   placeholder="표시할 텍스트"
@@ -526,7 +562,7 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
           <div className="bg-slate-900/95 backdrop-blur-xl border border-white/20 rounded-2xl p-6 max-w-md w-full">
             <h3 className="text-xl font-bold text-white mb-4">이미지 삽입</h3>
             <div className="space-y-4">
-              {/* 탭 전환 */}
+              {/* 탭 */}
               <div className="flex gap-2 border-b border-white/10">
                 <button
                   onClick={() => setImageUploadTab('url')}
@@ -553,7 +589,9 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
               {/* URL 입력 */}
               {imageUploadTab === 'url' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">이미지 URL</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    이미지 URL
+                  </label>
                   <Input
                     type="url"
                     placeholder="https://..."
@@ -567,7 +605,9 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
               {/* 파일 업로드 */}
               {imageUploadTab === 'file' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">이미지 파일</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    이미지 파일
+                  </label>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -593,7 +633,11 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                   </Button>
                   {imagePreview && (
                     <div className="mt-4">
-                      <img src={imagePreview} alt="Preview" className="max-w-full h-auto rounded-lg" />
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="max-w-full h-auto rounded-lg"
+                      />
                     </div>
                   )}
                 </div>

@@ -5,6 +5,9 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthProvider } from './context/AuthContext';
 import { CommunityPageContainer } from './pages/CommunityPageContainer';
 import { CommunityWritePage } from './components/CommunityWritePage';
+import { CommunityPostDetailPage } from './pages/CommunityPostDetailPage';
+import { CommunityEditPageContainer } from "./pages/CommunityEditPageContainer";
+
 
 // 라우팅용 래퍼 컴포넌트 (hooks 사용하려고)
 function CommunityWriteRouteWrapper() {
@@ -12,6 +15,7 @@ function CommunityWriteRouteWrapper() {
 
   return (
     <CommunityWritePage
+      mode="create"   // ⭐ 추가!
       onBack={() => navigate(-1)}
       // onSubmit에서 바로 커뮤니티 목록으로 이동
       onSubmit={() => navigate('/community')}
@@ -29,6 +33,8 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/community" element={<CommunityPageContainer />} />
             <Route path="/community/write" element={<CommunityWriteRouteWrapper />} />
+            <Route path="/community/posts/:postId" element={<CommunityPostDetailPage />} />
+            <Route path="/community/edit/:postId"element={<CommunityEditPageContainer />} />
           </Routes>
         </div>
       </BrowserRouter>
