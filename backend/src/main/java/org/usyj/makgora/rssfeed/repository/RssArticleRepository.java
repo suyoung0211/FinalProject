@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface RssArticleRepository extends JpaRepository<RssArticleEntity, Integer> {
@@ -33,7 +34,6 @@ public interface RssArticleRepository extends JpaRepository<RssArticleEntity, In
     @Query("UPDATE RssArticleEntity a SET a.thumbnailUrl = :thumbnail WHERE a.id = :id")
     void updateThumbnail(Integer id, String thumbnail);
 
-    // 카테고리로 기사 조회
-    @Query("SELECT a FROM RssArticleEntity a JOIN a.categories c WHERE c.name = :category")
-List<RssArticleEntity> findByCategory(String category);
+    // 특정 feed에서 링크가 존재하는 것만 조회
+    List<RssArticleEntity> findByFeedAndLinkIn(RssFeedEntity feed, Set<String> links);
 }

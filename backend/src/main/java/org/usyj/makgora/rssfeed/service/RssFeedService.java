@@ -1,7 +1,5 @@
 package org.usyj.makgora.rssfeed.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,130 +8,95 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.dto.RssArticleDTO;
-import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
-import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 import org.usyj.makgora.rssfeed.source.RssFeedSource;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
+/**
+ * RSS 피드 수집 및 저장 서비스
+ * - 모든 RSS 소스를 순회
+ * - 각 카테고리별 RSS feed 수집
+ * - 기사 저장 (중복 체크 포함)
+ * - feed 마지막 수집 시간 업데이트
+ * - 전체 수집 완료 후 DB 기준으로 저장된 기사/스킵/전체 파싱 집계
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RssFeedService {
 
     private final List<RssFeedSource> sources;
-    private final ArticleCategoryRepository categoryRepo;
+    private final RssFeedManagementService feedService;
+    private final RssArticleManagementService articleService;
     private final RssFeedRepository feedRepo;
-    private final RssArticleRepository articleRepo;
 
     @Transactional
     public void collectAndSaveAllFeeds() {
-        int totalSaved = 0;
-        int totalSkipped = 0;
-        int totalFetched = 0;
+        int totalFetched = 0;   // 전체 파싱 수 누적
+        int totalSaved = 0;     // DB 기준 저장된 기사 수
 
         for (RssFeedSource source : sources) {
-            String sourceName = getSourceNameFromClass(source); // 소스 이름 추출
+
+            String sourceName = getSourceNameFromClass(source);
             Map<String, String> categoryFeeds = source.getCategoryFeeds();
 
-            for (var entry : categoryFeeds.entrySet()) {
+            for (Map.Entry<String, String> entry : categoryFeeds.entrySet()) {
                 String categoryName = entry.getKey();
                 String feedUrl = entry.getValue();
 
-                // 기본 카테고리 확보
-                ArticleCategoryEntity defaultCategory = categoryRepo.findByName(categoryName)
-                        .orElseGet(() -> categoryRepo.save(
-                                ArticleCategoryEntity.builder().name(categoryName).build()
-                        ));
+                // 1. 기본 카테고리 확보
+                ArticleCategoryEntity defaultCategory = feedService.getOrCreateCategory(categoryName);
 
-                // 피드 엔터티 조회/생성 시 category 설정
+                // 2. 피드 엔터티 조회/생성
                 Set<ArticleCategoryEntity> defaultCategories = new HashSet<>();
                 defaultCategories.add(defaultCategory);
+                RssFeedEntity feed = feedService.getOrCreateFeed(feedUrl, sourceName, defaultCategories);
 
-                RssFeedEntity feed = feedRepo.findByUrl(feedUrl)
-                        .orElseGet(() -> feedRepo.save(
-                                RssFeedEntity.builder()
-                                        .url(feedUrl)
-                                        .sourceName(sourceName)
-                                        .categories(defaultCategories)
-                                        .build()
-                        ));
-
-                List<RssArticleDTO> parsedItems;
+                // 3. 기사 fetch
+                List<RssArticleDTO> dtos;
                 try {
-                    parsedItems = source.fetch(categoryName, feedUrl);
+                    dtos = source.fetch(categoryName, feedUrl);
                 } catch (Exception e) {
                     log.error("RSS 수집 실패: {} | {} | 에러: {}", sourceName, feedUrl, e.getMessage(), e);
                     continue;
                 }
 
-                int savedCount = 0;
-                int skippedCount = 0;
+                // 4. 전체 파싱 수 누적
+                totalFetched += dtos.size();
 
-                for (RssArticleDTO dto : parsedItems) {
-                    if (articleRepo.existsByLink(dto.getLink())) {
-                        skippedCount++;
-                        continue;
-                    }
+                // 5. batch 저장 (중복 처리 포함)
+                articleService.saveArticlesBatch(feed, dtos, defaultCategory);
 
-                    // DTO에서 다중 카테고리 적용
-                    List<ArticleCategoryEntity> articleCategories = new ArrayList<>();
-                    if (dto.getCategories() != null && !dto.getCategories().isEmpty()) {
-                        for (String catName : dto.getCategories()) {
-                            ArticleCategoryEntity cat = categoryRepo.findByName(catName)
-                                    .orElseGet(() -> categoryRepo.save(
-                                            ArticleCategoryEntity.builder().name(catName).build()
-                                    ));
-                            articleCategories.add(cat);
-                        }
-                    } else {
-                        // 기본 카테고리
-                        articleCategories.add(defaultCategory);
-                    }
-
-                    // 다중 카테고리 대응 RssArticleEntity 저장
-                    RssArticleEntity article = RssArticleEntity.builder()
-                            .feed(feed)
-                            .title(dto.getTitle())
-                            .link(dto.getLink())
-                            .content(dto.getContent())
-                            .thumbnailUrl(dto.getThumbnailUrl())
-                            .publishedAt(dto.getPublishedAt())
-                            .build();
-
-                    // 다대다 관계 설정 (List → Set 변환)
-                    article.setCategories(new HashSet<>(articleCategories));
-
-                    articleRepo.save(article);
-                    savedCount++;
-                }
-
-                totalSaved += savedCount;
-                totalSkipped += skippedCount;
-                totalFetched += parsedItems.size();
-
-                feed.setLastFetched(LocalDateTime.now());
-                feedRepo.save(feed);
-
-                log.info("Feed 수집 완료: {} | {} | 저장: {} | 스킵(중복): {} | 파싱된 기사 수: {}",
-                        sourceName, feedUrl, savedCount, skippedCount, parsedItems.size());
+                // 6. 피드 마지막 수집 시간 업데이트
+                feedService.updateLastFetched(feed);
             }
         }
 
-        // 전체 합산 로그
-        log.info("전체 RSS 수집 완료: 저장된 기사 수: {}, 스킵(중복): {}, 파싱된 기사 전체 수: {}",
+        // 7. DB 기준 전체 저장된 기사 수 조회
+        totalSaved = articleService.countAllSavedArticles();
+
+        // 8. 스킵 수 = 전체 파싱 - DB에 저장된 기사
+        int totalSkipped = totalFetched - totalSaved;
+
+        // 9. 전체 피드 갯수 조회 (DB 기준)
+        int feedCount = (int) feedRepo.count();
+
+        log.info("전체 피드 갯수: {}", feedCount);
+        log.info("저장된 기사: {}, 스킵: {}, 전체 파싱: {}",
                 totalSaved, totalSkipped, totalFetched);
     }
 
+    /**
+     * 소스 클래스명에서 Source 접미사 제거
+     */
     private String getSourceNameFromClass(RssFeedSource source) {
         String simpleName = source.getClass().getSimpleName();
         if (simpleName.endsWith("Source")) {
-            return simpleName.substring(0, simpleName.length() - 6); // GuardianSource -> Guardian
+            return simpleName.substring(0, simpleName.length() - 6);
         }
         return simpleName;
     }

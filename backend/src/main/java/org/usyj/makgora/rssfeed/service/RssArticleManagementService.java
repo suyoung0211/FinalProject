@@ -1,6 +1,9 @@
 package org.usyj.makgora.rssfeed.service;
 
-import lombok.RequiredArgsConstructor;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
@@ -10,37 +13,31 @@ import org.usyj.makgora.rssfeed.dto.RssArticleDTO;
 import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class RssArticleService {
+public class RssArticleManagementService {
 
-    private final RssArticleRepository articleRepo;
     private final ArticleCategoryRepository categoryRepo;
+    private final RssArticleRepository articleRepo;
 
     /**
-     * 여러 기사 저장
-     * @param feed 기사 소속 feed
-     * @param dtos 기사 DTO 리스트
-     * @return ArticleSaveResult (saved / skipped / total)
+     * 배치 단위로 기사 저장
+     * - DB에 이미 존재하는 링크는 스킵
+     * - batch 내 중복도 스킵
+     * - DTO에 카테고리 없으면 feed 기본 카테고리 사용
      */
     @Transactional
-    public ArticleSaveResult saveArticles(RssFeedEntity feed, List<RssArticleDTO> dtos) {
-        int savedCount = 0;
-        int skippedCount = 0;
-
-        // 이번 batch에서 이미 저장한 링크를 기록
+    public void saveArticlesBatch(RssFeedEntity feed, List<RssArticleDTO> dtos, ArticleCategoryEntity defaultCategory) {
+        // batch 내 중복 체크용 Set
         Set<String> savedLinksSet = new HashSet<>();
 
         for (RssArticleDTO dto : dtos) {
             String link = dto.getLink();
 
-            // DB 또는 이번 batch에서 중복이면 skip
-            if (savedLinksSet.contains(link) || articleRepo.existsByLink(link)) {
-                skippedCount++;
+            // DB에 이미 존재하거나 batch 내 중복이면 저장하지 않고 스킵
+            if (articleRepo.existsByLink(link) || savedLinksSet.contains(link)) {
                 continue;
             }
 
@@ -55,11 +52,11 @@ public class RssArticleService {
                     categories.add(cat);
                 }
             } else {
-                categories.addAll(feed.getCategories());
+                categories.add(defaultCategory);
             }
 
-            // 기사 엔터티 생성
-            RssArticleEntity article = RssArticleEntity.builder()
+            // 기사 엔터티 생성 및 DB 저장
+            articleRepo.save(RssArticleEntity.builder()
                     .feed(feed)
                     .title(dto.getTitle())
                     .link(link)
@@ -67,21 +64,18 @@ public class RssArticleService {
                     .thumbnailUrl(dto.getThumbnailUrl())
                     .publishedAt(dto.getPublishedAt())
                     .categories(categories)
-                    .build();
+                    .build());
 
-            articleRepo.save(article);
+            // batch 내 저장된 링크 추가
             savedLinksSet.add(link);
-            savedCount++;
         }
-
-        return new ArticleSaveResult(savedCount, skippedCount, dtos.size());
     }
 
-    @lombok.Data
-    @lombok.AllArgsConstructor
-    public static class ArticleSaveResult {
-        private int saved;
-        private int skipped;
-        private int total;
+    /**
+     * 전체 저장된 기사 수 조회 (DB 기준)
+     * - 전체 RSS 수집 후 정확한 저장 수 집계용
+     */
+    public int countAllSavedArticles() {
+        return (int) articleRepo.count();
     }
 }

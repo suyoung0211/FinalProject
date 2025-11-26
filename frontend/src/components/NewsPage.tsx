@@ -40,7 +40,7 @@ export function NewsPage({ onBack, onCommunity, onLeaderboard, onPointsShop, onP
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory>('홈');
   const [currentSlide, setCurrentSlide] = useState(0);
-  // const slideIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const slideIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const categories: NewsCategory[] = ['홈', '정치', '경제', '사회', '크립토', '스포츠', '기술', '문화', '국제'];
 
@@ -205,7 +205,7 @@ export function NewsPage({ onBack, onCommunity, onLeaderboard, onPointsShop, onP
     const interval = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % displayNews.filter(news => news.image).length);
     }, 3000);
-    // slideIntervalRef.current = interval;
+    slideIntervalRef.current = interval;
     return () => clearInterval(interval);
   }, [displayNews]);
 

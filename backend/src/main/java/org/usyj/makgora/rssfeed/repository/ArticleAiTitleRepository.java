@@ -1,4 +1,4 @@
-package org.usyj.makgora.repository;
+package org.usyj.makgora.rssfeed.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,4 +16,7 @@ public interface ArticleAiTitleRepository extends JpaRepository<ArticleAiTitleEn
 
     // 특정 기사 + 모델명으로 요약 조회
     Optional<ArticleAiTitleEntity> findByArticleAndModelName(RssArticleEntity article, String modelName);
+
+    // AI 제목 생성 갯수 조회
+    long countByStatus(String status); // 성공한 제목 개수 조회
 }
