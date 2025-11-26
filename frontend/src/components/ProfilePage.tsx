@@ -18,12 +18,16 @@ interface ProfilePageProps {
   onBack: () => void;
   user: UserProfile;
   onUpdateUser?: (user: UserProfile) => void;
+  onAdminPage?: () => void;
 }
 
-export function ProfilePage({ onBack, user, onUpdateUser }: ProfilePageProps) {
+export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: ProfilePageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
+  const [adminCodeError, setAdminCodeError] = useState('');
   const [editedUsername, setEditedUsername] = useState(user.username);
   const [editedName, setEditedName] = useState(user.name);
   const [editedEmail, setEditedEmail] = useState(user.email);
@@ -36,6 +40,9 @@ export function ProfilePage({ onBack, user, onUpdateUser }: ProfilePageProps) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  // 관리자 여부 확인 (username이 'admin'인 경우)
+  const isAdmin = user.username === 'admin';
 
   const handleSave = () => {
     if (onUpdateUser) {
@@ -97,6 +104,30 @@ export function ProfilePage({ onBack, user, onUpdateUser }: ProfilePageProps) {
     setNewPassword('');
     setConfirmPassword('');
     setPasswordError('');
+  };
+
+  const handleAdminCodeSubmit = () => {
+    setAdminCodeError('');
+    
+    if (!adminCode) {
+      setAdminCodeError('관리자 코드를 입력해주세요.');
+      return;
+    }
+    
+    // 임시: 실제로는 백엔드로 요청을 보내야 함
+    if (adminCode === 'admin123') {
+      alert('관리자 권한이 부여되었습니다!');
+      setShowAdminModal(false);
+      onAdminPage?.();
+    } else {
+      setAdminCodeError('잘못된 관리자 코드입니다.');
+    }
+  };
+
+  const handleCancelAdminCode = () => {
+    setShowAdminModal(false);
+    setAdminCode('');
+    setAdminCodeError('');
   };
 
   // 임시 통계 데이터
@@ -238,7 +269,7 @@ export function ProfilePage({ onBack, user, onUpdateUser }: ProfilePageProps) {
               ) : (
                 <div className="space-y-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">��용자 이름</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">용자 이름</label>
                     <Input
                       type="text"
                       value={editedUsername}
@@ -269,23 +300,36 @@ export function ProfilePage({ onBack, user, onUpdateUser }: ProfilePageProps) {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
-                  <Coins className="w-5 h-5 text-white" />
-                  <span className="text-white font-bold">{user.points.toLocaleString()} P</span>
+              <div className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
+                    <Coins className="w-5 h-5 text-white" />
+                    <span className="text-white font-bold">{user.points.toLocaleString()} P</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full">
+                    <Trophy className="w-5 h-5 text-yellow-400" />
+                    <span className="text-white font-medium">#{stats.rank} 랭킹</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full">
+                    <Calendar className="w-5 h-5 text-blue-400" />
+                    <span className="text-white font-medium">{stats.totalBets}회 투표</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                    <span className="text-white font-bold">{stats.winRate}% 승률</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full">
-                  <Trophy className="w-5 h-5 text-yellow-400" />
-                  <span className="text-white font-medium">#{stats.rank} 랭킹</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full">
-                  <Calendar className="w-5 h-5 text-blue-400" />
-                  <span className="text-white font-medium">{stats.totalBets}회 투표</span>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 rounded-full">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                  <span className="text-white font-bold">{stats.winRate}% 승률</span>
-                </div>
+                
+                {/* Admin Button - Right side of badges */}
+                {!isEditing && (
+                  <Button
+                    onClick={() => setShowAdminModal(true)}
+                    className="bg-gradient-to-r from-red-600/20 to-orange-600/20 hover:from-red-600/30 hover:to-orange-600/30 border border-red-500/30 text-red-400 hover:text-red-300"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    관리자 페이지
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -509,6 +553,57 @@ export function ProfilePage({ onBack, user, onUpdateUser }: ProfilePageProps) {
           )}
         </div>
       </div>
+
+      {/* Admin Code Modal */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border border-red-500/30 rounded-3xl p-8 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+              <Shield className="w-6 h-6 text-red-400" />
+              관리자 인증
+            </h2>
+            <p className="text-gray-300 mb-4">
+              관리자 페이지 접근을 위해 관리자 코드를 입력해주세요.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">관리자 코드</label>
+                <Input
+                  type="password"
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                  placeholder="관리자 코드를 입력하세요"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAdminCodeSubmit();
+                    }
+                  }}
+                />
+              </div>
+              {adminCodeError && (
+                <div className="text-sm text-red-400 mt-2">{adminCodeError}</div>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAdminCodeSubmit}
+                  className="flex-1 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  확인
+                </Button>
+                <Button
+                  onClick={handleCancelAdminCode}
+                  className="flex-1 bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  취소
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
