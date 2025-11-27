@@ -2,11 +2,7 @@ package org.usyj.makgora.request.vote;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
@@ -14,13 +10,11 @@ import lombok.Setter;
 @AllArgsConstructor
 public class VoteCreateRequest {
 
-    private String title;
+    private String title;   // 투표 제목
 
-    // YES/NO 또는 MULTI
-    private VoteType type;
+    private VoteType type;  // YESNO or MULTI
 
-    // 다중 옵션일 때만 사용
-    private List<String> options;
+    private List<String> options; // MULTI 옵션일 때만 사용
 
     private LocalDateTime endAt;
 

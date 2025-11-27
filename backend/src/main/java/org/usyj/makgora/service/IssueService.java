@@ -36,7 +36,7 @@ public class IssueService {
      * 1. 기사 기반 Issue 생성
      * =========================================================== */
     @Transactional
-    public IssueArticleResponse createIssue(Integer articleId, IssueCreateRequest req, Long userId) {
+    public IssueArticleResponse createIssue(Integer articleId, IssueCreateRequest req, Integer userId) {
 
         RssArticleEntity article = rssArticleRepository.findById(articleId)
                 .orElseThrow(() -> new RuntimeException("Article not found"));
@@ -107,7 +107,7 @@ public class IssueService {
                 voteResponses.add(VoteResponse.of(vote, optionResults, totalParticipants));
             }
 
-            result.add(IssueWithVotesResponse.of(issue, votes, voteResponses));
+            result.add(IssueWithVotesResponse.of(issue, voteResponses));
         }
 
         return result;

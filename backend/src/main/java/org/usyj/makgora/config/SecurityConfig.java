@@ -17,7 +17,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.usyj.makgora.config.JwtAuthFilter;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
@@ -52,6 +51,10 @@ public class SecurityConfig {
                         "/api/email/**",
                         "/api/home/**"
                 ).permitAll()
+
+                // 🔥 투표 조회(GET) 허용 (프론트에서 VotePage 불러올 수 있도록)
+                .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/vote/**").permitAll()
 
                 // ⭐ 커뮤니티: 조회는 모두 허용, 작성/수정/삭제는 인증 필요
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()

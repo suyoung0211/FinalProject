@@ -1,54 +1,58 @@
 package org.usyj.makgora.response.vote;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import org.usyj.makgora.entity.VoteEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 @Builder
 public class VoteResponse {
 
     private Integer voteId;
     private String title;
     private String status;
-    private LocalDateTime endAt;
-
     private Integer totalPoints;
     private Integer totalParticipants;
+    private LocalDateTime endAt;
 
-    /** YES/NO 투표일 경우에만 세팅 (옵션이 2개일 때) */
-    private Integer yesPercent;
-    private Integer noPercent;
+    private List<VoteOptionResultResponse> options; // YES/NO 등
 
+    /**
+     * 상세 조회용 변환 메서드
+     */
     public static VoteResponse of(
-            VoteEntity vote,
+            VoteEntity v,
             List<VoteOptionResultResponse> options,
-            long totalParticipants
+            long participants
     ) {
-        Integer yesPercent = null;
-        Integer noPercent = null;
-
-        if (options != null && options.size() == 2) {
-            yesPercent = options.get(0).getPercent();
-            noPercent = options.get(1).getPercent();
-        }
-
         return VoteResponse.builder()
-                .voteId(vote.getId())
-                .title(vote.getTitle())
-                .status(vote.getStatus().name())
-                .endAt(vote.getEndAt())
-                .totalPoints(vote.getTotalPoints())
-                .totalParticipants((int) totalParticipants)
-                .yesPercent(yesPercent)
-                .noPercent(noPercent)
+                .voteId(v.getId())
+                .title(v.getTitle())
+                .status(v.getStatus().name())
+                .totalPoints(v.getTotalPoints())
+                .totalParticipants((int) participants)
+                .endAt(v.getEndAt())
+                .options(options)
+                .build();
+    }
+
+    /**
+     * 🔥 전체 리스트 조회용 변환 메서드 (options 없이 단순 변환)
+     */
+    public static VoteResponse fromEntity(VoteEntity v) {
+        return VoteResponse.builder()
+                .voteId(v.getId())
+                .title(v.getTitle())
+                .status(v.getStatus().name())
+                .totalPoints(v.getTotalPoints())
+                .totalParticipants(v.getTotalParticipants())
+                .endAt(v.getEndAt())
+                .options(null)  // 리스트 조회에서는 옵션 필요 없음
                 .build();
     }
 }

@@ -24,6 +24,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = req.getRequestURI();
         System.out.println("🔎 요청 URL : " + path);
+        System.out.println("🔍 [JWT FILTER] RAW Request URI = " + req.getRequestURI());
+        System.out.println("🔍 [JWT FILTER] RAW Method = " + req.getMethod());
 
         // 🔹 JWT 검사를 생략할 URL
         boolean skip =
@@ -31,7 +33,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 path.equals("/api/auth/register") ||
                 path.equals("/api/auth/refresh") ||
                 path.startsWith("/api/email") ||
-                path.startsWith("/api/home");   // 🔥 추가됨
+                path.startsWith("/api/home") ||  
+                path.startsWith("/api/votes") ||   
+                path.startsWith("/api/vote");   
 
         if (skip) {
             System.out.println("➡ JWT 검사 생략 URL → " + path);
