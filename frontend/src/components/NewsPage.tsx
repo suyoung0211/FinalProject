@@ -17,8 +17,10 @@ interface NewsPageProps {
   onPointsShop?: () => void;
   onProfile?: () => void;
   onVote?: () => void;
+  onNewsClick?: (newsId: string) => void;
   user?: User | null;
   onLogin?: () => void;
+  
   onLogout?: () => void;
   onSignup?: () => void;
 }
@@ -36,7 +38,7 @@ interface NewsArticle {
   hasVideo?: boolean;
 }
 
-export function NewsPage({ onBack, onCommunity, onLeaderboard, onPointsShop, onProfile, onVote, user, onLogin, onLogout, onSignup }: NewsPageProps) {
+export function NewsPage({ onBack, onCommunity, onLeaderboard, onPointsShop, onProfile, onVote, onNewsClick, user, onLogin, onLogout, onSignup }: NewsPageProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<NewsCategory>('홈');
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -130,7 +132,7 @@ export function NewsPage({ onBack, onCommunity, onLeaderboard, onPointsShop, onP
       id: 10,
       category: '스포츠',
       title: 'MLB 시즌 개막... 오타니, 개막전 홈런 포함 3안타',
-      summary: 'MLB 시즌이 개막했다. 오타니 쇼헤이가 개막전에서 홈런을 포함 3안타를 기록하며...',
+      summary: 'MLB ��즌이 개막했다. 오타니 쇼헤이가 개막전에서 홈런을 포함 3안타를 기록하며...',
       source: '스포츠타임즈',
       timeAgo: '10시간 전',
     },
@@ -398,6 +400,7 @@ export function NewsPage({ onBack, onCommunity, onLeaderboard, onPointsShop, onP
               {displayNews.map((news, index) => (
                 <div
                   key={news.id}
+                  onClick={() => onNewsClick && onNewsClick(news.id.toString())}
                   className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden hover:bg-white/10 transition-all cursor-pointer"
                 >
                   <div className="flex gap-4 p-4">
