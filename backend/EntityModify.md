@@ -163,4 +163,9 @@ List<RssArticleEntity> findByCategory(String category);
 
 11/26 18:00
 ------------------
-
+11/27 17:00
+IssueEntity에 
+    public enum CreatedBy {
+        SYSTEM, ADMIN, AI, USER
+    }
+    USER 추가

@@ -149,7 +149,7 @@ public IssueEntity createUserIssue(String title, String description, Integer use
             .title(title)
             .content(description)
             .source("USER")
-            .createdBy(IssueEntity.CreatedBy.SYSTEM)
+            .createdBy(IssueEntity.CreatedBy.USER)
             .build();
 
     return issueRepository.save(issue);

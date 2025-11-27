@@ -78,6 +78,6 @@ public class IssueEntity {
     }
 
     public enum CreatedBy {
-        SYSTEM, ADMIN, AI
+        SYSTEM, ADMIN, AI, USER
     }
 }
