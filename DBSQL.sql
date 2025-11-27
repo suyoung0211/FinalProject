@@ -49,7 +49,7 @@ CREATE TABLE Issues (
     source VARCHAR(255) COMMENT '출처 URL/정보',
 
     ai_summary TEXT COMMENT 'AI 요약 내용',
-    ai_points JSON COMMENT 'AI 평가: 논쟁 포인트, 중요도 등',
+    ai_points JSON COMMENT 'AI 평가: 포인트 ',
 
     status ENUM('pending','approved','rejected') DEFAULT 'pending' COMMENT '승인 상태',
     approved_at DATETIME COMMENT '승인 시각',
