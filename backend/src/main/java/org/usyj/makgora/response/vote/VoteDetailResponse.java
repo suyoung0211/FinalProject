@@ -1,17 +1,21 @@
 package org.usyj.makgora.response.vote;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.usyj.makgora.entity.VoteEntity;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
-import lombok.Builder;
-import lombok.Data;
-
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class VoteDetailResponse {
 
-    private Integer id;
-    private Integer issueId;
+    private Integer voteId;
     private String title;
     private String status;
     private LocalDateTime endAt;
@@ -19,15 +23,22 @@ public class VoteDetailResponse {
     private Integer totalPoints;
     private Integer totalParticipants;
 
-    private List<OptionDto> options;
+    /** 옵션 + 퍼센트 전체 */
+    private List<VoteOptionResultResponse> options;
 
-    @Data
-    @Builder
-    public static class OptionDto {
-        private Long optionId;       // YES / NO 같은 옵션 ID
-        private String optionTitle;  // YES / NO
-        private Integer pointsTotal; // YES 누적 포인트
-        private Integer participantsCount; // YES 참여자
-        private Double odds;         // 배당률
+    public static VoteDetailResponse of(
+            VoteEntity vote,
+            List<VoteOptionResultResponse> options,
+            long totalParticipants
+    ) {
+        return VoteDetailResponse.builder()
+                .voteId(vote.getId())
+                .title(vote.getTitle())
+                .status(vote.getStatus().name())
+                .endAt(vote.getEndAt())
+                .totalPoints(vote.getTotalPoints())
+                .totalParticipants((int) totalParticipants)
+                .options(options)
+                .build();
     }
 }

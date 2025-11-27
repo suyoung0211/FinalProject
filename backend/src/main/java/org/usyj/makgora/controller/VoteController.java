@@ -21,15 +21,15 @@ public class VoteController {
 
     /** Issue → Vote 생성 */
     @PostMapping("/issue/{issueId}")
-public ResponseEntity<VoteResponse> createVote(
-        @PathVariable Integer issueId,
-        @AuthenticationPrincipal CustomUserDetails user,
-        @RequestBody VoteCreateRequest req) {
+    public ResponseEntity<VoteResponse> createVote(
+            @PathVariable Integer issueId,
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody VoteCreateRequest req) {
 
-    if (user == null) throw new RuntimeException("로그인이 필요합니다.");
+        if (user == null) throw new RuntimeException("로그인이 필요합니다.");
 
-    return ResponseEntity.ok(voteService.createVote(issueId, req, user.getId()));
-}
+        return ResponseEntity.ok(voteService.createVote(issueId, req, user.getId()));
+    }
 
     /** Issue → Vote 목록 */
     @GetMapping("/issue/{issueId}")
@@ -39,10 +39,11 @@ public ResponseEntity<VoteResponse> createVote(
         return ResponseEntity.ok(voteService.getVotesByIssue(issueId));
     }
 
+    /** Vote 상세 (옵션 + 퍼센트 포함) */
     @GetMapping("/{voteId}")
-public ResponseEntity<VoteDetailResponse> getVoteDetail(
-        @PathVariable Integer voteId) {
+    public ResponseEntity<VoteDetailResponse> getVoteDetail(
+            @PathVariable Integer voteId) {
 
-    return ResponseEntity.ok(voteService.getVoteDetail(voteId));
-}
+        return ResponseEntity.ok(voteService.getVoteDetail(voteId));
+    }
 }
