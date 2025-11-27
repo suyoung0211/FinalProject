@@ -11,9 +11,9 @@ import org.usyj.makgora.entity.UserEntity.Status;
 import org.usyj.makgora.repository.EmailVerificationRepository;
 import org.usyj.makgora.repository.RefreshTokenRepository;
 import org.usyj.makgora.repository.UserRepository;
-import org.usyj.makgora.request.LoginRequest;
-import org.usyj.makgora.request.RegisterRequest;
-import org.usyj.makgora.response.LoginResponse;
+import org.usyj.makgora.request.auth.LoginRequest;
+import org.usyj.makgora.request.auth.RegisterRequest;
+import org.usyj.makgora.response.auth.LoginResponse;
 import org.usyj.makgora.security.JwtTokenProvider;
 
 @Service

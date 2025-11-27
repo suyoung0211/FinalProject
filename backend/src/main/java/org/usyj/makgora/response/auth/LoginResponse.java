@@ -1,4 +1,4 @@
-package org.usyj.makgora.response;
+package org.usyj.makgora.response.auth;
 
 import lombok.*;
 import org.usyj.makgora.entity.UserEntity;

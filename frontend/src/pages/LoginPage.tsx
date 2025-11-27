@@ -155,7 +155,7 @@ export function LoginPage() {
       </div>
 
       {/* 메인 컨테이너 */}
-      <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 relative z-10">
+      <div className="w-full max-w-6xl flex items-center justify-center relative z-10">
         {/* 왼쪽 소개 영역 (생략: 네 기존 코드 그대로) */}
         {/* ... 그대로 두면 됨 */}
 
@@ -169,7 +169,7 @@ export function LoginPage() {
             돌아가기
           </button>
 
-          <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl w-[600px]">
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 mb-4 shadow-lg shadow-purple-500/50">
                 <LogIn className="w-8 h-8 text-white" />

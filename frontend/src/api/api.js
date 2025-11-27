@@ -8,9 +8,11 @@ const api = axios.create({
 // 요청 인터셉터 → Access Token만 헤더에 붙임
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 

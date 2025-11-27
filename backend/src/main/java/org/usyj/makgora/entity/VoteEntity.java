@@ -52,6 +52,9 @@ public class VoteEntity {
     @Column(name = "fee_rate", nullable = false)
     @Builder.Default
     private Double feeRate = 0.10;
+    
+    @Column(name = "end_at", nullable = false)
+    private LocalDateTime endAt;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

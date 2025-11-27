@@ -42,16 +42,16 @@ public class RssFeedCollector {
 
         try {
             // 1️⃣ RSS 기사 수집
-            rssFeedService.collectAndSaveAllFeeds();
+            // rssFeedService.collectAndSaveAllFeeds();
 
-            // 2️⃣ Python AI 제목 생성 API 호출
-            // 터미널에서 pythonwoker 라이브러리로 들어가서 python generate_ai_titles_api.py 실행
-            // -> pythonwoker>python generate_ai_titles_api.py
+            // // 2️⃣ Python AI 제목 생성 API 호출
+            // // 터미널에서 pythonwoker 라이브러리로 들어가서 python generate_ai_titles_api.py 실행
+            // // -> pythonwoker>python generate_ai_titles_api.py
             
-            var response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
-            long successCount = aiTitleRepository.countByStatus("SUCCESS");
-            System.out.println("AI 제목 생성 API 응답: " + response);
-            System.out.println("생성된 AI 제목 개수: " + successCount);
+            // var response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
+            // long successCount = aiTitleRepository.countByStatus("SUCCESS");
+            // System.out.println("AI 제목 생성 API 응답: " + response);
+            // System.out.println("생성된 AI 제목 개수: " + successCount);
 
         } catch (Exception e) {
             System.err.println("RSS 수집 또는 AI 제목 생성 중 오류 발생: " + e.getMessage());

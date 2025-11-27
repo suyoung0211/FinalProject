@@ -54,7 +54,7 @@ public class CustomUserDetails implements UserDetails {
     return user.getStatus() == UserEntity.Status.ACTIVE;
   }
 
-  public Long getId() {
-    return Long.valueOf(user.getId());
+  public Integer getId() {
+    return user.getId();
   }
 }
