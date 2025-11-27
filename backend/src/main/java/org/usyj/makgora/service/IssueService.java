@@ -141,4 +141,17 @@ public class IssueService {
 
         return results;
     }
+
+    @Transactional
+public IssueEntity createUserIssue(String title, String description, Integer userId) {
+
+    IssueEntity issue = IssueEntity.builder()
+            .title(title)
+            .content(description)
+            .source("USER")
+            .createdBy(IssueEntity.CreatedBy.SYSTEM)
+            .build();
+
+    return issueRepository.save(issue);
+}
 }

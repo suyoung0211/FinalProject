@@ -258,7 +258,7 @@ export function VoteListPage({
               onClick={() => navigate("/vote/create")}
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-5 py-3 rounded-xl shadow-lg hover:from-purple-700 hover:to-pink-700"
             >
-              + 투표 생성
+              + 이슈 생성
             </Button>
           </div>
 

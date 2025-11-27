@@ -9,6 +9,7 @@ import org.usyj.makgora.request.vote.VoteCreateRequest;
 import org.usyj.makgora.request.vote.VoteParticipateRequest;
 import org.usyj.makgora.response.vote.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -262,4 +263,24 @@ public class VoteService {
         .map(VoteResponse::fromEntity)
         .toList();
 }
+
+/* ==========================================================
+ * [NEW] Issue 생성 시 기본 YES/NO 투표 자동 생성
+ * ========================================================== */
+@Transactional
+public VoteResponse createDefaultVoteOnIssue(IssueEntity issue, String endAtStr, Integer userId) {
+
+    VoteCreateRequest req = new VoteCreateRequest();
+    req.setTitle(issue.getTitle());     // 이슈 제목 = 투표 제목
+    req.setType(VoteCreateRequest.VoteType.YESNO);
+    req.setOptions(List.of("YES", "NO"));
+
+    // "2025-01-10T20:00" 형식 → LocalDateTime 변환
+    LocalDateTime endAt = LocalDateTime.parse(endAtStr);
+    req.setEndAt(endAt);
+
+    // 기존 createVote 재사용하는 게 가장 깔끔함
+    return createVote(issue.getId(), req, userId);
+}
+
 }
