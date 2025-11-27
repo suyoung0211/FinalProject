@@ -53,6 +53,12 @@ public class SecurityConfig {
                         "/api/home/**"
                 ).permitAll()
 
+                // ⭐ 커뮤니티: 조회는 모두 허용, 작성/수정/삭제는 인증 필요
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
+
                 // ⭐ 로그아웃은 반드시 인증 필요
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
 
