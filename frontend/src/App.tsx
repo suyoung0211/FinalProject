@@ -7,6 +7,7 @@ import { CommunityWritePage } from './components/CommunityWritePage';
 import { CommunityPostDetailPage } from './pages/CommunityPostDetailPage';
 import { CommunityEditPageContainer } from "./pages/CommunityEditPageContainer";
 import { AdminPage } from "./pages/AdminPage";
+import { AdminPage22 } from "./components/AdminPage22";
 
 // 라우팅용 래퍼 컴포넌트 (hooks 사용하려고)
 function CommunityWriteRouteWrapper() {
@@ -34,7 +35,10 @@ export default function App() {
             <Route path="/community/write" element={<CommunityWriteRouteWrapper />} />
             <Route path="/community/posts/:postId" element={<CommunityPostDetailPage />} />
             <Route path="/community/edit/:postId" element={<CommunityEditPageContainer />} />
-            <Route path="/admin" element={<AdminPage />} />
+            
+            {/* 관리자 페이지 */}
+            <Route path="/admin/*" element={<AdminPage />} />
+            <Route path="/admin22" element={<AdminPage22 />} />
           </Routes>
         </div>
       </BrowserRouter>

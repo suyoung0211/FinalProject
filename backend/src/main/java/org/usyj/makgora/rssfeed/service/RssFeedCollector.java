@@ -47,7 +47,6 @@ public class RssFeedCollector {
             // 2️⃣ Python AI 제목 생성 API 호출
             // 터미널에서 pythonwoker 라이브러리로 들어가서 python generate_ai_titles_api.py 실행
             // -> pythonwoker>python generate_ai_titles_api.py
-            
             var response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
             long successCount = aiTitleRepository.countByStatus("SUCCESS");
             System.out.println("AI 제목 생성 API 응답: " + response);
