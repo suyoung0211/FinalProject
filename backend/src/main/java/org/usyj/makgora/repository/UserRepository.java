@@ -15,9 +15,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     // 닉네임으로 사용자 찾기
     Optional<UserEntity> findByNickname(String nickname);
 
-    // 이메일 인증 토큰으로 사용자 찾기
-    Optional<UserEntity> findByEmailVerificationToken(String token);
-
     // 활성 상태인 사용자만 찾기
     Optional<UserEntity> findByEmailAndStatus(String email, UserEntity.Status status);
+    
 }

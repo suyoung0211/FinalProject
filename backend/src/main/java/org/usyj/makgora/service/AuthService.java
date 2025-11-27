@@ -1,88 +1,126 @@
 package org.usyj.makgora.service;
 
-import java.util.Optional;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.dto.LoginRequest;
-import org.usyj.makgora.dto.LoginResponse;
-import org.usyj.makgora.dto.RegisterRequest;
+import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.entity.EmailVerificationEntity;
 import org.usyj.makgora.entity.RefreshTokenEntity;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.entity.UserEntity.Status;
+import org.usyj.makgora.repository.EmailVerificationRepository;
 import org.usyj.makgora.repository.RefreshTokenRepository;
 import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.request.LoginRequest;
+import org.usyj.makgora.request.RegisterRequest;
+import org.usyj.makgora.response.LoginResponse;
 import org.usyj.makgora.security.JwtTokenProvider;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
+@Transactional
 @RequiredArgsConstructor
 public class AuthService {
 
-  private final UserRepository userRepo;
-  private final RefreshTokenRepository tokenRepo;
-  private final PasswordEncoder encoder;
-  private final JwtTokenProvider jwt;
+    private final UserRepository userRepo;
+    private final RefreshTokenRepository tokenRepo;
+    private final PasswordEncoder encoder;
+    private final JwtTokenProvider jwt;
+    private final EmailVerificationRepository emailVerificationRepo;
 
-  public void register(RegisterRequest req) {
+    /**
+     * 회원가입
+     */
+    public void register(RegisterRequest req) {
 
-    if (userRepo.findByEmail(req.getEmail()).isPresent())
-      throw new RuntimeException("이미 존재하는 이메일입니다.");
+        userRepo.findByEmail(req.getEmail()).ifPresent(u -> {
+            throw new RuntimeException("이미 존재하는 이메일입니다.");
+        });
 
-    UserEntity user = UserEntity.builder()
-        .email(req.getEmail())
-        .password(encoder.encode(req.getPassword()))
-        .nickname(req.getNickname())
-        .build();
+        EmailVerificationEntity verification =
+                emailVerificationRepo.findTopByEmailOrderByCreatedAtDesc(req.getVerificationEmail())
+                        .orElseThrow(() -> new RuntimeException("이메일 인증 기록이 없습니다."));
 
-    userRepo.save(user);
-  }
+        if (!verification.getVerified()) {
+            throw new RuntimeException("이메일 인증을 완료해주세요.");
+        }
 
-  public LoginResponse login(LoginRequest req) {
+        UserEntity user = UserEntity.builder()
+                .email(req.getEmail())
+                .password(encoder.encode(req.getPassword()))
+                .nickname(req.getNickname())
+                .verificationEmail(verification.getEmail())
+                .emailVerified(true)
+                .role(UserEntity.Role.USER)
+                .points(0)
+                .level(1)
+                .status(Status.ACTIVE)
+                .build();
 
-    UserEntity user = userRepo.findByEmail(req.getEmail())
-        .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        userRepo.save(user);
+    }
 
-    if (!encoder.matches(req.getPassword(), user.getPassword()))
-      throw new RuntimeException("비밀번호 불일치");
+    /**
+     * 로그인
+     */
+    public LoginResponse login(LoginRequest req) {
 
-    String accessToken = jwt.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-    String refreshToken = jwt.createRefreshToken(user.getId(), user.getEmail(), user.getRole().name());
+        UserEntity user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-    tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
+        if (!encoder.matches(req.getPassword(), user.getPassword())) {
+            throw new RuntimeException("비밀번호가 올바르지 않습니다.");
+        }
 
-    tokenRepo.save(
-        RefreshTokenEntity.builder()
-            .userId(user.getId())
-            .token(refreshToken)
-            .build());
+        // Access/Refresh Token 생성
+        String accessToken = jwt.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        String refreshToken = jwt.createRefreshToken(user.getId(), user.getEmail(), user.getRole().name());
 
-    return new LoginResponse(accessToken, refreshToken, user);
-  }
+        // 기존 토큰 제거 후 재발급
+        tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
 
-  public LoginResponse reissue(String refreshToken) {
+        tokenRepo.save(
+                RefreshTokenEntity.builder()
+                        .userId(user.getId())
+                        .token(refreshToken)
+                        .build()
+        );
 
-    RefreshTokenEntity token = tokenRepo.findByToken(refreshToken)
-        .orElseThrow(() -> new RuntimeException("리프레시 토큰 없음"));
+        return new LoginResponse(accessToken, refreshToken, user);
+    }
 
-    UserEntity user = userRepo.findById(token.getUserId())
-        .orElseThrow(() -> new RuntimeException("사용자 없음"));
+    /**
+     * Refresh Token 유효성 검사
+     */
+    public boolean validateRefreshToken(String refreshToken) {
 
-    String newAccess = jwt.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-    String newRefresh = jwt.createRefreshToken(user.getId(), user.getEmail(), user.getRole().name());
+        // JWT 유효성 체크(만료/서명검증)
+        if (!jwt.validateToken(refreshToken)) {
+            tokenRepo.findByToken(refreshToken).ifPresent(tokenRepo::delete);
+            return false;
+        }
 
-    tokenRepo.deleteByUserId(user.getId());
-    tokenRepo.save(
-        RefreshTokenEntity.builder()
-            .userId(user.getId())
-            .token(newRefresh)
-            .build());
+        // DB에 존재하는지 확인
+        return tokenRepo.findByToken(refreshToken).isPresent();
+    }
 
-    return new LoginResponse(newAccess, newRefresh, user);
-  }
+    /**
+     * Access Token 재발급
+     */
+    public String reissueAccessToken(String refreshToken) {
 
-  public void logout(Integer userId) {
-    tokenRepo.deleteByUserId(userId);
-  }
+        RefreshTokenEntity storedToken = tokenRepo.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("리프레시 토큰이 존재하지 않습니다."));
 
+        UserEntity user = userRepo.findById(storedToken.getUserId())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        return jwt.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+    }
+
+    /**
+     * 로그아웃
+     */
+    public void logout(Integer userId) {
+        tokenRepo.deleteByUserId(userId);
+    }
 }

@@ -40,18 +40,104 @@
     -> 기사 소프트 딜리트 추가
 - thumbnail_url
     -> 썸네일 추가
--category_id
+- category_id
     -> feed에서 가져온 카테고리 직접 저장
+- join 테이블 생성
+    -> 기사 카테고리 맵핑용
 
+Rankings 테이블 수정
+ranking_type ENUM('points','winrate', 'streak') NOT NULL COMMENT '랭킹 종류'
+
+11/20 3:31
+vote_users에 vote_id 추가 => 마이페이지 조회시 자신이 한 투표 확인하려고
+-----------------------------
+
+VoteOptionEntity에 
+  @Column(name = "is_deleted")
+  private Boolean isDeleted = false;
+추가 => 소프트 딜리트용(임시 숨김, 비활성용)
+
+voteOptionChoiceEntit에
+  @Column(name = "odds")
+  private Double odds;
+추가 => 선택지 배당률
+
+VoteOptionRepository
+@Query("SELECT o FROM VoteOptionEntity o LEFT JOIN FETCH o.choices WHERE o.vote.id = :voteId")
+List<VoteOptionEntity> findAllWithChoicesByVoteId(Long voteId);
+추가 => 옵션+선택지 한번에 가져오기
+
+VoteOptionChoiceRepository
+List<VoteOptionChoiceEntity> findByOptionIdOrderByPointsTotalDesc(Long optionId);
+추가 => 인기 선택지 순으로 가져오기
+
+VoteUserRepository
+Optional<VoteUserEntity> findByUserIdAndVoteId(Long userId, Long voteId);
+추가 => 유저가 어떤 선택지 골랐는지
+int countByOptionId(Long optionId);
+추가 => 옵션 참여자 수 계산
+
+11/21 10:15
+pom.xml에 보안관련3개+swagger확인용 1개 추가
+http://localhost:8080/swagger-ui/index.html
+
+userentity 수정 => refreshToken 값 저장
 ### Vote_Users 테이블(유니크 추가, 칼럼 추가)
 - unique_vote_user_option
     -> 중복 투표 방지용으로 추가
 - isCancelled
     -> 투표 취소 기능 추가
 
-###  Article_Category_Map 테이블(테이블 삭제)
+### Article_Category_Map 테이블(테이블 삭제)
     -> 불필요해서 삭제
 
 ### RSS_Feeds 테이블(칼럼 추가)
 - category_id 추가
     -> 맵핑시키는 테이블이랑 합침
+
+11/24 19:40
+프론트 형식
+app.tsx통한 라우터 형식으로 변경(아직 pages폴더에 main, login만 있고components/ui에 남은 page있음 )
+
+이메일 인증 추가로 controller, dto, service, response, request 추가
+
+pom.xml에 이메일인증관련 추가
+
+UserEntity 이메일인증 분리 (EmailVerificationEntity로 분리) 
+
+dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response, request에 정리
+- sourceName 추가
+    -> 언론사 확인용
+- join 테이블 생성
+    -> 기사 카테고리 맵핑용
+
+## 11/25
+* 준우
+프론트
+- MainPage.tsx : 메인에서 회원가입 버튼 눌렀을 때 로그인 폼을 보여줌.
+ 
+    <button
+        onClick={() => navigate("/login")}
+        ↪️
+        onClick={() => navigate("/login?mode=signup")}
+        className="text-gray-300 hover:text-white px-4 py-2"
+    >
+        회원가입
+    </button>
+
+- LoginPage.tsx : URL 파라미터로 회원가입 모드 설정
+
+    const [isSignup, setIsSignup] = useState(false);
+    ↪️
+    const [isSignup, setIsSignup] = useState(new URLSearchParams(location.search).get("mode") === "signup");
+
+- MainPage.tsx : onClick 없어서 추가함.
+
+    <button
+        ↪️
+        onClick={() => navigate("/community")}
+        className="hover:text-white transition">커뮤니티</button>
+  
+### Article_Summaries -> ArticleAiTitle(테이블 변경)
+- 현실적으로 크롤링이 불가능한 부분이 있어서 변경
+- rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경

@@ -23,39 +23,52 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         String path = req.getRequestURI();
-        System.out.println("\n==============================");
-        System.out.println("🔎 [JwtAuthFilter] 요청 URL : " + path);
+        System.out.println("🔎 요청 URL : " + path);
 
-        // 로그인, 회원가입만 JWT 검사 생략
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
-            System.out.println("➡ LOGIN/REGISTER → JWT 검사 생략");
+        // 🔹 JWT 검사를 생략할 URL
+        boolean skip =
+                path.equals("/api/auth/login") ||
+                path.equals("/api/auth/register") ||
+                path.equals("/api/auth/refresh") ||
+                path.startsWith("/api/email");
+
+        if (skip) {
             chain.doFilter(req, res);
             return;
         }
 
+        // 🔹 Access Token 추출: 헤더 우선, 없으면 쿠키
+        String token = null;
+
+        // 1️⃣ Authorization 헤더 확인
         String header = req.getHeader("Authorization");
-
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            System.out.println("📌 JWT 추출됨: " + token);
+            token = header.substring(7);
+        }
 
-            if (jwtTokenProvider.validate(token)) {
-                System.out.println("✅ JWT 검증 성공");
-
-                String email = jwtTokenProvider.getEmail(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, null, userDetails.getAuthorities());
-
-                SecurityContextHolder.getContext().setAuthentication(auth);
-
-                System.out.println("🔐 SecurityContext 인증 세팅 완료");
+        // 2️⃣ 쿠키 확인 (헤더 없을 때)
+        if (token == null && req.getCookies() != null) {
+            for (Cookie c : req.getCookies()) {
+                if ("accessToken".equals(c.getName())) {
+                    token = c.getValue();
+                    break;
+                }
             }
         }
 
+        // 🔹 토큰이 존재하고 유효하면 SecurityContext 설정
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            String email = jwtTokenProvider.getEmail(token);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities()
+                    );
+
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        }
+
         chain.doFilter(req, res);
-        System.out.println("==============================\n");
     }
 }

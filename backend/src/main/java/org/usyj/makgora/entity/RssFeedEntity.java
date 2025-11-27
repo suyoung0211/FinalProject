@@ -1,10 +1,13 @@
 package org.usyj.makgora.entity;
 
-import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "rss_feeds")
@@ -23,10 +26,17 @@ public class RssFeedEntity {
     @Column(nullable = false, length = 255)
     private String url;
 
-    // RSS 피드가 속한 카테고리
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
-    private ArticleCategoryEntity category;
+    @Column(nullable = false, length = 100)
+    private String sourceName;
+
+    @ManyToMany
+    @JoinTable(
+        name = "rss_feed_categories",
+        joinColumns = @JoinColumn(name = "feed_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    @Builder.Default
+    private Set<ArticleCategoryEntity> categories = new HashSet<>();
 
     private LocalDateTime lastFetched;
 

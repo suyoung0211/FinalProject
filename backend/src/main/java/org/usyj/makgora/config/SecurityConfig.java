@@ -15,9 +15,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.usyj.makgora.config.JwtAuthFilter;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
+@EnableAsync
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -37,23 +41,36 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-                // Swagger 허용
+                // ⭐ Preflight 허용
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // ⭐ 비인가 허용되는 엔드포인트
                 .requestMatchers(
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**"
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/refresh",
+                        "/api/email/**"
                 ).permitAll()
 
-                // 로그인, 회원가입만 허용
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                // ⭐ 커뮤니티: 조회는 모두 허용, 작성/수정/삭제는 인증 필요
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
 
-                // 유저 인증 필요
+                // ⭐ 로그아웃은 반드시 인증 필요
+                .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
+
+                // ⭐ 보호 API
                 .requestMatchers("/api/user/**").authenticated()
+                .requestMatchers("/api/vote/**").authenticated()
+                .requestMatchers("/api/comment/**").authenticated()
 
-                // 그 외 모두 인증 필요
                 .anyRequest().authenticated()
             )
+            .logout(logout -> logout.disable())
 
+            // JWT 필터 삽입
             .addFilterBefore(
                 new JwtAuthFilter(jwtTokenProvider, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class
@@ -75,9 +92,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOriginPattern("*");
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3000");
-        config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 

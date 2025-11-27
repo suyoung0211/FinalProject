@@ -1,4 +1,4 @@
-package org.usyj.makgora.dto;
+package org.usyj.makgora.request;
 
 import lombok.Data;
 
@@ -7,4 +7,5 @@ public class RegisterRequest {
   private String email;
   private String password;
   private String nickname;
+  private String verificationEmail;
 }

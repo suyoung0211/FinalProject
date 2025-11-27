@@ -3,133 +3,90 @@ package org.usyj.makgora.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.request.LoginRequest;
+import org.usyj.makgora.request.RegisterRequest;
+import org.usyj.makgora.response.LoginResponse;
+import org.usyj.makgora.service.AuthService;
 
-import org.usyj.makgora.dto.*;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.repository.UserRepository;
-import org.usyj.makgora.security.JwtTokenProvider;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository repo;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
-    // =============================
-    // ⭐ 로그인
-    // =============================
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
-
-        System.out.println("🔍 [LOGIN] 요청 들어옴");
-        System.out.println("📧 Email = " + req.getEmail());
-
-        try {
-            // 1) AuthenticationManager 로 인증
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            req.getEmail(), req.getPassword())
-            );
-            System.out.println("✅ Authentication 인증 성공");
-
-            // 2) DB에서 사용자 조회
-            UserEntity user = repo.findByEmail(req.getEmail())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-            System.out.println("✅ User 조회 성공: " + user.getEmail());
-
-            // 3) JWT 발급
-            String accessToken = jwtTokenProvider.createAccessToken(
-                    user.getId(), user.getEmail(), user.getRole().name()
-            );
-
-            String refreshToken = jwtTokenProvider.createRefreshToken(
-                    user.getId(), user.getEmail(), user.getRole().name()
-            );
-
-            System.out.println("🎉 JWT 발급 완료");
-
-            // ⭐ 4) refreshToken DB 저장
-            user.setRefreshToken(refreshToken);
-            repo.save(user);
-
-            LoginResponse response = new LoginResponse(accessToken, refreshToken, user);
-
-            return ResponseEntity.ok(response);
-
-        } catch (BadCredentialsException e) {
-            System.out.println("❌ 비밀번호 불일치");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid password");
-        } catch (Exception e) {
-            System.out.println("❌ 로그인 실패: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Login failed: " + e.getMessage());
-        }
-    }
-
-    // =============================
-    // ⭐ 회원가입
-    // =============================
+    /** 회원가입 */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-
-        System.out.println("🔍 회원가입 요청 email: " + req.getEmail());
-
-        if (repo.findByEmail(req.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("Email already exists");
+        try {
+            authService.register(req);
+            return ResponseEntity.ok("Registered");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-
-        UserEntity user = new UserEntity();
-        user.setEmail(req.getEmail());
-        user.setNickname(req.getNickname());
-        user.setRole(UserEntity.Role.USER);
-        user.setPoints(0);
-        user.setLevel(1);
-
-        // 비밀번호 암호화
-        user.setPassword(passwordEncoder.encode(req.getPassword()));
-
-        // ⭐ refreshToken은 로그인시에만 저장
-        user.setRefreshToken(null);
-
-        repo.save(user);
-
-        System.out.println("✅ 회원가입 성공: " + user.getEmail());
-        return ResponseEntity.ok("Registered");
     }
-    @PostMapping("/logout")
-    public ResponseEntity<?> logout(Authentication auth) {
-        System.out.println("🚪 [LOGOUT] 요청 들어옴");
 
-        if (auth == null) {
-            System.out.println("❌ 인증 안 된 요청에서 로그아웃 시도");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not logged in");
+    /** 로그인 */
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletResponse response) {
+        try {
+            // db 로부터 accessToken, refreshToken, user 받음
+            LoginResponse loginResponse = authService.login(req);
+
+            // ⭐ Refresh Token을 HttpOnly 쿠키로 저장
+            Cookie refreshCookie = new Cookie("refreshToken", loginResponse.getRefreshToken());
+            refreshCookie.setHttpOnly(true);
+            refreshCookie.setSecure(false); // 로컬 개발환경에서는 false, 운영 HTTPS환경에서는 true
+            refreshCookie.setPath("/");
+            refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
+            response.addCookie(refreshCookie);
+
+            // 클라이언트에 보낼 응답 → Access Token + User 정보만 포함
+            LoginResponse responseBody = new LoginResponse(
+                    loginResponse.getAccessToken(),
+                    null,
+                    loginResponse.getUser()
+            );
+
+            return ResponseEntity.ok(responseBody);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
+        }
+    }
+
+    /** Access Token 재발급 */
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken) {
+
+        if (refreshToken == null || !authService.validateRefreshToken(refreshToken)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String email = auth.getName();
-        System.out.println("📧 로그아웃 사용자 email: " + email);
+        String newAccessToken = authService.reissueAccessToken(refreshToken);
 
-        // (선택) refreshToken 을 DB에 저장하고 있다면 여기서 제거
-        repo.findByEmail(email).ifPresent(user -> {
-            try {
-                user.setRefreshToken(null);   // ⚠ UserEntity에 필드 있어야 함
-                repo.save(user);
-                System.out.println("🧹 DB refreshToken 제거 완료");
-            } catch (Exception e) {
-                System.out.println("⚠ refreshToken 제거 중 오류: " + e.getMessage());
-            }
-        });
+        // Access Token만 전달
+        return ResponseEntity.ok(
+                new LoginResponse(newAccessToken, null, null)
+        );
+    }
 
-        // SecurityContext 비우기
-        SecurityContextHolder.clearContext();
-        System.out.println("✅ SecurityContext 클리어 완료");
+    /** 로그아웃 */
+    @PostMapping("/logout/{userId}")
+    public ResponseEntity<?> logout(@PathVariable Integer userId, HttpServletResponse response) {
+        authService.logout(userId);
+
+        // Refresh Token 쿠키 삭제 처리
+        Cookie refreshCookie = new Cookie("refreshToken", null);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(false);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(0);
+        response.addCookie(refreshCookie);
 
         return ResponseEntity.ok("Logged out");
     }
