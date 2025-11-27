@@ -116,14 +116,14 @@ export function MainPage() {
   const trendingMarkets = markets.filter((m) => m.trending);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen w-full bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* HEADER */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
         <div className="w-full max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
 
           {/* LOGO */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold text-white">Mak' gora</span>
@@ -190,7 +190,7 @@ export function MainPage() {
 
           <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
             미래의 이슈에 <br />
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
+            <span className="bg-linear-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">
               투표하고 예측하세요
             </span>
           </h1>
@@ -235,7 +235,7 @@ export function MainPage() {
                 className={`px-5 py-2.5 rounded-full flex items-center gap-2 transition 
                   ${
                     active
-                      ? "bg-gradient-to-r from-[#FF4EC7] to-[#A548FF] text-white shadow-lg shadow-pink-500/30"
+                      ? "bg-linear-to-r from-[#FF4EC7] to-[#A548FF] text-white shadow-lg shadow-pink-500/30"
                       : "bg-white/10 text-gray-300 border border-white/20 backdrop-blur-sm hover:bg-white/20"
                   }`}
               >
@@ -404,7 +404,7 @@ function UserDropdown({
         onClick={() => setOpen((p) => !p)}
         className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/20 hover:bg-white/10"
       >
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
           <User className="w-5 h-5 text-white" />
         </div>
         <span className="hidden sm:block text-white">{user?.nickname || user?.name}</span>
