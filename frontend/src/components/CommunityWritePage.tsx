@@ -7,19 +7,33 @@ import api from '../api/api';
 
 interface CommunityWritePageProps {
   onBack: () => void;
-  onSubmit?: (post: {
+  onSubmit?: () => void;
+  mode?: 'create' | 'edit';
+  initialPost?: {
+    postId: number;
     title: string;
     content: string;
-    category: string;
-    tags: string[];
-  }) => void;
+    postType: string;
+    tags?: string[];
+  };
 }
 
-export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps) {
-  const [newPostTitle, setNewPostTitle] = useState('');
-  const [newPostContent, setNewPostContent] = useState('');
-  const [newPostCategory, setNewPostCategory] = useState('free');
-  const [newPostTags, setNewPostTags] = useState('');
+export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialPost }: CommunityWritePageProps) {
+  // 초기값 설정 (수정 모드일 경우 initialPost 사용)
+  const [newPostTitle, setNewPostTitle] = useState(initialPost?.title || '');
+  const [newPostContent, setNewPostContent] = useState(initialPost?.content || '');
+  
+  // postType → category 매핑
+  const mapPostTypeToCategory = (postType: string): string => {
+    if (postType === '이슈추천') return 'prediction';
+    if (postType === '포인트자랑') return 'strategy';
+    return 'free';
+  };
+  
+  const [newPostCategory, setNewPostCategory] = useState(
+    initialPost ? mapPostTypeToCategory(initialPost.postType) : 'free'
+  );
+  const [newPostTags, setNewPostTags] = useState(initialPost?.tags?.join(', ') || '');
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
@@ -91,30 +105,104 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
     }
   };
 
-  const handleSubmit = () => {
-    if (!newPostTitle || !newPostContent) return;
+  // category → postType 매핑
+  const mapCategoryToPostType = (category: string): string => {
+    if (category === 'prediction') return '이슈추천';
+    if (category === 'strategy') return '포인트자랑';
+    return '일반';
+  };
 
-    const post = {
-      title: newPostTitle,
-      content: newPostContent,
-      category: newPostCategory,
-      tags: newPostTags.split(',').map(t => t.trim()).filter(t => t),
-    };
-
-    console.log('New post:', post);
-    
-    if (onSubmit) {
-      onSubmit(post);
+  const handleSubmit = async () => {
+    if (!newPostTitle.trim() || !newPostContent.trim()) {
+      alert('제목과 내용을 모두 입력해주세요.');
+      return;
     }
 
-    // Reset form
-    setNewPostTitle('');
-    setNewPostContent('');
-    setNewPostCategory('free');
-    setNewPostTags('');
-    
-    // Go back to community
-    onBack();
+    // 토큰 확인
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const postType = mapCategoryToPostType(newPostCategory);
+
+      const requestBody = {
+        title: newPostTitle.trim(),
+        content: newPostContent.trim(),
+        postType,
+      };
+
+      let res;
+      if (mode === 'edit') {
+        if (!initialPost?.postId) {
+          alert('수정할 게시글 ID가 없습니다.');
+          return;
+        }
+        console.log('✏️ 게시글 수정 요청:', {
+          url: `/community/posts/${initialPost.postId}`,
+          body: requestBody,
+        });
+        res = await api.put(`/community/posts/${initialPost.postId}`, requestBody);
+      } else {
+        console.log('📝 게시글 작성 요청:', {
+          url: '/community/posts',
+          body: requestBody,
+        });
+        res = await api.post('/community/posts', requestBody);
+      }
+
+      console.log('✅ 성공 응답:', res.data);
+
+      // 부모 콜백 호출 (ex. 커뮤니티 목록으로 이동)
+      if (onSubmit) {
+        onSubmit();
+      } else {
+        onBack();
+      }
+
+      // 새 글 작성 모드일 때만 폼 리셋
+      if (mode === 'create') {
+        setNewPostTitle('');
+        setNewPostContent('');
+        setNewPostCategory('free');
+        setNewPostTags('');
+      }
+    } catch (error: any) {
+      console.error('❌ 게시글 작성/수정 실패:', error);
+
+      let errorMessage = '게시글 처리에 실패했습니다.';
+
+      if (error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.message || error.response.data;
+
+        if (status === 401) {
+          errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
+        } else if (status === 403) {
+          errorMessage = message || '이 게시글을 수정할 권한이 없습니다. (작성자만 수정 가능)';
+        } else if (status === 400) {
+          errorMessage = message || '입력한 정보를 확인해주세요.';
+        } else {
+          errorMessage = message || `서버 오류가 발생했습니다. (${status})`;
+        }
+      } else if (error.request) {
+        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.';
+      }
+
+      alert(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -130,7 +218,9 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
               <ArrowLeft className="w-5 h-5" />
               <span>돌아가기</span>
             </button>
-            <h1 className="text-xl font-bold text-white">새 게시글 작성</h1>
+            <h1 className="text-xl font-bold text-white">
+              {mode === 'edit' ? '게시글 수정' : '새 게시글 작성'}
+            </h1>
             <div className="w-24" /> {/* Spacer for centering */}
           </div>
         </div>
@@ -422,11 +512,13 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={!newPostTitle || !newPostContent}
+                  disabled={!newPostTitle.trim() || !newPostContent.trim() || isSubmitting}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white h-12 px-8 shadow-lg shadow-purple-500/50"
                 >
                   <Plus className="w-5 h-5 mr-2" />
-                  작성 완료
+                  {isSubmitting 
+                    ? (mode === 'edit' ? '수정 중...' : '작성 중...')
+                    : (mode === 'edit' ? '수정 완료' : '작성 완료')}
                 </Button>
               </div>
             </div>

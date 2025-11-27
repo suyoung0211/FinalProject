@@ -93,8 +93,8 @@ useEffect(() => {
         category: post.postType === '이슈추천' ? 'prediction' 
                 : post.postType === '포인트자랑' ? 'strategy' 
                 : 'free',  // postType → category 변환
-        author: post.authorNickname,
-        authorName: post.authorNickname,
+        author: post.author || post.authorNickname,
+        authorName: post.authorNickname || post.author,
         authorLevel: post.authorLevel || 0,
         createdAt: post.createdAt,
         views: 0,  // 임시값 (백엔드에 없음)

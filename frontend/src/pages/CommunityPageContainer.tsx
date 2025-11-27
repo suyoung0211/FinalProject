@@ -25,9 +25,7 @@ export function CommunityPageContainer() {
 
       // 글쓰기 버튼 → 글쓰기 페이지로 이동
       onWriteClick={() => navigate("/community/write")}
-
-      // (원하면 나중에 게시글 상세도 이렇게 연결)
-      // onPostClick={(postId) => navigate(`/community/posts/${postId}`)}
+      onPostClick={(postId) => navigate(`/community/posts/${postId}`)}
 
       // 로그인/회원가입/로그아웃
       onLogin={() => navigate("/login")}
