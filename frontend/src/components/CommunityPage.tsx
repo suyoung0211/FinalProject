@@ -1,9 +1,11 @@
 import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Clock, TrendingUp, Flame, Users, Globe, Briefcase, DollarSign, Zap, Star, Award, Search, Plus, Pin, ChevronLeft, ChevronRight, User, Coins, ChevronDown, LogOut, ShoppingBag, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar } from './Avatar';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
+import api from '../api/api';
+
 
 interface User {
   id: string;
@@ -75,173 +77,39 @@ export function CommunityPage({ onBack, onPostClick, onWriteClick, currentUser, 
     { id: 'free', label: '자유', icon: MessageSquare },
   ];
 
-  const posts: CommunityPost[] = [
-    {
-      id: '1',
-      title: '[공지] Mak\' gora 커뮤니티 이용 가이드',
-      content: '커뮤니티 이용 시 지켜주셔야 할 규칙과 팁을 안내드립니다.',
-      category: 'free',
-      author: 'admin',
-      authorName: '운영진',
-      authorLevel: 99,
-      avatarType: 'male',
-      avatarVariant: 1,
-      createdAt: '1일 전',
-      views: 5234,
-      likes: 423,
-      comments: 67,
-      isPinned: true,
-    },
-    {
-      id: '2',
-      title: '비트코인 15만 달러 돌파 예측 - 상세 분석',
-      content: '기술적 분석과 온체인 데이터를 기반으로 비트코인의 15만 달러 돌파 가능성을 분석해봤습니다. 현재 주 지표들을 살펴보면...',
-      category: 'prediction',
-      author: 'crypto_analyst',
-      authorName: '크립토 분석가',
-      authorLevel: 15,
-      avatarType: 'male',
-      avatarVariant: 4,
-      createdAt: '2시간 전',
-      views: 3421,
-      likes: 287,
-      comments: 89,
-      isHot: true,
-      isBest: true,
-      tags: ['비트코인', '기술적분석', '크립토'],
-    },
-    {
-      id: '3',
-      title: '초보자를 위한 포인트 배팅 전략 가이드',
-      content: '5000 포인트로 시작해서 3주만에 20000 포인트를 달성한 전략을 공유합니다. 핵심은 리스크 관리와...',
-      category: 'strategy',
-      author: 'strategy_master',
-      authorName: '전략마스터',
-      authorLevel: 12,
-      avatarType: 'female',
-      avatarVariant: 2,
-      createdAt: '5시간 전',
-      views: 2856,
-      likes: 342,
-      comments: 124,
-      isHot: true,
-      tags: ['전략', '초보자', '가이드'],
-    },
-    {
-      id: '4',
-      title: '2027 대선 여론조사 데이터 분석',
-      content: '최근 3개월간의 여론조사 추이를 그래프로 정리했습니다. 흥미로운 패턴이 발견네요.',
-      category: 'politics',
-      author: 'data_scientist',
-      authorName: '데이터사이언티스트',
-      authorLevel: 10,
-      avatarType: 'male',
-      avatarVariant: 3,
-      createdAt: '7시간 전',
-      views: 1923,
-      likes: 156,
-      comments: 78,
-      tags: ['정치', '데이터분석', '대선'],
-    },
-    {
-      id: '5',
-      title: 'AI 의료 진단 시장 베팅 어떻게 보시나요?',
-      content: 'AI가 의사 면허 시험을 통과할 것 같은데, 여러분의 의견이 궁금합니다.',
-      category: 'business',
-      author: 'ai_enthusiast',
-      authorName: 'AI 매니아',
-      authorLevel: 8,
-      avatarType: 'female',
-      avatarVariant: 4,
-      createdAt: '9시간 전',
-      views: 1567,
-      likes: 89,
-      comments: 45,
-      tags: ['AI', '의료', '비즈니스'],
-    },
-    {
-      id: '6',
-      title: '손흥민 150골 달성 확률 99%라고 봅니다',
-      content: '현재 폼과 남은 경기 수를 고려하면 거의 확실하다고 생각합니다. 근거는...',
-      category: 'sports',
-      author: 'soccer_fan',
-      authorName: '축구팬',
-      authorLevel: 7,
-      avatarType: 'male',
-      avatarVariant: 2,
-      createdAt: '12시간 전',
-      views: 2134,
-      likes: 198,
-      comments: 56,
-      isHot: true,
-      tags: ['손흥민', '축구', 'EPL'],
-    },
-    {
-      id: '7',
-      title: '이더리움 2.0 업그레이드 후 가격 전망',
-      content: '업그레이드가 성공적으로 완료되었는데, 이제 가격은 어떻게 될까요? 역사적 패턴을 분석해봤습니다.',
-      category: 'crypto',
-      author: 'eth_holder',
-      authorName: 'ETH 홀더',
-      authorLevel: 11,
-      avatarType: 'female',
-      avatarVariant: 1,
-      createdAt: '14시간 전',
-      views: 1876,
-      likes: 167,
-      comments: 92,
-      tags: ['이더리움', '크립토', '업그레이드'],
-    },
-    {
-      id: '8',
-      title: '블랙핑크 제니 솔로 앨범 대박 예상',
-      content: '팬덤 규모와 이전 솔로곡 성과를 보면 차트 1위는 확실할 것 같아요.',
-      category: 'entertainment',
-      author: 'kpop_lover',
-      authorName: 'K-POP 러버',
-      authorLevel: 6,
-      avatarType: 'female',
-      avatarVariant: 3,
-      createdAt: '16시간 전',
-      views: 2456,
-      likes: 234,
-      comments: 67,
-      tags: ['블랙핑크', '제니', 'K-POP'],
-    },
-    {
-      id: '9',
-      title: '포인트 잃고 멘탈 회복하는 법',
-      content: '어제 1000포인트 날렸는데 오늘 다시 회복했습니다. 제 경험을 공유합니다.',
-      category: 'free',
-      author: 'comeback_king',
-      authorName: '컴백킹',
-      authorLevel: 9,
-      avatarType: 'male',
-      avatarVariant: 1,
-      createdAt: '18시간 전',
-      views: 1234,
-      likes: 145,
-      comments: 34,
-      tags: ['멘탈관리', '경험담'],
-    },
-    {
-      id: '10',
-      title: '코스피 3000선 돌파 vs 실패 토론',
-      content: '여러분은 어느 쪽에 베팅하셨나요? 이유도 함께 공유해주세요!',
-      category: 'business',
-      author: 'stock_trader',
-      authorName: '주식트레이더',
-      authorLevel: 13,
-      avatarType: 'male',
-      avatarVariant: 4,
-      createdAt: '1일 전',
-      views: 1678,
-      likes: 123,
-      comments: 89,
-      tags: ['주식', '코스피', '토론'],
-    },
-  ];
+  // useState로 변경
+const [posts, setPosts] = useState<CommunityPost[]>([]);
 
+// useEffect로 API 호출
+useEffect(() => {
+  const fetchPosts = async () => {
+    try {
+      const res = await api.get('/community/posts');
+      // 백엔드 데이터를 프론트엔드 형식으로 변환
+      const mappedPosts = res.data.map((post: any) => ({
+        id: String(post.postId),  // Long → string
+        title: post.title,
+        content: post.content,
+        category: post.postType === '이슈추천' ? 'prediction' 
+                : post.postType === '포인트자랑' ? 'strategy' 
+                : 'free',  // postType → category 변환
+        author: post.authorNickname,
+        authorName: post.authorNickname,
+        authorLevel: post.authorLevel || 0,
+        createdAt: post.createdAt,
+        views: 0,  // 임시값 (백엔드에 없음)
+        likes: post.recommendationCount || 0,
+        comments: post.commentCount || 0,
+        // avatarType, avatarVariant는 백엔드에 없으므로 옵셔널
+      }));
+      setPosts(mappedPosts);
+    } catch (error) {
+      console.error('게시글 목록 조회 실패', error);
+    }
+  };
+  fetchPosts();
+}, []);
+  
   const filteredPosts = posts.filter((post) => {
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
+import api from '../api/api';
 
 interface CommunityWritePageProps {
   onBack: () => void;
@@ -32,6 +33,7 @@ export function CommunityWritePage({ onBack, onSubmit }: CommunityWritePageProps
   const [imagePreview, setImagePreview] = useState<string>('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = [
     { id: 'prediction', label: '예측 분석', icon: TrendingUp },
