@@ -1,6 +1,8 @@
 package org.usyj.makgora.rssfeed.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -12,17 +14,32 @@ import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 @RequiredArgsConstructor
 public class RssFeedCollector {
 
-    private final RssFeedService rssFeedService;
-    private final ArticleAiTitleRepository aiTitleRepository;
-    private final RestTemplate restTemplate = new RestTemplate(); // API 호출용
+    private final RssFeedService rssFeedService; // RSS 기사 수집 서비스
+    private final ArticleAiTitleRepository aiTitleRepository; // AI 제목 DB 저장용 리포지토리
+    private final RestTemplate restTemplate = new RestTemplate(); // 외부 API 호출용 객체
 
     // Python AI 제목 생성 API URL
     private static final String PYTHON_API_URL = "http://localhost:8000/generate-ai-titles";
+
+     /*
+     * 개발/운영 환경에 따라 서버 시작 시 RSS 수집 자동 실행 여부를 제어
+     * @Value("${app.runRssOnStartup:false}")
+     * - application.properties 또는 application.yml에서 app.runRssOnStartup 값을 가져옴
+     * - 값이 없으면 기본값 false 사용
+     * - @Value("${app.runRssOnStartup:true}") → 서버 시작 시 runAtStartup() 실행
+     * - @Value("${app.runRssOnStartup:false}") → 서버 시작 시 runAtStartup() 실행 안함
+     */
+    @Value("${app.runRssOnStartup:false}") // 여기를 변경
+    private boolean runRssOnStartup;
 
     // 서버 시작 시 자동 실행
     @EventListener(ApplicationReadyEvent.class)
     @Async
     public void runAtStartup() {
+        // runRssOnStartup이 false면 바로 종료 → 개발 단계에서 불필요한 작업 방지
+        System.out.println("runRssOnStartup 값: " + runRssOnStartup);
+        if(!runRssOnStartup) return;
+
         try {
             // 1️⃣ RSS 기사 수집
             rssFeedService.collectAndSaveAllFeeds();

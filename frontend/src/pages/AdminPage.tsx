@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { useNavigate } from "react-router-dom";
+import { CreateVoteModal } from '../components/CreateVoteModal';
 
 interface AdminPageProps {
   onBack: () => void;
@@ -91,9 +91,9 @@ interface AdminLog {
 }
 
 export function AdminPage({ onBack, currentUser }: AdminPageProps) {
-  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState<'dashboard' | 'rss-feeds' | 'issues' | 'votes' | 'community' | 'store' | 'logs'>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateVoteModal, setShowCreateVoteModal] = useState(false);
 
   // Sample data
   const users: User[] = [
@@ -189,7 +189,18 @@ export function AdminPage({ onBack, currentUser }: AdminPageProps) {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
+    <>
+      <CreateVoteModal
+        isOpen={showCreateVoteModal}
+        onClose={() => setShowCreateVoteModal(false)}
+        onCreate={(voteData) => {
+          console.log('New vote created:', voteData);
+          // TODO: 실제로는 백엔드로 데이터를 전송해야 합니다
+          alert(`투표가 생성되었습니다!\n질문: ${voteData.question}\n카테고리: ${voteData.category}\n종료일: ${voteData.endDate}`);
+        }}
+      />
+      
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-950/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
         {/* Logo */}
@@ -559,7 +570,10 @@ export function AdminPage({ onBack, currentUser }: AdminPageProps) {
               <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
                 <div className="p-6 border-b border-white/10 flex items-center justify-between">
                   <h3 className="font-bold text-white">투표 목록</h3>
-                  <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm">
+                  <Button 
+                    onClick={() => setShowCreateVoteModal(true)}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     투표 생성
                   </Button>
@@ -783,6 +797,7 @@ export function AdminPage({ onBack, currentUser }: AdminPageProps) {
           )}
         </div>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

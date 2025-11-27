@@ -11,8 +11,7 @@ export interface UserType {
 export interface AuthContextType {
   user: UserType | null;
   token: string | null;
-  refreshToken: string | null;
-  login: (user: UserType, access: string, refresh: string) => void;
+  login: (user: UserType, access: string) => void;
   logout: () => void;
 }
 
@@ -43,14 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (
     userData: UserType,
     accessToken: string,
-    newRefreshToken: string
   ) => {
     setUser(userData);
     setToken(accessToken);
-    setRefreshToken(newRefreshToken);
 
     localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("refreshToken", newRefreshToken);
   };
 
   const logout = async () => {
@@ -74,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
   return (
-    <AuthContext.Provider value={{ user, token, refreshToken, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
