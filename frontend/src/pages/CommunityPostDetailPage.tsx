@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/api";
+
+// 댓글 UI에 필요한 아이콘 & 컴포넌트들
+import { MessageSquare, ThumbsUp } from "lucide-react";
+import { Avatar } from "../components/Avatar";
+import { Button } from "../components/ui/button";
+import { Textarea } from "../components/ui/textarea";
 
 type PostDetail = {
   postId: number;
@@ -17,6 +23,20 @@ type PostDetail = {
   commentCount?: number;
   isLiked?: boolean;
   isDisliked?: boolean;
+};
+
+type Comment = {
+  id: string;
+  author: string;
+  authorName: string;
+  authorLevel?: number;
+  avatarType?: "male" | "female";
+  avatarVariant?: number;
+  content: string;
+  createdAt: string;
+  likes: number;
+  isLiked?: boolean;
+  replies?: Comment[];
 };
 
 export function CommunityPostDetailPage() {
@@ -97,6 +117,10 @@ export function CommunityPostDetailPage() {
 
         const res = await api.get(`/community/posts/${postId}`);
         setPost(res.data);
+
+        // TODO: 나중에 댓글 API 연동 시 여기에서 댓글도 같이 불러오기
+        // const commentRes = await api.get(`/community/posts/${postId}/comments`);
+        // setComments(commentRes.data);
       } catch (e) {
         console.error("게시글 조회 실패", e);
         setError("게시글을 불러오지 못했습니다.");
@@ -133,7 +157,7 @@ export function CommunityPostDetailPage() {
   }
 
   const isMyPost = user && String(user.id) === String(post.authorId);
-  const authorName = post.authorNickname || post.author || '알 수 없음';
+  const authorName = post.authorNickname || post.author || "알 수 없음";
 
   return (
     <div className="min-h-screen text-white p-8 bg-gradient-to-b from-slate-900 to-purple-900">
@@ -184,7 +208,7 @@ export function CommunityPostDetailPage() {
 
         {/* 글 작성자만 보이는 버튼 */}
         {isMyPost && (
-          <div className="flex gap-3">
+          <div className="flex gap-3 mb-8">
             <button
               onClick={() => navigate(`/community/edit/${post.postId}`)}
               className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-700"
@@ -199,6 +223,195 @@ export function CommunityPostDetailPage() {
             </button>
           </div>
         )}
+
+        {/* 🔽 댓글 섹션 */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-8 mt-10">
+          <h2 className="text-white text-xl font-bold mb-6 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-purple-400" />
+            댓글 {comments.length}
+          </h2>
+
+          {/* 댓글 입력 */}
+          <div className="mb-8">
+            {user ? (
+              <div className="space-y-3">
+                <Textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="댓글을 작성하세요..."
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 resize-none"
+                  rows={3}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handlePostComment}
+                    disabled={!commentText.trim()}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+                  >
+                    댓글 작성
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-white/5 rounded-xl border border-white/10">
+                <p className="text-gray-400 mb-4">
+                  댓글을 작성하려면 로그인이 필요합니다
+                </p>
+                <Button
+                  onClick={requireLogin}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
+                  로그인
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* 댓글 리스트 */}
+          <div className="space-y-6">
+            {comments.length === 0 && (
+              <p className="text-gray-500 text-sm">
+                아직 댓글이 없습니다. 첫 댓글을 남겨보세요!
+              </p>
+            )}
+
+            {comments.map((comment) => (
+              <div
+                key={comment.id}
+                className="border-b border-white/10 pb-6 last:border-0"
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <Avatar
+                    type={comment.avatarType || "male"}
+                    variant={comment.avatarVariant || 1}
+                    size={48}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-white font-medium">
+                        {comment.authorName}
+                      </span>
+                      {comment.authorLevel && (
+                        <span className="px-2 py-0.5 bg-blue-600/20 text-blue-400 text-xs rounded-full border border-blue-500/30">
+                          Lv.{comment.authorLevel}
+                        </span>
+                      )}
+                      <span className="text-xs text-gray-500">
+                        {comment.createdAt}
+                      </span>
+                    </div>
+                    <p className="text-gray-300 mb-3">{comment.content}</p>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleLikeComment(comment.id)}
+                        className={`flex items-center gap-1 text-sm transition-colors ${
+                          comment.isLiked
+                            ? "text-purple-400"
+                            : "text-gray-400 hover:text-purple-400"
+                        }`}
+                      >
+                        <ThumbsUp className="w-3 h-3" />
+                        <span>{comment.likes}</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          setReplyTo(
+                            replyTo === comment.id ? null : comment.id
+                          )
+                        }
+                        className="text-sm text-gray-400 hover:text-purple-400 transition-colors"
+                      >
+                        답글
+                      </button>
+                    </div>
+
+                    {/* 답글 입력 */}
+                    {replyTo === comment.id && user && (
+                      <div className="mt-3 space-y-2">
+                        <Textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="답글을 작성하세요..."
+                          className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 resize-none text-sm"
+                          rows={2}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            onClick={() => setReplyTo(null)}
+                            variant="outline"
+                            size="sm"
+                            className="border-white/20 hover:bg-white/10"
+                          >
+                            취소
+                          </Button>
+                          <Button
+                            onClick={() => handlePostReply(comment.id)}
+                            disabled={!replyText.trim()}
+                            size="sm"
+                            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+                          >
+                            답글 작성
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 대댓글 */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="mt-4 ml-8 space-y-4">
+                        {comment.replies.map((reply) => (
+                          <div
+                            key={reply.id}
+                            className="flex items-start gap-3"
+                          >
+                            <Avatar
+                              type={reply.avatarType || "male"}
+                              variant={reply.avatarVariant || 1}
+                              size={36}
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-white text-sm font-medium">
+                                  {reply.authorName}
+                                </span>
+                                {reply.authorLevel && (
+                                  <span className="px-2 py-0.5 bg-blue-600/20 text-blue-400 text-xs rounded-full border border-blue-500/30">
+                                    Lv.{reply.authorLevel}
+                                  </span>
+                                )}
+                                <span className="text-xs text-gray-500">
+                                  {reply.createdAt}
+                                </span>
+                              </div>
+                              <p className="text-gray-300 text-sm mb-2">
+                                {reply.content}
+                              </p>
+                              <button
+                                onClick={() =>
+                                  handleLikeComment(reply.id, comment.id)
+                                }
+                                className={`flex items-center gap-1 text-xs transition-colors ${
+                                  reply.isLiked
+                                    ? "text-purple-400"
+                                    : "text-gray-400 hover:text-purple-400"
+                                }`}
+                              >
+                                <ThumbsUp className="w-3 h-3" />
+                                <span>{reply.likes}</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* 댓글 섹션 끝 */}
       </div>
     </div>
   );
