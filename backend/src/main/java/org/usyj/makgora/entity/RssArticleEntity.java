@@ -73,4 +73,8 @@ private String link;
     @Column(nullable = false)
     @Builder.Default
     private int commentCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean issueCreated = false;
 }
