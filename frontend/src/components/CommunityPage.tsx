@@ -22,6 +22,7 @@ interface CommunityPageProps {
   onLeaderboard?: () => void;
   onPointsShop?: () => void;
   onProfile?: () => void;
+  onVote?: () => void;
   user?: User | null;
   onLogin?: () => void;
   onLogout?: () => void;
@@ -48,7 +49,7 @@ interface CommunityPost {
   tags?: string[];
 }
 
-export function CommunityPage({ onBack, onPostClick, onWriteClick, currentUser, onNews, onLeaderboard, onPointsShop, onProfile, user, onLogin, onLogout, onSignup }: CommunityPageProps) {
+export function CommunityPage({ onBack, onPostClick, onWriteClick, currentUser, onNews, onLeaderboard, onPointsShop, onProfile, onVote, user, onLogin, onLogout, onSignup }: CommunityPageProps) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'hot'>('latest');
@@ -307,6 +308,12 @@ export function CommunityPage({ onBack, onPostClick, onWriteClick, currentUser, 
             <div className="flex items-center gap-6">
               {/* Navigation Menu */}
               <nav className="hidden md:flex items-center gap-6 mr-4">
+                <button 
+                  onClick={onVote}
+                  className="text-gray-300 hover:text-white transition-colors font-medium"
+                >
+                  투표
+                </button>
                 <button 
                   className="text-purple-400 font-medium"
                 >
