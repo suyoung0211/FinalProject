@@ -11,6 +11,7 @@ import org.usyj.makgora.repository.RefreshTokenRepository;
 import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.request.auth.LoginRequest;
 import org.usyj.makgora.request.auth.RegisterRequest;
+import org.usyj.makgora.response.UserInfoResponse;
 import org.usyj.makgora.response.auth.LoginResponse;
 import org.usyj.makgora.security.JwtTokenProvider;
 
@@ -59,20 +60,21 @@ public class AuthService {
      */
     public LoginResponse login(LoginRequest req) {
 
+        // 1. 사용자 조회
         UserEntity user = userRepo.findByLoginId(req.getLoginId())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
+        // 2. 비밀번호 검증
         if (!encoder.matches(req.getPassword(), user.getPassword())) {
             throw new RuntimeException("비밀번호가 올바르지 않습니다.");
         }
 
-        // Access/Refresh Token 생성
+        // 3. Access/Refresh Token 생성
         String accessToken = jwt.createAccessToken(user.getId(), user.getLoginId(), user.getRole().name());
         String refreshToken = jwt.createRefreshToken(user.getId(), user.getLoginId(), user.getRole().name());
 
-        // 기존 토큰 제거 후 재발급
+        // 4. 기존 리프레시 토큰 제거 후 재발급
         tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
-
         tokenRepo.save(
                 RefreshTokenEntity.builder()
                         .userId(user.getId())
@@ -80,7 +82,18 @@ public class AuthService {
                         .build()
         );
 
-        return new LoginResponse(accessToken, refreshToken, user);
+        // 5. 안전하게 DTO 변환
+        UserInfoResponse safeUser = new UserInfoResponse(
+                user.getNickname(),
+                user.getLevel(),
+                user.getPoints(),
+                user.getProfileImage(),
+                user.getProfileBackground(),
+                user.getRole().name() // Enum이면 name() 사용, 이미 String이면 user.getRole()
+        );
+
+        // 6. 클라이언트에 AccessToken + 안전한 User 정보 반환
+        return new LoginResponse(accessToken, null, safeUser);
     }
 
     /**

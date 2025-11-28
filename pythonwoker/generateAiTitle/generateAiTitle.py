@@ -62,7 +62,7 @@ def generate_ai_title(title, content):
         model="gpt-4.1-mini",
         messages=[{"role":"user","content":prompt}],
         temperature=1.5,
-        max_tokens=30
+        max_tokens=60
     )
     return response.choices[0].message.content.strip()
 
