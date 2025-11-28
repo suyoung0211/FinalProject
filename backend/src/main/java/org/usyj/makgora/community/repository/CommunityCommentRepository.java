@@ -1,4 +1,4 @@
-package org.usyj.makgora.repository;
+package org.usyj.makgora.community.repository;
 
 import org.usyj.makgora.entity.CommunityCommentEntity;
 import org.usyj.makgora.entity.CommunityPostEntity;

@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.community.dto.CommunityPostCreateRequest;
 import org.usyj.makgora.community.dto.CommunityPostResponse;
+import org.usyj.makgora.community.repository.CommunityPostRepository;
 import org.usyj.makgora.entity.CommunityPostEntity;
 import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.repository.CommunityPostRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +21,7 @@ public class CommunityPostService {
     private final CommunityPostRepository communityPostRepository;
 
     /** 게시글 등록 */
+    @Transactional
     public CommunityPostResponse createPost(
             CommunityPostCreateRequest request, UserEntity user) {
         try {
@@ -52,6 +53,9 @@ public class CommunityPostService {
                     .authorId(user.getId())
                     .createdAt(post.getCreatedAt())
                     .recommendationCount(post.getRecommendationCount())
+                    .dislikeCount(post.getDislikeCount())
+                    .commentCount(0)  // 새 게시글은 댓글 수 0
+                    .authorLevel(user.getLevel())  // 작성자 레벨
                     .build();
 
         } catch (Exception e) {
@@ -64,10 +68,28 @@ public class CommunityPostService {
     // ⭐ 전체 게시글 조회 (최신순)
     @Transactional(readOnly = true)
     public List<CommunityPostResponse> getAllPosts() {
-        return communityPostRepository.findAllByOrderByCreatedAtDesc()
-                .stream()
-                .map(CommunityPostResponse::fromEntity)
+        System.out.println("📋 게시글 목록 조회 시작...");
+        List<CommunityPostEntity> entities = communityPostRepository.findAllByOrderByCreatedAtDesc();
+        System.out.println("   - DB에서 조회된 엔티티 수: " + entities.size());
+        
+        List<CommunityPostResponse> responses = entities.stream()
+                .map(entity -> {
+                    try {
+                        System.out.println("   - 게시글 ID: " + entity.getPostId() + ", 제목: " + entity.getTitle());
+                        System.out.println("   - 작성자: " + (entity.getUser() != null ? entity.getUser().getNickname() : "null"));
+                        System.out.println("   - 작성 시간: " + entity.getCreatedAt());
+                        return CommunityPostResponse.fromEntity(entity);
+                    } catch (Exception e) {
+                        System.out.println("   ❌ 게시글 변환 실패 (ID: " + entity.getPostId() + "): " + e.getMessage());
+                        e.printStackTrace();
+                        return null;
+                    }
+                })
+                .filter(response -> response != null)
                 .collect(Collectors.toList());
+        
+        System.out.println("   - 변환 완료된 응답 수: " + responses.size());
+        return responses;
     }
 
     /** 단건 조회 */
