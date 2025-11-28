@@ -389,7 +389,7 @@ const deleteComment = async (commentId: number) => {
       </div>
     );
 
-  const isMyPost = user && String(user.id) === String(post.authorId);
+  const isMyPost = user && String(user.loginId) === String(post.authorId);
 
   return (
     <div className="min-h-screen text-white p-8">
