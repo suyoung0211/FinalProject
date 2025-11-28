@@ -21,13 +21,6 @@ import java.util.List;
 public interface CommunityCommentRepository extends JpaRepository<CommunityCommentEntity, Long> {
 
     /**
-     * 특정 게시글(post)에서 부모 댓글(parent가 null)만 가져오기
-     * → 즉 "루트 댓글"만 조회 (대댓글 제외)
-     * → 기존 팀원이 만들었던 기능 그대로 유지
-     */
-    List<CommunityCommentEntity> findByPostAndParentIsNullOrderByCreatedAtAsc(CommunityPostEntity post);
-
-    /**
      * 특정 게시글(postId)의 전체 댓글 목록(부모+대댓글) 최신순 조회
      * → 댓글 전체를 가져와야 할 때 사용
      */

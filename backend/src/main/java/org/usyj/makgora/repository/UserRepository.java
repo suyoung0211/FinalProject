@@ -21,4 +21,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     
     // 🔹 loginId 일부 포함 검색
     List<UserEntity> findByLoginIdContaining(String loginIdPart);
+
+    // 🔹 로그인 아이디 존재 여부 확인
+    boolean existsByLoginId(String loginId);
 }
