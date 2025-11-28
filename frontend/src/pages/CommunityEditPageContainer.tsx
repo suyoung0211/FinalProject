@@ -35,7 +35,7 @@ export function CommunityEditPageContainer() {
         const post = res.data;
 
         // 작성자 확인
-        if (user && String(user.id) !== String(post.authorId)) {
+        if (user && String(user.name) !== String(post.authorId)) {
           setError("수정 권한이 없습니다.");
           setLoading(false);
           return;

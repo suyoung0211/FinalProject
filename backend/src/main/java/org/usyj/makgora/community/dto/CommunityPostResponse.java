@@ -29,6 +29,7 @@ public class CommunityPostResponse {
     private Integer dislikeCount;        // 비추천 수
     private Integer commentCount;
     private Integer authorLevel;
+    private Integer viewCount;
 
     public static CommunityPostResponse fromEntity(CommunityPostEntity entity) {
         if (entity == null) {
@@ -52,6 +53,7 @@ public class CommunityPostResponse {
                 .authorId(entity.getUser().getId())
                 .commentCount(entity.getComments() != null ? entity.getComments().size() : 0)  // 댓글 수 계산
                 .authorLevel(entity.getUser().getLevel() != null ? entity.getUser().getLevel() : 1)  // 작성자 레벨 (기본값 1)
+                .viewCount(entity.getViewCount())
                 .build();
     }
 }

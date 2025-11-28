@@ -38,6 +38,8 @@ public class CommunityPostController {
     @GetMapping("/{postId}")
     public ResponseEntity<CommunityPostResponse> getPost(@PathVariable Long postId) {
         System.out.println("📄 게시글 단건 조회 요청, id = " + postId);
+        // ⭐ 조회수 증가
+        communityPostReactionService.addView(postId);
         CommunityPostResponse post = communityPostService.getPostById(postId);
         return ResponseEntity.ok(post);
     }

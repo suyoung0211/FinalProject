@@ -56,6 +56,7 @@ public class CommunityPostService {
                     .dislikeCount(post.getDislikeCount())
                     .commentCount(0)  // 새 게시글은 댓글 수 0
                     .authorLevel(user.getLevel())  // 작성자 레벨
+                    .viewCount(post.getViewCount())
                     .build();
 
         } catch (Exception e) {

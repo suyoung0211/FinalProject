@@ -1,4 +1,4 @@
-import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Clock, TrendingUp, Flame, Users, Globe, Briefcase, DollarSign, Zap, Star, Award, Search, Plus, Pin, ChevronLeft, ChevronRight, User, Coins, ChevronDown, LogOut, ShoppingBag, X } from 'lucide-react';
+import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Clock, TrendingUp, Flame, Users, Globe, Briefcase, DollarSign, Zap, Star, Award, Search, Plus, Pin, ChevronLeft, ChevronRight, User, Coins, ChevronDown, LogOut, ShoppingBag, X, ThumbsDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Avatar } from './Avatar';
@@ -45,6 +45,7 @@ interface CommunityPost {
   createdAt: string;
   views: number;
   likes: number;
+  dislikes: number; 
   comments: number;
   isPinned?: boolean;
   isHot?: boolean;
@@ -112,8 +113,9 @@ useEffect(() => {
           authorName: post.authorNickname || post.author,
           authorLevel: post.authorLevel || 0,
           createdAt: post.createdAt,
-          views: 0,  // 임시값 (백엔드에 없음)
+          views: post.viewCount || 0,  // 임시값 (백엔드에 없음)
           likes: post.recommendationCount || 0,
+          dislikes: post.dislikeCount || 0,
           comments: post.commentCount || 0,
           // avatarType, avatarVariant는 백엔드에 없으므로 옵셔널
         };
@@ -517,6 +519,12 @@ useEffect(() => {
                       <div className="flex items-center gap-1 text-pink-400">
                         <ThumbsUp className="w-4 h-4" />
                         <span>{post.likes}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-blue-400">
+                        <ThumbsDown className="w-4 h-4 rotate-180" /> 
+    {/* ← ThumbsDown은 원래 아래 방향이라 rotate 필요 없음.
+        만약 아래로 확실히 보이게 하고 싶으면 rotate 제거해도 됨 */}
+                        <span>{post.dislikes}</span>
                       </div>
                       <div className="flex items-center gap-1 text-blue-400">
                         <MessageSquare className="w-4 h-4" />
