@@ -1,7 +1,5 @@
 package org.usyj.makgora.community.repository;
 
-import org.usyj.makgora.entity.CommunityCommentEntity;
-import org.usyj.makgora.entity.CommunityPostEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,4 +51,7 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
      */
     @Query("SELECT c FROM CommunityCommentEntity c WHERE c.user.id = :userId ORDER BY c.createdAt DESC")
     List<CommunityCommentEntity> findByUserId(@Param("userId") Integer userId);
+
+    // 특정 게시글의 모든 댓글/대댓글을 작성시간 기준으로 가져오기
+    List<CommunityCommentEntity> findByPost_PostIdOrderByCreatedAtAsc(Long postId);
 }
