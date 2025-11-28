@@ -1,6 +1,7 @@
 package org.usyj.makgora.community.service;
 
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.community.dto.CommunityCommentRequest;
@@ -164,10 +165,11 @@ public class CommunityCommentService {
                 .content(entity.getContent())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
-                .likeCount(0)      // 엔티티에 없어서 임시 0
-                .dislikeCount(0)   // 엔티티에 없어서 임시 0
+                .likeCount(entity.getLikeCount())     // 엔티티에 없어서 임시 0
+                .dislikeCount(entity.getDislikeCount())  // 엔티티에 없어서 임시 0
                 .mine(mine)
                 .replies(new ArrayList<>())
                 .build();
     }
+
 }
