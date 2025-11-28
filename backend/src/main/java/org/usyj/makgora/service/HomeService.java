@@ -31,7 +31,7 @@ public class HomeService {
 
         /* -----------------------
            1) 뉴스 슬라이드 (최신 10개)
-           ----------------------- */
+        ----------------------- */
         List<RssArticleEntity> slideArticles =
                 articleRepository.findAll().stream()
                         .filter(a -> a.getThumbnailUrl() != null)
@@ -39,24 +39,27 @@ public class HomeService {
                         .limit(10)
                         .toList();
 
-        List<SlideNewsDto> newsSlides = slideArticles.stream()
-                .map(a -> {
-                    Optional<ArticleAiTitleEntity> ai =
-                            aiTitleRepository.findByArticleAndModelName(a, "default");
+        List<SlideNewsDto> newsSlides =
+                slideArticles.stream()
+                        .map(a -> {
+                            String displayTitle = aiTitleRepository
+                                    .findByArticleAndModelName(a, "default")
+                                    .map(ArticleAiTitleEntity::getAiTitle)
+                                    .orElse(a.getTitle()); // 🔥 기본 제목으로 대체
 
-                    return SlideNewsDto.builder()
-                            .articleId(a.getId())
-                            .aiTitle(ai.map(ArticleAiTitleEntity::getAiTitle).orElse(a.getTitle()))
-                            .thumbnail(a.getThumbnailUrl())
-                            .publishedAt(a.getPublishedAt())
-                            .build();
-                })
-                .toList();
+                            return SlideNewsDto.builder()
+                                    .articleId(a.getId())
+                                    .aiTitle(displayTitle)
+                                    .thumbnail(a.getThumbnailUrl())
+                                    .publishedAt(a.getPublishedAt())
+                                    .build();
+                        })
+                        .toList();
 
 
         /* -----------------------
            2) TOP3 투표 (기존)
-           ----------------------- */
+        ----------------------- */
         List<TopVoteDto> topVotes = voteRepository.findTop3ByOrderByTotalPointsDesc()
                 .stream()
                 .map(v -> TopVoteDto.builder()
@@ -72,24 +75,25 @@ public class HomeService {
 
         /* -----------------------
            3) 최근 24시간 핫이슈
-           ----------------------- */
+        ----------------------- */
         LocalDateTime limit = LocalDateTime.now().minusDays(1);
 
         List<HotIssueDto> hotIssues = articleRepository.findAll().stream()
                 .filter(a -> a.getPublishedAt() != null && a.getPublishedAt().isAfter(limit))
-                .map(article -> {
-                    Optional<ArticleAiTitleEntity> ai =
-                            aiTitleRepository.findByArticleAndModelName(article, "default");
+                .map(a -> {
+                    String displayTitle = aiTitleRepository
+                            .findByArticleAndModelName(a, "default")
+                            .map(ArticleAiTitleEntity::getAiTitle)
+                            .orElse(a.getTitle()); // 🔥 기본 제목 대체
 
                     return HotIssueDto.builder()
-                            .articleId(article.getId())
-                            .title(article.getTitle())
-                            .aiTitle(ai.map(ArticleAiTitleEntity::getAiTitle).orElse(null))
-                            .thumbnail(article.getThumbnailUrl())
-                            .publishedAt(article.getPublishedAt())
+                            .articleId(a.getId())
+                            .title(a.getTitle()) // 원제목 (보관용)
+                            .aiTitle(displayTitle) // 🔥 실제 프론트에서 보여줄 제목
+                            .thumbnail(a.getThumbnailUrl())
+                            .publishedAt(a.getPublishedAt())
                             .categories(
-                                    article.getCategories()
-                                            .stream()
+                                    a.getCategories().stream()
                                             .map(c -> c.getName())
                                             .toList()
                             )
@@ -100,35 +104,35 @@ public class HomeService {
 
         /* -----------------------
            4) 최신 뉴스 20개
-           ----------------------- */
-        List<HotIssueDto> latestIssues =
-                articleRepository.findAll().stream()
-                        .sorted(Comparator.comparing(RssArticleEntity::getPublishedAt).reversed())
-                        .limit(20)
-                        .map(article -> {
-                            Optional<ArticleAiTitleEntity> ai =
-                                    aiTitleRepository.findByArticleAndModelName(article, "default");
+        ----------------------- */
+        List<HotIssueDto> latestIssues = articleRepository.findAll().stream()
+                .sorted(Comparator.comparing(RssArticleEntity::getPublishedAt).reversed())
+                .limit(20)
+                .map(a -> {
+                    String displayTitle = aiTitleRepository
+                            .findByArticleAndModelName(a, "default")
+                            .map(ArticleAiTitleEntity::getAiTitle)
+                            .orElse(a.getTitle()); // 🔥 기본 제목 대체
 
-                            return HotIssueDto.builder()
-                                    .articleId(article.getId())
-                                    .title(article.getTitle())
-                                    .aiTitle(ai.map(ArticleAiTitleEntity::getAiTitle).orElse(null))
-                                    .thumbnail(article.getThumbnailUrl())
-                                    .publishedAt(article.getPublishedAt())
-                                    .categories(
-                                            article.getCategories()
-                                                    .stream()
-                                                    .map(c -> c.getName())
-                                                    .toList()
-                                    )
-                                    .build();
-                        })
-                        .toList();
+                    return HotIssueDto.builder()
+                            .articleId(a.getId())
+                            .title(a.getTitle())
+                            .aiTitle(displayTitle)
+                            .thumbnail(a.getThumbnailUrl())
+                            .publishedAt(a.getPublishedAt())
+                            .categories(
+                                    a.getCategories().stream()
+                                            .map(c -> c.getName())
+                                            .toList()
+                            )
+                            .build();
+                })
+                .toList();
 
 
         /* -----------------------
-           5) AI 배너 (최신 AI요약)
-           ----------------------- */
+           5) AI 배너
+        ----------------------- */
         AiBannerDto banner = null;
 
         Optional<ArticleAiTitleEntity> latestAi =
@@ -146,14 +150,11 @@ public class HomeService {
         }
 
 
-        /* -----------------------
-           최종 응답
-           ----------------------- */
         return HomeResponse.builder()
-                .newsSlides(newsSlides)      // 추가됨
+                .newsSlides(newsSlides)
                 .topVotes(topVotes)
                 .hotIssues(hotIssues)
-                .latestIssues(latestIssues)  // 추가됨
+                .latestIssues(latestIssues)
                 .aiBanner(banner)
                 .build();
     }

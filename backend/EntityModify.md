@@ -187,3 +187,29 @@ IssueEntity에
 ### CommunityPostEntity 테이블(칼럼 수정)
 - dislikeCount 칼럼 추가
     -> 비추천
+
+    ------------------
+    11/28 17:00
+    userentity 인증이메일컬럼 uq로 바꿈
+rssarticle 조회수/추천수/댓글수/이슈여부 컬럼 추가
+IssueAiAnalysisRepository 생성(이슈 ai가 만들기용)
+
+rssfeedcollector 변경
+CommunityPostEntity에 view_count / commentCount / aiSystemScore삽입
+@Column(nullable = false)
+    @Builder.Default
+    private int commentCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int aiSystemScore = 0;
+
+    @Column(name = "view_count")
+    @Builder.Default
+    private Integer viewCount = 0;
+
+redis관련(조회수/댓글수/추천수 계산) 패키지 설정
+communitycommentrepository에 추가(설명 주석 첨부)
+
+aiadmincontroller에 postmapping방식 수정
+--------------------
