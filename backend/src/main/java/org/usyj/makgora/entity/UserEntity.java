@@ -69,6 +69,7 @@ public class UserEntity {
     }
 
     public enum Role {
+        SUPER_ADMIN,
         USER,
         ADMIN
     }
