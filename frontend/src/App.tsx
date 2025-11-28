@@ -7,10 +7,10 @@ import { CommunityWritePage } from './components/CommunityWritePage';
 import { CommunityPostDetailPage } from './pages/CommunityPostDetailPage';
 import { CommunityEditPageContainer } from "./pages/CommunityEditPageContainer";
 import { AdminPage } from "./pages/AdminPage";
-import {VoteListPage} from './pages/VoteListPage';
-import {VoteDetailPage} from './pages/VoteDetailPage';
+import { VoteListPage } from './pages/VoteListPage';
+import { VoteDetailPage } from './pages/VoteDetailPage';
+import { PointsShopPage } from './pages/PointsShopPage';
 
-// 라우팅용 래퍼 컴포넌트 (hooks 사용하려고)
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
 
@@ -18,7 +18,6 @@ function CommunityWriteRouteWrapper() {
     <CommunityWritePage
       mode="create"
       onBack={() => navigate(-1)}
-      // onSubmit에서 바로 커뮤니티 목록으로 이동
       onSubmit={() => navigate('/community')}
     />
   );
@@ -38,6 +37,7 @@ export default function App() {
             <Route path="/community/edit/:postId" element={<CommunityEditPageContainer />} />
             <Route path="/vote" element={<VoteListPage />} />
             <Route path="/vote/:voteId" element={<VoteDetailPage />} />
+            <Route path="/store" element={<PointsShopPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </div>
