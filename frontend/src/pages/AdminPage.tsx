@@ -16,13 +16,14 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const { user: currentUser } = useAuth(); // <- 여기서 유저 가져오기
   const navigate = useNavigate();
 
+  // role 체크: ADMIN이 아니면 홈으로 이동
   useEffect(() => {
-    console.log("currentUser:", currentUser)
     if (currentUser?.role !== 'ADMIN') {
       navigate('/', { replace: true });
     }
   }, [currentUser, navigate]);
 
+  // 렌더링 부분에서는 그냥 null 처리
   if (currentUser?.role !== 'ADMIN') return null;
 
   // 메뉴 아이템 정의
@@ -35,18 +36,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
     { path: 'store', label: '상점 관리', icon: ShoppingBag, subtitle: '아이템 관리' },
     { path: 'logs', label: '활동 로그', icon: FileText, subtitle: '관리자 활동' },
   ] as const;
-
-  // role 체크: ADMIN이 아니면 홈으로 이동
-  useEffect(() => {
-    if (currentUser?.role !== 'ADMIN') {
-      navigate('/', { replace: true });
-    }
-  }, [currentUser, navigate]);
-
-  // 렌더링 부분에서는 그냥 null 처리
-  if (currentUser?.role !== 'ADMIN') {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
