@@ -1,14 +1,12 @@
 package org.usyj.makgora.community.repository;
 
-import org.usyj.makgora.entity.CommunityCommentEntity;
-import org.usyj.makgora.entity.CommunityPostEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.usyj.makgora.entity.CommunityCommentEntity;
 
 import java.util.List;
 
-// 커뮤니티 댓글
 public interface CommunityCommentRepository extends JpaRepository<CommunityCommentEntity, Long> {
 
-    // 특정 게시글의 "루트 댓글" 목록 조회 (대댓글 제외)
-    List<CommunityCommentEntity> findByPostAndParentIsNullOrderByCreatedAtAsc(CommunityPostEntity post);
+    // 특정 게시글의 모든 댓글/대댓글을 작성시간 기준으로 가져오기
+    List<CommunityCommentEntity> findByPost_PostIdOrderByCreatedAtAsc(Long postId);
 }
