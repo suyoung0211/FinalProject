@@ -31,6 +31,7 @@ public class SuperAdminInitializer {
                     .status(Status.ACTIVE)
                     .points(99999)
                     .level(99999)
+                    .verificationEmail("superadmin@superadmin.com")
                     .build();
             userRepository.save(superAdmin);
             System.out.println("✅ 슈퍼어드민 계정 생성 완료: superadmin / 123");

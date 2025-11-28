@@ -2,11 +2,12 @@ import { createContext, useState, useEffect, ReactNode } from "react";
 import { logoutApi, getMyInfoApi } from "../api/authApi";
 
 export interface UserType {
-  loginId?: number;
-  nickname?: string;
-  email?: string;
-  name?: string;
-  role?: string;
+  nickname: string;
+  level:number;
+  points:number;
+  profileImage?: string;
+  profileBackground?: string;
+  role: string;
 }
 
 export interface AuthContextType {
@@ -14,7 +15,6 @@ export interface AuthContextType {
   token: string | null;
   login: (user: UserType, access: string) => void;
   logout: () => void;
-  role?: string;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -47,9 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
   try {
-    if (user?.loginId) {
-      await logoutApi(user.loginId); 
-    }
+    await logoutApi(); 
   } catch (e) {
     console.error("Logout error:", e);
   }

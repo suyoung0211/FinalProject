@@ -63,6 +63,7 @@ public class UserInfoService {
                 user.getPoints(),
                 user.getProfileImage(),
                 user.getProfileBackground(),
+                user.getVerificationEmail(),
                 user.getRole().name(),
                 user.getStatus().name(),
                 user.getCreatedAt().toString()

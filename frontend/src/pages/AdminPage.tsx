@@ -18,13 +18,13 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
   // role 체크: ADMIN이 아니면 홈으로 이동
   useEffect(() => {
-    if (currentUser?.role !== 'ADMIN') {
+    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'SUPER_ADMIN') {
       navigate('/', { replace: true });
     }
   }, [currentUser, navigate]);
 
   // 렌더링 부분에서는 그냥 null 처리
-  if (currentUser?.role !== 'ADMIN') return null;
+  if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'SUPER_ADMIN') return null;
 
   // 메뉴 아이템 정의
   const menuItems = [
