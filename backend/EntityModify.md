@@ -178,3 +178,10 @@ IssueEntity에
 ### RSS_Feeds 테이블(칼럼 추가)
 - sourceName 추가
     -> 뉴스 가져오는 언론사 추가
+
+### CommunityPostReactionEntity 테이블(칼럼 추가)
+- 커뮤니티 게시글 추천 비추천 갯수 기록 용도
+
+### CommunityPostEntity 테이블(칼럼 수정)
+- dislikeCount 칼럼 추가
+    -> 비추천
