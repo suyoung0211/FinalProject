@@ -7,6 +7,7 @@ import { CommunityWritePage } from './components/CommunityWritePage';
 import { CommunityPostDetailPage } from './pages/CommunityPostDetailPage';
 import { CommunityEditPageContainer } from "./pages/CommunityEditPageContainer";
 import { AdminPage } from "./pages/AdminPage";
+import { AdminPage22 } from "./components/AdminPage22";
 import {VoteListPage} from './pages/VoteListPage';
 import {VoteDetailPage} from './pages/VoteDetailPage';
 
@@ -39,6 +40,10 @@ export default function App() {
             <Route path="/vote" element={<VoteListPage />} />
             <Route path="/vote/:voteId" element={<VoteDetailPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            
+            {/* 관리자 페이지 */}
+            <Route path="/admin/*" element={<AdminPage />} />
+            <Route path="/admin22" element={<AdminPage22 />} />
           </Routes>
         </div>
       </BrowserRouter>

@@ -18,7 +18,7 @@ public class UserEntity {
     private Integer id;
 
     @Column(nullable = false, unique = true, length = 150)
-    private String email;  // 로그인용 이메일
+    private String loginId;
 
     @Column(nullable = false, length = 255)
     private String password;
@@ -43,11 +43,7 @@ public class UserEntity {
     @Column(length = 255)
     private String profileBackground;
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean emailVerified = false;
-
-    @Column(length = 150)
+    @Column(length = 150, unique = true)
     private String verificationEmail;
 
     @Enumerated(EnumType.STRING)

@@ -1,13 +1,11 @@
 package org.usyj.makgora.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.EmailVerificationEntity;
 import org.usyj.makgora.entity.RefreshTokenEntity;
 import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.UserEntity.Status;
 import org.usyj.makgora.repository.EmailVerificationRepository;
 import org.usyj.makgora.repository.RefreshTokenRepository;
 import org.usyj.makgora.repository.UserRepository;
@@ -15,6 +13,8 @@ import org.usyj.makgora.request.auth.LoginRequest;
 import org.usyj.makgora.request.auth.RegisterRequest;
 import org.usyj.makgora.response.auth.LoginResponse;
 import org.usyj.makgora.security.JwtTokenProvider;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Transactional
@@ -32,7 +32,7 @@ public class AuthService {
      */
     public void register(RegisterRequest req) {
 
-        userRepo.findByEmail(req.getEmail()).ifPresent(u -> {
+        userRepo.findByLoginId(req.getLoginId()).ifPresent(u -> {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
         });
 
@@ -45,15 +45,10 @@ public class AuthService {
         }
 
         UserEntity user = UserEntity.builder()
-                .email(req.getEmail())
+                .loginId(req.getLoginId())
                 .password(encoder.encode(req.getPassword()))
                 .nickname(req.getNickname())
                 .verificationEmail(verification.getEmail())
-                .emailVerified(true)
-                .role(UserEntity.Role.USER)
-                .points(0)
-                .level(1)
-                .status(Status.ACTIVE)
                 .build();
 
         userRepo.save(user);
@@ -64,7 +59,7 @@ public class AuthService {
      */
     public LoginResponse login(LoginRequest req) {
 
-        UserEntity user = userRepo.findByEmail(req.getEmail())
+        UserEntity user = userRepo.findByLoginId(req.getLoginId())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         if (!encoder.matches(req.getPassword(), user.getPassword())) {
@@ -72,8 +67,8 @@ public class AuthService {
         }
 
         // Access/Refresh Token 생성
-        String accessToken = jwt.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
-        String refreshToken = jwt.createRefreshToken(user.getId(), user.getEmail(), user.getRole().name());
+        String accessToken = jwt.createAccessToken(user.getId(), user.getLoginId(), user.getRole().name());
+        String refreshToken = jwt.createRefreshToken(user.getId(), user.getLoginId(), user.getRole().name());
 
         // 기존 토큰 제거 후 재발급
         tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
@@ -114,7 +109,7 @@ public class AuthService {
         UserEntity user = userRepo.findById(storedToken.getUserId())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        return jwt.createAccessToken(user.getId(), user.getEmail(), user.getRole().name());
+        return jwt.createAccessToken(user.getId(), user.getLoginId(), user.getRole().name());
     }
 
     /**
