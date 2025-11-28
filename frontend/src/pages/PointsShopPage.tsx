@@ -22,6 +22,8 @@ import {
 import { Button } from "../components/ui/button";
 import { getItems, getMyItems, purchaseItem } from "../api/storeApi";
 
+
+
 export function PointsShopPage({
   onBack,
   onCommunity,
@@ -34,17 +36,28 @@ export function PointsShopPage({
   onLogout,
   onSignup,
 }) {
+
+  interface ShopItem {
+    id: number;
+    name: string;
+    price: number;
+    description: string;
+    emoji: string;
+    category: string;
+    rarity: string;
+  }
+
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedItem, setSelectedItem] = useState(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const [shopItems, setShopItems] = useState([]);
-  const [myItems, setMyItems] = useState([]);
+  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [myItems, setMyItems] = useState<number[]>([]);
   const [userPoints, setUserPoints] = useState(user?.points || 0);
 
   // 🔥 Backend category → Front category 매핑
-  const mapCategory = (backendCategory) => {
+  const mapCategory = (backendCategory: string) => {
     switch (backendCategory) {
       case "AVATAR":
         return "icons";
@@ -59,7 +72,7 @@ export function PointsShopPage({
   };
 
   // 🔥 rarity 계산
-  const getRarityFromPrice = (price) => {
+  const getRarityFromPrice = (price: number) => {
     if (price >= 1500) return "legendary";
     if (price >= 900) return "epic";
     if (price >= 500) return "rare";
@@ -104,7 +117,9 @@ export function PointsShopPage({
     (item) => selectedCategory === "all" || item.category === selectedCategory
   );
 
-  const getRarityColor = (rarity) => {
+  type RarityType = "common" | "rare" | "epic" | "legendary";
+
+  const getRarityColor = (rarity: RarityType) => {
     switch (rarity) {
       case "rare":
         return "text-blue-400 border-blue-500/30";
@@ -117,7 +132,7 @@ export function PointsShopPage({
     }
   };
 
-  const getRarityName = (rarity) => {
+  const getRarityName = (rarity: RarityType) => {
     switch (rarity) {
       case "rare":
         return "레어";
@@ -152,14 +167,14 @@ export function PointsShopPage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
       
       {/* 🔥 Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button onClick={onBack} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold text-white">Mak'gora</span>
@@ -170,7 +185,7 @@ export function PointsShopPage({
 
       {/* 🔥 Banner */}
       <div className="container mx-auto px-4 pt-24">
-        <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl p-8 mb-8 relative overflow-hidden">
+        <div className="bg-linear-to-r from-purple-600 via-pink-600 to-orange-500 rounded-2xl p-8 mb-8 relative overflow-hidden">
           <div className="absolute inset-0 bg-black/20" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-2">
@@ -192,7 +207,7 @@ export function PointsShopPage({
               onClick={() => setSelectedCategory(c)}
               className={`px-6 py-3 rounded-xl font-medium whitespace-nowrap transition-all ${
                 selectedCategory === c
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg"
+                  ? "bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg"
                   : "bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
               }`}
             >
@@ -240,7 +255,7 @@ export function PointsShopPage({
                     className={`${
                       isOwned(item.id)
                         ? "bg-gray-600 cursor-not-allowed"
-                        : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
+                        : "bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
                     } text-white text-sm px-4`}
                   >
                     {isOwned(item.id) ? "보유중" : "구매"}
@@ -280,7 +295,7 @@ export function PointsShopPage({
                 className={`flex-1 ${
                   userPoints < selectedItem.price
                     ? "bg-gray-600 cursor-not-allowed"
-                    : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
+                    : "bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
                 } text-white`}
               >
                 구매하기
