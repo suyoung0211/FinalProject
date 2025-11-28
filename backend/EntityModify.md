@@ -174,6 +174,8 @@ IssueEntity에
 ### Users 테이블(칼럼 수정)
 - email -> login_id
     -> email 로 로그인 했던걸 ID 로 로그인 되도록 변경
+- Role enum 추가
+    -> SUPER_ADMIN 서버 최소 실행시 만들어지게 설정
 
 ### RSS_Feeds 테이블(칼럼 추가)
 - sourceName 추가

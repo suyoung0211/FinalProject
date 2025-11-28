@@ -33,9 +33,7 @@ export function getItem(id) {
 // 아이템 구매
 // =============================
 export function purchaseItem(itemId) {
-  return API.post("/purchase", {
-    itemId,
-  });
+  return API.post("/purchase", { itemId });
 }
 
 // =============================

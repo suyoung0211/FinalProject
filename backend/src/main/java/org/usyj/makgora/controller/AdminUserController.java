@@ -34,10 +34,7 @@ public class AdminUserController {
     // 🔹 관리자: 특정 사용자 상세 조회 (옵션)
     @GetMapping("/{loginId}")
     public ResponseEntity<AdminUserInfoResponse> getUserByLoginId(@PathVariable String loginId) {
-        AdminUserInfoResponse user = userInfoService.getAllUsers().stream()
-                .filter(u -> u.getLoginId().equals(loginId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        AdminUserInfoResponse user = userInfoService.getUserByLoginId(loginId);
         return ResponseEntity.ok(user);
     }
 }
