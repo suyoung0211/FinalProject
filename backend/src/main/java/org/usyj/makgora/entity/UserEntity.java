@@ -23,7 +23,7 @@ public class UserEntity {
     @Column(nullable = false, length = 255)
     private String password;
 
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, length = 50, unique = true)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
@@ -32,7 +32,7 @@ public class UserEntity {
     private Role role = Role.USER;
 
     @Builder.Default
-    private Integer points = 0;
+    private Integer points = 5000;
 
     @Builder.Default
     private Integer level = 1;
