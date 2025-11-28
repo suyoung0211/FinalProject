@@ -9,13 +9,13 @@ import java.util.Optional;
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
-    // 이메일로 사용자 찾기
-    Optional<UserEntity> findByEmail(String email);
+    // ID로 사용자 찾기
+    Optional<UserEntity> findByLoginId(String loginId);
 
     // 닉네임으로 사용자 찾기
     Optional<UserEntity> findByNickname(String nickname);
 
     // 활성 상태인 사용자만 찾기
-    Optional<UserEntity> findByEmailAndStatus(String email, UserEntity.Status status);
+    Optional<UserEntity> findByLoginIdAndStatus(String loginId, UserEntity.Status status);
     
 }

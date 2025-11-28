@@ -61,7 +61,7 @@ def generate_ai_title(title, content):
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[{"role":"user","content":prompt}],
-        temperature=0.7,
+        temperature=1.5,
         max_tokens=30
     )
     return response.choices[0].message.content.strip()
