@@ -21,7 +21,7 @@ public class RssFeedCollector {
     private final RestTemplate restTemplate = new RestTemplate(); // 외부 API 호출용 객체
 
     // Python AI 제목 생성 API URL
-    private static final String PYTHON_API_URL = "http://localhost:8000/generate-all";
+    private static final String PYTHON_API_URL = "http://localhost:8000/generate-ai-titles";
 
      /*
      * 개발/운영 환경에 따라 서버 시작 시 RSS 수집 자동 실행 여부를 제어

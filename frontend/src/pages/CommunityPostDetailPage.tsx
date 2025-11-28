@@ -76,74 +76,61 @@ export function CommunityPostDetailPage() {
   // 📌 게시글 추천/비추천 (그대로 사용)
   // --------------------------------
   const handleLikePost = async () => {
-    if (!user) return requireLogin();
-    if (!post || !postId) return;
+  if (!user) return requireLogin();
+  if (!post || !postId) return;
 
-    const nextReaction = post.isLiked ? 0 : 1;
+  try {
+    const res = await api.post(`/community/posts/${postId}/reactions`, {
+      reactionValue: post.myReaction === 1 ? 0 : 1,
+    });
 
-    try {
-      const res = await api.post(`/community/posts/${postId}/reactions`, {
-        reactionValue: nextReaction,
-      });
+    const data = res.data;
 
-      const data = res.data as {
-        recommendationCount: number;
-        dislikeCount: number;
-        myReaction: number;
-      };
-
-      setPost((prev) =>
-        prev
-          ? {
-              ...prev,
-              recommendationCount: data.recommendationCount,
-              dislikeCount: data.dislikeCount,
-              myReaction: data.myReaction,
-              isLiked: data.myReaction === 1,
-              isDisliked: data.myReaction === -1,
-            }
-          : prev
-      );
-    } catch (e) {
-      console.error("게시글 추천 처리 실패", e);
-      alert("추천 중 오류가 발생했습니다.");
-    }
-  };
+    setPost((prev) =>
+      prev
+        ? {
+            ...prev,
+            recommendationCount: data.recommendationCount,
+            dislikeCount: data.dislikeCount,
+            myReaction: data.myReaction,
+            isLiked: data.myReaction === 1,
+            isDisliked: data.myReaction === -1,
+          }
+        : prev
+    );
+  } catch (e) {
+    console.error("게시글 추천 처리 실패", e);
+  }
+};
 
   const handleDislikePost = async () => {
-    if (!user) return requireLogin();
-    if (!post || !postId) return;
+  if (!user) return requireLogin();
+  if (!post || !postId) return;
 
-    const nextReaction = post.isDisliked ? 0 : -1;
+  try {
+    const res = await api.post(`/community/posts/${postId}/reactions`, {
+      reactionValue: post.myReaction === -1 ? 0 : -1,
+    });
 
-    try {
-      const res = await api.post(`/community/posts/${postId}/reactions`, {
-        reactionValue: nextReaction,
-      });
+    const data = res.data;
 
-      const data = res.data as {
-        recommendationCount: number;
-        dislikeCount: number;
-        myReaction: number;
-      };
+    setPost((prev) =>
+      prev
+        ? {
+            ...prev,
+            recommendationCount: data.recommendationCount,
+            dislikeCount: data.dislikeCount,
+            myReaction: data.myReaction,
+            isLiked: data.myReaction === 1,
+            isDisliked: data.myReaction === -1,
+          }
+        : prev
+    );
+  } catch (e) {
+    console.error("게시글 비추천 처리 실패", e);
+  }
+};
 
-      setPost((prev) =>
-        prev
-          ? {
-              ...prev,
-              recommendationCount: data.recommendationCount,
-              dislikeCount: data.dislikeCount,
-              myReaction: data.myReaction,
-              isLiked: data.myReaction === 1,
-              isDisliked: data.myReaction === -1,
-            }
-          : prev
-      );
-    } catch (e) {
-      console.error("게시글 비추천 처리 실패", e);
-      alert("비추천 중 오류가 발생했습니다.");
-    }
-  };
 
   // --------------------------------
   // 📌 댓글 추천/비추천 (지금은 프론트 로컬)

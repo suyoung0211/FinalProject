@@ -15,8 +15,8 @@ export function CommunityPageContainer() {
       user={
         user
           ? {
-              id: user.id?.toString() || "",
-              name: user.name || user.username || "",
+              id: user.loginId?.toString() || "",
+              name: user.name || user.nickname || "",
               email: user.email || "",
               points: 0, // TODO: 실제 포인트 필드 생기면 교체
             }
