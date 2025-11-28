@@ -130,7 +130,7 @@ export function MainPage() {
 
           <nav className="hidden md:flex gap-6 items-center text-gray-300">
             <button onClick={() => navigate("/community")} className="hover:text-white transition">커뮤니티</button>
-            <button onClick={() => navigate(user ? "/vote" : "/login")} className="hover:text-white transition">투표하기</button>
+            <button onClick={() => navigate("/vote")} className="hover:text-white transition">투표하기</button>
             <button onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))} className="hover:text-white transition">리더보드</button>
             <button onClick={() => (user ? navigate("/store") : navigate("/login"))} className="hover:text-white transition">포인트 상점</button>
           </nav>

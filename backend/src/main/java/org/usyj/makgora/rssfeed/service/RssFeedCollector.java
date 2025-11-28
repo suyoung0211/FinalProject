@@ -8,6 +8,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.usyj.makgora.repository.IssueRepository;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
 @Component
@@ -16,10 +17,11 @@ public class RssFeedCollector {
 
     private final RssFeedService rssFeedService; // RSS 기사 수집 서비스
     private final ArticleAiTitleRepository aiTitleRepository; // AI 제목 DB 저장용 리포지토리
+    private final IssueRepository issueRepository;
     private final RestTemplate restTemplate = new RestTemplate(); // 외부 API 호출용 객체
 
     // Python AI 제목 생성 API URL
-    private static final String PYTHON_API_URL = "http://localhost:8000/generate-ai-titles";
+    private static final String PYTHON_API_URL = "http://localhost:8000/generate-all";
 
      /*
      * 개발/운영 환경에 따라 서버 시작 시 RSS 수집 자동 실행 여부를 제어
@@ -47,10 +49,13 @@ public class RssFeedCollector {
             // 2️⃣ Python AI 제목 생성 API 호출
             // 터미널에서 pythonwoker 라이브러리로 들어가서 python generate_ai_titles_api.py 실행
             // -> pythonwoker>python generate_ai_titles_api.py
+            
             var response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
-            long successCount = aiTitleRepository.countByStatus("SUCCESS");
+            long titleCount = aiTitleRepository.countByStatus("SUCCESS");
+            long issueCount = issueRepository.count();
             System.out.println("AI 제목 생성 API 응답: " + response);
-            System.out.println("생성된 AI 제목 개수: " + successCount);
+            System.out.println("생성된 AI 제목 개수: " + titleCount);
+            System.out.println("이슈 생성 개수: " + issueCount);
 
         } catch (Exception e) {
             System.err.println("RSS 수집 또는 AI 제목 생성 중 오류 발생: " + e.getMessage());

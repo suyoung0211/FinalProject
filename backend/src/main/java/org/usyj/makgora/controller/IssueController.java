@@ -1,23 +1,13 @@
+// src/main/java/org/usyj/makgora/controller/IssueController.java
 package org.usyj.makgora.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.usyj.makgora.entity.IssueEntity;
-import org.usyj.makgora.request.vote.IssueCreateRequest;
-import org.usyj.makgora.request.vote.IssueCreateWithVoteRequest;
-import org.usyj.makgora.request.vote.VoteCreateRequest;
-import org.usyj.makgora.response.vote.IssueArticleResponse;
-import org.usyj.makgora.response.vote.IssueWithVotesResponse;
-import org.usyj.makgora.response.vote.VoteResponse;
-import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.response.issue.IssueResponse;
+import org.usyj.makgora.response.issue.IssueWithVotesResponse;
 import org.usyj.makgora.service.IssueService;
-import org.usyj.makgora.service.VoteService;
 
-import jakarta.transaction.Transactional;
-
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -26,64 +16,22 @@ import java.util.List;
 public class IssueController {
 
     private final IssueService issueService;
-    private final VoteService voteService;
 
-    /** 기사 기반 Issue 생성 */
-    @PostMapping("/articles/{articleId}")
-public ResponseEntity<IssueArticleResponse> createIssue(
-        @PathVariable Integer articleId,
-        @AuthenticationPrincipal CustomUserDetails user,
-        @RequestBody IssueCreateRequest req) {
-
-    if (user == null) throw new RuntimeException("로그인이 필요합니다.");
-
-    return ResponseEntity.ok(issueService.createIssue(articleId, req, user.getId()));
-}
-
-    /** 기사 기반 Issue 조회 */
-    @GetMapping("/articles/{articleId}")
-    public ResponseEntity<List<IssueArticleResponse>> getIssuesByArticle(
-            @PathVariable Integer articleId) {
-
-        return ResponseEntity.ok(issueService.getIssuesByArticle(articleId));
+    /** 🔹 AI 추천 이슈 목록 (메인/이슈페이지에서 사용) */
+    @GetMapping("/recommended")
+    public ResponseEntity<List<IssueResponse>> getRecommendedIssues() {
+        return ResponseEntity.ok(issueService.getRecommendedIssues());
     }
 
-    /** 최근 이슈 조회 */
-    @GetMapping("/latest")
-    public ResponseEntity<List<IssueArticleResponse>> getLatest() {
-        return ResponseEntity.ok(issueService.getLatestIssues());
+    /** 🔹 단일 이슈 + 관련 투표 조회 */
+    @GetMapping("/{id}")
+    public ResponseEntity<IssueWithVotesResponse> getIssue(@PathVariable Integer id) {
+        return ResponseEntity.ok(issueService.getIssueWithVotes(id));
     }
 
-     @GetMapping("/votes")
-    public ResponseEntity<List<IssueWithVotesResponse>> getIssuesWithVotes() {
-        return ResponseEntity.ok(issueService.getIssuesWithVotes());
+    /** 🔹 전체 이슈 + 투표 (관리자/디버그용) */
+    @GetMapping("/with-votes")
+    public ResponseEntity<List<IssueWithVotesResponse>> getAllIssuesWithVotes() {
+        return ResponseEntity.ok(issueService.getAllIssuesWithVotes());
     }
-
-    @PostMapping("/create-with-vote")
-@Transactional
-public ResponseEntity<?> createIssueWithVote(
-        @RequestBody IssueCreateWithVoteRequest req,
-        @AuthenticationPrincipal CustomUserDetails user
-) {
-    Integer userId = user.getId();
-
-    // 1) 이슈 생성
-    IssueEntity issue = issueService.createUserIssue(
-            req.getTitle(),
-            req.getDescription(),
-            userId    // ✔ category 제거, 올바른 인자만 전달
-    );
-
-    // 2) Vote 자동 생성
-    VoteCreateRequest voteReq = new VoteCreateRequest();
-    voteReq.setTitle(req.getTitle());
-    voteReq.setType(VoteCreateRequest.VoteType.YESNO);
-    voteReq.setOptions(List.of("YES", "NO"));
-    voteReq.setEndAt(LocalDateTime.parse(req.getEndAt()));
-
-    VoteResponse vote = voteService.createVote(issue.getId(), voteReq, userId);
-
-    return ResponseEntity.ok(vote);
-}
-
 }

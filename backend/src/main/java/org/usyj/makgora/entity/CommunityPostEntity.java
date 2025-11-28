@@ -55,6 +55,18 @@ public class CommunityPostEntity {
     @Column(name = "dislike_count", nullable = false)
     private Integer dislikeCount = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private int commentCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int aiSystemScore = 0;
+
+    @Column(name = "view_count")
+    @Builder.Default
+    private Integer viewCount = 0;
+
     /** 작성 시각 */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -74,6 +86,10 @@ public class CommunityPostEntity {
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
+        
+        if (recommendationCount == null) recommendationCount = 0;
+        if (viewCount == null) viewCount = 0;
+        
         if (postType == null) postType = "일반";
         if (recommendationCount == null) recommendationCount = 0;
         if (dislikeCount == null) dislikeCount = 0;

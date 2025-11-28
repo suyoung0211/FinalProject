@@ -61,4 +61,23 @@ private String link;
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int viewCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int likeCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private int commentCount = 0;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean issueCreated = false;
+
+    @Column(nullable = false)
+private int aiSystemScore;
 }
