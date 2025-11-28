@@ -4,15 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.response.UserInfoResponse;
+import org.usyj.makgora.service.UserInfoService;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/user")
 public class UserAuthController {
 
-    private final UserRepository repo;
+    private final UserInfoService userInfoService;
 
     @GetMapping("/me")
     public ResponseEntity<?> getMyInfo(Authentication auth) {
@@ -27,12 +27,11 @@ public class UserAuthController {
         String loginId = auth.getName();
         System.out.println("📧 인증된 사용자 loginId: " + loginId);
 
-        UserEntity user = repo.findByLoginId(loginId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // 🔹 서비스 호출
+        UserInfoResponse response = userInfoService.getMyInfo(loginId);
 
-        System.out.println("✅ 유저 조회 성공: " + user.getLoginId());
+        System.out.println("✅ 유저 조회 성공: " + response.getNickname());
 
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(response);
     }
-    
 }

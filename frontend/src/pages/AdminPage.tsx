@@ -17,6 +17,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("currentUser:", currentUser)
     if (currentUser?.role !== 'ADMIN') {
       navigate('/', { replace: true });
     }
@@ -53,13 +54,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
       <aside className="w-64 bg-slate-950/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>돌아가기</span>
-          </button>
           <div className="flex items-center gap-3">
             <Shield className="w-8 h-8 text-red-400" />
             <div>
@@ -114,6 +108,23 @@ export function AdminPage({ onBack }: AdminPageProps) {
             );
           })}
         </nav>
+
+        {/* User Info */}
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-white">
+                {currentUser.nickname}
+              </div>
+              <div className="text-xs text-gray-400">
+                @{currentUser.role}
+              </div>
+            </div>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}

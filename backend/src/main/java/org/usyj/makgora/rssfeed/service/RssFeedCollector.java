@@ -29,7 +29,7 @@ public class RssFeedCollector {
      * - @Value("${app.runRssOnStartup:true}") → 서버 시작 시 runAtStartup() 실행
      * - @Value("${app.runRssOnStartup:false}") → 서버 시작 시 runAtStartup() 실행 안함
      */
-    @Value("${app.runRssOnStartup:true}") // 여기를 변경
+    @Value("${app.runRssOnStartup:false}") // 여기를 변경
     private boolean runRssOnStartup;
 
     // 서버 시작 시 자동 실행
