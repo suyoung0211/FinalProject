@@ -141,3 +141,14 @@ dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response
 ### Article_Summaries -> ArticleAiTitle(테이블 변경)
 - 현실적으로 크롤링이 불가능한 부분이 있어서 변경
 - rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경
+
+
+## 11/28
+### Users 테이블(칼럼 수정)
+- email -> login_id
+    -> email 로 로그인 했던걸 ID 로 로그인 되도록 변경
+
+### RSS_Feeds 테이블(칼럼 추가)
+- sourceName 추가
+    -> 뉴스 가져오는 언론사 추가
+
