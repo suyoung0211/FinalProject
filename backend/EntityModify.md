@@ -169,3 +169,12 @@ IssueEntity에
         SYSTEM, ADMIN, AI, USER
     }
     USER 추가
+
+## 11/28
+### Users 테이블(칼럼 수정)
+- email -> login_id
+    -> email 로 로그인 했던걸 ID 로 로그인 되도록 변경
+
+### RSS_Feeds 테이블(칼럼 추가)
+- sourceName 추가
+    -> 뉴스 가져오는 언론사 추가

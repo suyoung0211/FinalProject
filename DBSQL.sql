@@ -1,7 +1,7 @@
 -- 1. Users 테이블
 CREATE TABLE Users (
     user_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '사용자 고유 ID',
-    email VARCHAR(150) NOT NULL UNIQUE COMMENT '로그인용 이메일',
+    login_id VARCHAR(150) NOT NULL UNIQUE COMMENT '로그인용 이메일',
     password VARCHAR(255) NOT NULL COMMENT '비밀번호 해시',
     nickname VARCHAR(50) NOT NULL COMMENT '닉네임',
     role ENUM('user','admin') DEFAULT 'user' COMMENT '사용자 역할: 일반(user) / 관리자(admin)',
@@ -24,6 +24,7 @@ CREATE TABLE Users (
 CREATE TABLE RSS_Feeds (
     feed_id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'RSS 피드 ID',
     url VARCHAR(255) NOT NULL COMMENT 'RSS URL',
+    source_name VARCHAR(100) NOT NULL COMMENT '소스 이름',
     
     -- 수정된 부분: 카테고리 연결
     category_id INT NOT NULL COMMENT '카테고리 ID',
@@ -49,7 +50,7 @@ CREATE TABLE Issues (
     source VARCHAR(255) COMMENT '출처 URL/정보',
 
     ai_summary TEXT COMMENT 'AI 요약 내용',
-    ai_points JSON COMMENT 'AI 평가: 논쟁 포인트, 중요도 등',
+    ai_points JSON COMMENT 'AI 평가: 포인트 ',
 
     status ENUM('pending','approved','rejected') DEFAULT 'pending' COMMENT '승인 상태',
     approved_at DATETIME COMMENT '승인 시각',

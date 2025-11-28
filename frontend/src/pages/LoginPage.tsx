@@ -25,7 +25,7 @@ export function LoginPage() {
   const { login } = useAuth();
 
   const [nickname, setNickname] = useState("");
-  const [email, setEmail] = useState("");       // 사이트 로그인용 email (ID)
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
 
   // ⭐ fix : URL 파라미터로 회원가입 모드 설정
@@ -40,7 +40,7 @@ export function LoginPage() {
 
   // 🔹 회원가입 폼 데이터 임시 저장
   const [pendingSignup, setPendingSignup] = useState<{
-    email: string;
+    loginId: string;
     password: string;
     nickname: string;
   } | null>(null);
@@ -54,7 +54,7 @@ export function LoginPage() {
       // 아직 이메일 인증 안 했으면 → 회원가입 API 호출 대신 모달 오픈
       if (!emailVerified) {
         // 현재 폼 데이터 저장해두기
-        setPendingSignup({ email, password, nickname });
+        setPendingSignup({ loginId, password, nickname });
         setVerifyModalOpen(true);
         return;
       }
@@ -70,7 +70,7 @@ export function LoginPage() {
       setIsLoading(true);
       try {
         await signupApi({
-          email: pendingSignup.email,
+          loginId: pendingSignup.loginId,
           password: pendingSignup.password,
           nickname: pendingSignup.nickname,
           verificationEmail: verifiedEmail, // 백엔드에 인증용 이메일도 넘길 수 있음
@@ -93,8 +93,8 @@ export function LoginPage() {
     // 2) 로그인 모드
     setIsLoading(true);
     try {
-      const res = await loginApi({ email, password });
-
+      const res = await loginApi({ loginId, password });
+      
       const accessToken = res.data.accessToken;
       const refreshToken = res.data.refreshToken;
       const userData = res.data.user;
@@ -126,7 +126,7 @@ export function LoginPage() {
         try {
           setIsLoading(true);
           await signupApi({
-            email: pendingSignup.email,
+            loginId: pendingSignup.loginId,
             password: pendingSignup.password,
             nickname: pendingSignup.nickname,
             verificationEmail: verified,
@@ -191,11 +191,11 @@ export function LoginPage() {
                 </Field>
               )}
 
-              <Field label="이메일 (로그인 ID)" icon={<Mail className="w-4 h-4" />}>
+              <Field label="로그인 ID" icon={<Mail className="w-4 h-4" />}>
                 <Input
-                  value={email}
-                  type="email"
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={loginId}
+                  type="text"
+                  onChange={(e) => setLoginId(e.target.value)}
                   required
                 />
               </Field>

@@ -1,5 +1,6 @@
 import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Clock, TrendingUp, Flame, Users, Globe, Briefcase, DollarSign, Zap, Star, Award, Search, Plus, Pin, ChevronLeft, ChevronRight, User, Coins, ChevronDown, LogOut, ShoppingBag, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Avatar } from './Avatar';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
@@ -52,6 +53,7 @@ interface CommunityPost {
 }
 
 export function CommunityPage({ onBack, onPostClick, onWriteClick, currentUser, onNews, onLeaderboard, onPointsShop, onProfile, onVote, user, onLogin, onLogout, onSignup }: CommunityPageProps) {
+  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'latest' | 'popular' | 'hot'>('latest');
@@ -80,35 +82,54 @@ export function CommunityPage({ onBack, onPostClick, onWriteClick, currentUser, 
   // useState로 변경
 const [posts, setPosts] = useState<CommunityPost[]>([]);
 
-// useEffect로 API 호출
+// useEffect로 API 호출 - location이 변경될 때마다 다시 불러오기 (게시글 작성 후 목록 갱신)
 useEffect(() => {
   const fetchPosts = async () => {
     try {
+      console.log('📋 게시글 목록 조회 시작...');
       const res = await api.get('/community/posts');
+      console.log('✅ 게시글 목록 응답:', res.data);
+      console.log('   - 응답 데이터 타입:', Array.isArray(res.data) ? '배열' : typeof res.data);
+      console.log('   - 게시글 수:', Array.isArray(res.data) ? res.data.length : 0);
+      
+      if (!Array.isArray(res.data)) {
+        console.error('❌ 응답이 배열이 아닙니다:', res.data);
+        setPosts([]);
+        return;
+      }
+      
       // 백엔드 데이터를 프론트엔드 형식으로 변환
-      const mappedPosts = res.data.map((post: any) => ({
-        id: String(post.postId),  // Long → string
-        title: post.title,
-        content: post.content,
-        category: post.postType === '이슈추천' ? 'prediction' 
-                : post.postType === '포인트자랑' ? 'strategy' 
-                : 'free',  // postType → category 변환
-        author: post.author || post.authorNickname,
-        authorName: post.authorNickname || post.author,
-        authorLevel: post.authorLevel || 0,
-        createdAt: post.createdAt,
-        views: 0,  // 임시값 (백엔드에 없음)
-        likes: post.recommendationCount || 0,
-        comments: post.commentCount || 0,
-        // avatarType, avatarVariant는 백엔드에 없으므로 옵셔널
-      }));
+      const mappedPosts = res.data.map((post: any) => {
+        console.log('   - 게시글 변환:', post.postId, post.title);
+        return {
+          id: String(post.postId),  // Long → string
+          title: post.title,
+          content: post.content,
+          category: post.postType === '이슈추천' ? 'prediction' 
+                  : post.postType === '포인트자랑' ? 'strategy' 
+                  : 'free',  // postType → category 변환
+          author: post.author || post.authorNickname,
+          authorName: post.authorNickname || post.author,
+          authorLevel: post.authorLevel || 0,
+          createdAt: post.createdAt,
+          views: 0,  // 임시값 (백엔드에 없음)
+          likes: post.recommendationCount || 0,
+          comments: post.commentCount || 0,
+          // avatarType, avatarVariant는 백엔드에 없으므로 옵셔널
+        };
+      });
+      
+      console.log('✅ 변환 완료된 게시글 수:', mappedPosts.length);
       setPosts(mappedPosts);
-    } catch (error) {
-      console.error('게시글 목록 조회 실패', error);
+    } catch (error: any) {
+      console.error('❌ 게시글 목록 조회 실패', error);
+      console.error('   - 에러 응답:', error.response?.data);
+      console.error('   - 에러 상태:', error.response?.status);
+      setPosts([]);
     }
   };
   fetchPosts();
-}, []);
+}, [location.pathname]); // location.pathname이 변경될 때마다 다시 불러오기
   
   const filteredPosts = posts.filter((post) => {
     const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;

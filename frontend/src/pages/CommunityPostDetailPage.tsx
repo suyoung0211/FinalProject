@@ -1,5 +1,3 @@
-// ⭐⭐⭐⭐⭐ 댓글 추천/비추천 기능 추가된 완성본 ⭐⭐⭐⭐⭐
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
@@ -19,7 +17,18 @@ type PostDetail = {
   author: string;
   authorNickname?: string;
   createdAt: string;
+
+  // 📌 게시글 추천/비추천
   recommendationCount?: number;
+  dislikeCount?: number;
+
+  // 백엔드 기준 내 반응 (1, -1, 0)
+  myReaction?: number;
+
+  // 프론트 편의용
+  isLiked?: boolean;
+  isDisliked?: boolean;
+
   commentCount?: number;
 };
 
@@ -32,10 +41,12 @@ type Comment = {
   avatarVariant?: number;
   content: string;
   createdAt: string;
+
   likes: number;
   dislikes?: number;
   isLiked?: boolean;
   isDisliked?: boolean;
+
   replies?: Comment[];
 };
 
@@ -48,20 +59,95 @@ export function CommunityPostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 댓글 상태
+  // 댓글 상태 (현재는 프론트 로컬 전용)
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
 
-  // ------------------------------
-  // 댓글 추천 / 비추천 기능 추가
-  // ------------------------------
+  const requireLogin = () => navigate("/login");
 
+  // ---------------------------
+  // 📌 게시글 추천/비추천 기능
+  // ---------------------------
+  const handleLikePost = async () => {
+    if (!user) return requireLogin();
+    if (!post || !postId) return;
+
+    // 현재 상태 기준 → 내가 되고 싶은 상태 계산
+    const nextReaction = post.isLiked ? 0 : 1; // 좋아요 눌러져 있으면 취소, 아니면 좋아요
+
+    try {
+      const res = await api.post(`/community/posts/${postId}/reactions`, {
+        reactionValue: nextReaction,
+      });
+
+      const data = res.data as {
+        recommendationCount: number;
+        dislikeCount: number;
+        myReaction: number;
+      };
+
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              recommendationCount: data.recommendationCount,
+              dislikeCount: data.dislikeCount,
+              myReaction: data.myReaction,
+              isLiked: data.myReaction === 1,
+              isDisliked: data.myReaction === -1,
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error("게시글 추천 처리 실패", e);
+      alert("추천 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleDislikePost = async () => {
+    if (!user) return requireLogin();
+    if (!post || !postId) return;
+
+    const nextReaction = post.isDisliked ? 0 : -1; // 비추천 눌러져 있으면 취소, 아니면 비추천
+
+    try {
+      const res = await api.post(`/community/posts/${postId}/reactions`, {
+        reactionValue: nextReaction,
+      });
+
+      const data = res.data as {
+        recommendationCount: number;
+        dislikeCount: number;
+        myReaction: number;
+      };
+
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              recommendationCount: data.recommendationCount,
+              dislikeCount: data.dislikeCount,
+              myReaction: data.myReaction,
+              isLiked: data.myReaction === 1,
+              isDisliked: data.myReaction === -1,
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error("게시글 비추천 처리 실패", e);
+      alert("비추천 중 오류가 발생했습니다.");
+    }
+  };
+
+  // ---------------------------
+  // 📌 댓글 추천/비추천
+  // ---------------------------
   const handleLikeComment = (commentId: string, parentId?: string) => {
     setComments((prev) =>
       prev.map((comment) => {
-        // 대댓글 처리
+        // 대댓글
         if (parentId && comment.id === parentId && comment.replies) {
           return {
             ...comment,
@@ -83,7 +169,7 @@ export function CommunityPostDetailPage() {
           };
         }
 
-        // 일반 댓글 처리
+        // 일반 댓글
         if (comment.id === commentId) {
           return {
             ...comment,
@@ -106,7 +192,7 @@ export function CommunityPostDetailPage() {
   const handleDislikeComment = (commentId: string, parentId?: string) => {
     setComments((prev) =>
       prev.map((comment) => {
-        // 대댓글 처리
+        // 대댓글
         if (parentId && comment.id === parentId && comment.replies) {
           return {
             ...comment,
@@ -130,7 +216,7 @@ export function CommunityPostDetailPage() {
           };
         }
 
-        // 일반 댓글 처리
+        // 일반 댓글
         if (comment.id === commentId) {
           return {
             ...comment,
@@ -152,11 +238,9 @@ export function CommunityPostDetailPage() {
     );
   };
 
-  // ------------------------------
-  // 댓글 작성
-  // ------------------------------
-  const requireLogin = () => navigate("/login");
-
+  // ---------------------------
+  // 댓글 작성 (프론트 로컬 전용)
+  // ---------------------------
   const handlePostComment = () => {
     if (!user) return requireLogin();
     if (!commentText.trim()) return;
@@ -211,9 +295,9 @@ export function CommunityPostDetailPage() {
     setReplyTo(null);
   };
 
-  // ------------------------------
+  // ---------------------------
   // 게시글 로딩
-  // ------------------------------
+  // ---------------------------
   useEffect(() => {
     if (!postId) return;
 
@@ -221,9 +305,21 @@ export function CommunityPostDetailPage() {
       try {
         setLoading(true);
         setError(null);
+
         const res = await api.get(`/community/posts/${postId}`);
-        setPost(res.data);
+        const data = res.data as any;
+
+        // 백엔드에서 myReaction 내려준다고 가정 (없으면 0)
+        const myReaction: number = data.myReaction ?? 0;
+
+        setPost({
+          ...data,
+          myReaction,
+          isLiked: myReaction === 1,
+          isDisliked: myReaction === -1,
+        });
       } catch (e) {
+        console.error(e);
         setError("게시글을 불러오지 못했습니다.");
       } finally {
         setLoading(false);
@@ -242,11 +338,11 @@ export function CommunityPostDetailPage() {
 
   if (error || !post)
     return (
-      <div className="min-h-screen text-white p-8">
+      <div className="min-h-screen p-8 text-white">
         <button onClick={() => navigate("/community")} className="mb-4">
           ← 목록으로
         </button>
-        {error}
+        {error || "게시글이 존재하지 않습니다."}
       </div>
     );
 
@@ -268,13 +364,38 @@ export function CommunityPostDetailPage() {
           <span>{new Date(post.createdAt).toLocaleString()}</span>
         </div>
 
-        <div className="bg-black/20 p-6 rounded-xl mb-6">
+        <div className="bg-black/20 p-6 rounded-xl mb-6 whitespace-pre-wrap">
           {post.content}
         </div>
 
-        {/* ------------------------------
-            댓글 섹션
-        ------------------------------ */}
+        {/* 📌 게시글 추천/비추천 버튼 */}
+        <div className="flex items-center gap-4 mb-10">
+          <button
+            onClick={handleLikePost}
+            className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
+              post.isLiked
+                ? "border-purple-400 text-purple-400"
+                : "border-gray-500 text-gray-300 hover:text-purple-300"
+            }`}
+          >
+            <ThumbsUp className="w-4 h-4" />
+            추천 {post.recommendationCount ?? 0}
+          </button>
+
+          <button
+            onClick={handleDislikePost}
+            className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
+              post.isDisliked
+                ? "border-red-400 text-red-400"
+                : "border-gray-500 text-gray-300 hover:text-red-300"
+            }`}
+          >
+            <ThumbsDown className="w-4 h-4" />
+            비추천 {post.dislikeCount ?? 0}
+          </button>
+        </div>
+
+        {/* 댓글 섹션 */}
         <div className="bg-white/5 p-8 rounded-2xl">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-purple-400" />
@@ -282,32 +403,32 @@ export function CommunityPostDetailPage() {
           </h2>
 
           {/* 댓글 작성 */}
-          <div className="mb-8">
-            {user ? (
-              <div className="space-y-3">
-                <Textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="댓글을 작성하세요..."
-                  className="bg-white/5 text-white"
-                />
-                <div className="flex justify-end">
-                  <Button onClick={handlePostComment}>댓글 작성</Button>
-                </div>
+          {user ? (
+            <div className="mb-8">
+              <Textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="댓글을 작성하세요..."
+                className="bg-white/5 text-white"
+              />
+              <div className="flex justify-end mt-3">
+                <Button onClick={handlePostComment}>댓글 작성</Button>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                댓글을 작성하려면 로그인이 필요합니다.
-                <Button onClick={requireLogin}>로그인</Button>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              댓글 작성하려면 로그인이 필요합니다.
+              <Button onClick={requireLogin} className="ml-2">
+                로그인
+              </Button>
+            </div>
+          )}
 
-          {/* 댓글 리스트 */}
-          <div className="space-y-6">
+          {/* 댓글 리스트 (프론트 로컬 상태) */}
+          <div className="space-y-8">
             {comments.map((comment) => (
               <div key={comment.id} className="border-b border-white/10 pb-6">
-                <div className="flex items-start gap-3">
+                <div className="flex gap-3">
                   <Avatar
                     type={comment.avatarType || "male"}
                     variant={comment.avatarVariant || 1}
@@ -316,10 +437,9 @@ export function CommunityPostDetailPage() {
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-white">
+                      <span className="text-white font-medium">
                         {comment.authorName}
                       </span>
-
                       <span className="text-xs text-gray-500">
                         {comment.createdAt}
                       </span>
@@ -327,10 +447,8 @@ export function CommunityPostDetailPage() {
 
                     <p className="text-gray-300 mb-3">{comment.content}</p>
 
-                    {/* ------------------------------
-                        댓글 추천 / 비추천 버튼
-                    ------------------------------ */}
-                    <div className="flex items-center gap-3 mb-2">
+                    {/* 댓글 추천/비추천 */}
+                    <div className="flex items-center gap-4 mb-2">
                       <button
                         onClick={() => handleLikeComment(comment.id)}
                         className={`flex items-center gap-1 text-sm ${
@@ -344,9 +462,7 @@ export function CommunityPostDetailPage() {
                       </button>
 
                       <button
-                        onClick={() =>
-                          handleDislikeComment(comment.id)
-                        }
+                        onClick={() => handleDislikeComment(comment.id)}
                         className={`flex items-center gap-1 text-sm ${
                           comment.isDisliked
                             ? "text-red-400"
@@ -354,7 +470,7 @@ export function CommunityPostDetailPage() {
                         }`}
                       >
                         <ThumbsDown className="w-3 h-3" />
-                        {comment.dislikes || 0}
+                        {comment.dislikes ?? 0}
                       </button>
 
                       <button
@@ -367,7 +483,7 @@ export function CommunityPostDetailPage() {
                       </button>
                     </div>
 
-                    {/* 답글 입력 */}
+                    {/* 대댓글 작성 */}
                     {replyTo === comment.id && user && (
                       <div className="mt-3 space-y-2">
                         <Textarea
@@ -377,10 +493,7 @@ export function CommunityPostDetailPage() {
                           className="bg-white/5 text-white text-sm"
                         />
                         <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => setReplyTo(null)}
-                          >
+                          <Button size="sm" onClick={() => setReplyTo(null)}>
                             취소
                           </Button>
                           <Button
@@ -394,11 +507,9 @@ export function CommunityPostDetailPage() {
                       </div>
                     )}
 
-                    {/* ------------------------------
-                        대댓글 리스트
-                    ------------------------------ */}
-                    {comment.replies && (
-                      <div className="mt-4 ml-8 space-y-3">
+                    {/* 대댓글 리스트 */}
+                    {comment.replies?.length ? (
+                      <div className="mt-4 ml-10 space-y-4">
                         {comment.replies.map((reply) => (
                           <div key={reply.id} className="flex gap-3">
                             <Avatar
@@ -409,7 +520,7 @@ export function CommunityPostDetailPage() {
 
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm text-white">
+                                <span className="text-white text-sm">
                                   {reply.authorName}
                                 </span>
                                 <span className="text-xs text-gray-500">
@@ -421,8 +532,7 @@ export function CommunityPostDetailPage() {
                                 {reply.content}
                               </p>
 
-                              {/* 대댓글 추천/비추천 */}
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-4">
                                 <button
                                   onClick={() =>
                                     handleLikeComment(reply.id, comment.id)
@@ -448,21 +558,21 @@ export function CommunityPostDetailPage() {
                                   }`}
                                 >
                                   <ThumbsDown className="w-3 h-3" />
-                                  {reply.dislikes || 0}
+                                  {reply.dislikes ?? 0}
                                 </button>
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          {/* ▼ 댓글 리스트 끝 */}
         </div>
+        {/* 댓글 섹션 끝 */}
       </div>
     </div>
   );

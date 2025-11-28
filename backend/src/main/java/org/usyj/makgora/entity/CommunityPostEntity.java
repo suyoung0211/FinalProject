@@ -2,6 +2,7 @@ package org.usyj.makgora.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
  * - 포인트자랑 / 이슈추천 / 일반 카테고리 지원
  */
 @Entity
-@Table(name = "Community_Posts")
+@Table(name = "community_posts")   // 실제 테이블명이랑 맞춰줘!
 @Getter
 @Setter
 @NoArgsConstructor
@@ -45,8 +46,14 @@ public class CommunityPostEntity {
     private String postType;
 
     /** 추천 수 */
-    @Column(name = "recommendation_count")
-    private Integer recommendationCount;
+    @Builder.Default
+    @Column(name = "recommendation_count", nullable = false)
+    private Integer recommendationCount = 0;
+
+    /** 비추천 수 */
+    @Builder.Default
+    @Column(name = "dislike_count", nullable = false)
+    private Integer dislikeCount = 0;
 
     @Column(nullable = false)
     @Builder.Default
@@ -61,11 +68,11 @@ public class CommunityPostEntity {
     private Integer viewCount = 0;
 
     /** 작성 시각 */
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     /** 수정 시각 */
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     /** 해당 게시글에 달린 댓글 목록 */
@@ -82,7 +89,17 @@ public class CommunityPostEntity {
         
         if (recommendationCount == null) recommendationCount = 0;
         if (viewCount == null) viewCount = 0;
+        
         if (postType == null) postType = "일반";
+        if (recommendationCount == null) recommendationCount = 0;
+        if (dislikeCount == null) dislikeCount = 0;
+    }
+    
+    /** DB에서 조회 후 NULL 값을 0으로 변환 */
+    @PostLoad
+    public void postLoad() {
+        if (recommendationCount == null) recommendationCount = 0;
+        if (dislikeCount == null) dislikeCount = 0;
     }
 
     /** UPDATE 시 시간 자동 반영 */
@@ -95,5 +112,11 @@ public class CommunityPostEntity {
     public void increaseRecommendation() {
         if (recommendationCount == null) recommendationCount = 0;
         recommendationCount++;
+    }
+
+    /** 비추천 수 증가 */
+    public void increaseDislike() {
+        if (dislikeCount == null) dislikeCount = 0;
+        dislikeCount++;
     }
 }

@@ -24,13 +24,13 @@ public class UserAuthController {
             return ResponseEntity.status(401).body("Unauthorized");
         }
 
-        String email = auth.getName();
-        System.out.println("📧 인증된 사용자 email: " + email);
+        String loginId = auth.getName();
+        System.out.println("📧 인증된 사용자 loginId: " + loginId);
 
-        UserEntity user = repo.findByEmail(email)
+        UserEntity user = repo.findByLoginId(loginId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        System.out.println("✅ 유저 조회 성공: " + user.getEmail());
+        System.out.println("✅ 유저 조회 성공: " + user.getLoginId());
 
         return ResponseEntity.ok(user);
     }
