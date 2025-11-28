@@ -77,4 +77,7 @@ private String link;
     @Column(nullable = false)
     @Builder.Default
     private Boolean issueCreated = false;
+
+    @Column(nullable = false)
+private int aiSystemScore;
 }

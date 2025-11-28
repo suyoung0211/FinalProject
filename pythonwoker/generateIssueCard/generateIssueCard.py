@@ -11,7 +11,9 @@ load_dotenv()
 DB_URL = os.getenv("DB_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# ===============================
 # DB 세팅
+# ===============================
 engine = create_engine(DB_URL, echo=False, future=True)
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -33,7 +35,7 @@ class RssArticleEntity(Base):
 class IssueEntity(Base):
     __tablename__ = "issues"
 
-    id = Column(Integer, primary_key=True)
+    id = Column("issue_id", Integer, primary_key=True)
     article_id = Column(Integer, ForeignKey("rss_articles.article_id"))
     community_post_id = Column(Integer, nullable=True)
 
@@ -43,7 +45,7 @@ class IssueEntity(Base):
     source = Column(String(255))
     ai_summary = Column(Text)
 
-    ai_points = Column(Text)  # JSON 문자열 저장
+    ai_points = Column(Text)   # JSON 문자열 저장
 
     status = Column(String(20), default="PENDING")
     created_by = Column(String(20), default="AI")
@@ -53,14 +55,13 @@ class IssueEntity(Base):
 
     article = relationship("RssArticleEntity")
 
-
 # ===============================
 # OpenAI 클라이언트
 # ===============================
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ===============================
-# Issue 생성 AI 함수
+# Issue 생성 AI 함수 (JSON 안전 처리 포함)
 # ===============================
 def generate_issue_card(title, content):
     content_text = content or title
@@ -68,12 +69,8 @@ def generate_issue_card(title, content):
     prompt = f"""
     아래 뉴스 기사를 기반으로 Mak'gora의 Issue 카드를 생성하라.
 
-    ① 핵심 쟁점 제목 (20자 내외)
-    ② 요약 설명 (3~5문장)
-    ③ 핵심 포인트 리스트(JSON)
-    ④ 중요도: 낮음/중간/높음
-    ⑤ 추천 투표 방식: YESNO or MULTI
-    
+    반드시 JSON만 출력하고 설명 문장을 절대 쓰지 마라.
+
     기사 제목: {title}
     내용: {content_text[:2000]}
 
@@ -90,12 +87,42 @@ def generate_issue_card(title, content):
     res = client.chat.completions.create(
         model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=200,
+        max_tokens=300,
         temperature=0.7,
     )
 
-    return json.loads(res.choices[0].message["content"])
+    raw = res.choices[0].message.content.strip()
 
+    print("\n🔵 GPT 응답 RAW:")
+    print(raw)
+    print("===============================================")
+
+    # JSON 파싱 오류 방지
+    try:
+        ai_json = json.loads(raw)
+    except Exception as e:
+        print("❌ JSON 파싱 오류 발생:", e)
+        print("⚠️ 원본 GPT 출력:", raw)
+
+        # 기본값으로 fallback
+        return {
+            "issue_title": title,
+            "issue_summary": "",
+            "key_points": [],
+            "importance": "중간",
+            "vote_type": "YESNO"
+        }
+
+    # key_points가 문자열로 올 경우 다시 파싱
+    kp = ai_json.get("key_points", [])
+    if isinstance(kp, str):
+        try:
+            kp = json.loads(kp)
+        except:
+            kp = []
+    ai_json["key_points"] = kp
+
+    return ai_json
 
 # ===============================
 # Issue INSERT
@@ -117,16 +144,20 @@ def save_issue_to_db(article, ai):
     )
 
     session.add(issue)
-
+    print(f"🟢 Issue 생성됨 → article_id: {article.article_id}, title: {ai['issue_title']}")
 
 # ===============================
 # 전체 Issue 생성 실행 함수
 # ===============================
 def run_issue_analysis():
+    print("\n🚀 Issue 생성 시작...")
+
     articles = session.query(RssArticleEntity).all()
+    print(f"📌 총 RSS 기사 수: {len(articles)}")
+
+    count_new = 0
 
     for article in articles:
-        # 이미 이 기사(article_id)로 Issue가 생성됐는지 확인
         exists = (
             session.query(IssueEntity)
             .filter_by(article_id=article.article_id)
@@ -135,8 +166,12 @@ def run_issue_analysis():
         if exists:
             continue
 
+        print(f"\n📝 기사 처리중: {article.article_id} - {article.title[:30]}...")
+
         ai = generate_issue_card(article.title, article.content)
         save_issue_to_db(article, ai)
+        count_new += 1
 
     session.commit()
-    print("AI Issue 생성 완료!")
+
+    print(f"\n🎉 AI Issue 생성 완료! 새로 생성된 Issue 수: {count_new}")
