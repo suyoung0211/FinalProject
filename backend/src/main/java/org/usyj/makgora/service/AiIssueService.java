@@ -11,31 +11,50 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class AiIssueService {
 
-    @Value("${python.issue.url:http://localhost:8010/generate-issue-cards}")
-    private String pythonIssueUrl;
+    @Value("${python.issue.url.base:http://localhost:8000}")
+    private String pythonBaseUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public void triggerAiIssueGeneration() {
+    // ------------------------------
+    // 내부 공통 함수
+    // ------------------------------
+    private void callPython(String path, String jsonBody) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
             ResponseEntity<String> resp = restTemplate.exchange(
-                    pythonIssueUrl,
+                    pythonBaseUrl + path,
                     HttpMethod.POST,
                     entity,
                     String.class
             );
 
-            log.info("AI Issue 생성 응답: status={}, body={}",
+            log.info("[AI Issue] Python 응답: status={}, body={}",
                     resp.getStatusCode(), resp.getBody());
 
         } catch (Exception e) {
-            log.error("AI Issue 생성 호출 중 에러", e);
-            throw new RuntimeException("AI Issue 생성 호출 실패", e);
+            log.error("[AI Issue] Python 호출 실패", e);
+            throw new RuntimeException("Python Issue 생성 호출 실패", e);
         }
+    }
+
+    // ------------------------------
+    // 1) 기사 기반 Issue 생성
+    // ------------------------------
+    public void triggerArticleIssue(int articleId) {
+        String body = "{\"articleId\": " + articleId + "}";
+        callPython("/generate-for-article", body);
+    }
+
+    // ------------------------------
+    // 2) 커뮤니티 기반 Issue 생성
+    // ------------------------------
+    public void triggerCommunityIssue(long postId) {
+        String body = "{\"communityPostId\": " + postId + "}";
+        callPython("/generate-for-community", body);
     }
 }
