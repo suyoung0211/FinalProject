@@ -2,10 +2,10 @@ package org.usyj.makgora.response;
 
 import lombok.Builder;
 import lombok.Getter;
+import org.usyj.makgora.entity.RankingEntity;
 
-@Builder
 @Getter
-
+@Builder
 public class RankingResponse {
     private Long rankingId;
     private Integer userId;
@@ -14,4 +14,16 @@ public class RankingResponse {
     private Integer rank;
     private Integer score;
     private String updatedAt;
+
+    public static RankingResponse fromEntity(RankingEntity e) {
+        return RankingResponse.builder()
+                .rankingId(e.getId().longValue())
+                .userId(e.getUser().getId())
+                .nickname(e.getUser().getNickname())
+                .rankingType(e.getRankingType().name())
+                .rank(e.getRanking())
+                .score(e.getScore())
+                .updatedAt(e.getUpdatedAt() != null ? e.getUpdatedAt().toString() : null)
+                .build();
+    }
 }
