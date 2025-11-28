@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
 
                 // ⭐ 로그아웃은 반드시 인증 필요
                 .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
