@@ -3,6 +3,8 @@ package org.usyj.makgora.community.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.usyj.makgora.entity.CommunityCommentEntity;
+import org.usyj.makgora.entity.CommunityPostEntity;
 
 import java.util.List;
 
@@ -31,13 +33,6 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
      */
     @Query("SELECT c FROM CommunityCommentEntity c WHERE c.post.postId = :postId ORDER BY c.createdAt DESC")
     List<CommunityCommentEntity> findAllByPostId(@Param("postId") Long postId);
-
-    /**
-     * 특정 게시글의 모든 댓글들의 likeCount 합계
-     * → AI 점수 계산 공식에서 사용됨
-     */
-    @Query("SELECT COALESCE(SUM(c.likeCount), 0) FROM CommunityCommentEntity c WHERE c.post.postId = :postId")
-    long sumLikeCountByPost(@Param("postId") Long postId);
 
     /**
      * 특정 게시글의 전체 댓글 수
