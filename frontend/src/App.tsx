@@ -10,6 +10,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { AdminPage22 } from "./components/AdminPage22";
 import {VoteListPage} from './pages/VoteListPage';
 import {VoteDetailPage} from './pages/VoteDetailPage';
+import { PointsShopPage } from './pages/PointsShopPage';
 
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
