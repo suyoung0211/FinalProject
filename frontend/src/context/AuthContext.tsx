@@ -6,6 +6,7 @@ export interface UserType {
   username?: string;
   email?: string;
   name?: string;
+  role?: string;
 }
 
 export interface AuthContextType {
@@ -13,6 +14,7 @@ export interface AuthContextType {
   token: string | null;
   login: (user: UserType, access: string) => void;
   logout: () => void;
+  role?: string;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
