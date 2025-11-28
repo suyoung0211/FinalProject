@@ -18,36 +18,39 @@ type PostDetail = {
   authorNickname?: string;
   createdAt: string;
 
-  // 📌 게시글 추천/비추천
   recommendationCount?: number;
   dislikeCount?: number;
 
-  // 백엔드 기준 내 반응 (1, -1, 0)
   myReaction?: number;
-
-  // 프론트 편의용
   isLiked?: boolean;
   isDisliked?: boolean;
 
   commentCount?: number;
 };
 
+// 🔥 백엔드 CommunityCommentResponse 기준으로 타입 정의
 type Comment = {
-  id: string;
-  author: string;
-  authorName: string;
-  authorLevel?: number;
-  avatarType?: "male" | "female";
-  avatarVariant?: number;
+  commentId: number;
+  postId: number;
+  parentCommentId: number | null;
+
+  userId: number;
+  nickname: string;
+
   content: string;
   createdAt: string;
+  updatedAt: string;
 
-  likes: number;
-  dislikes?: number;
-  isLiked?: boolean;
-  isDisliked?: boolean;
+  likeCount: number;
+  dislikeCount: number;
 
-  replies?: Comment[];
+  mine: boolean;
+
+  replies: Comment[];
+
+  // (옵션) 아바타 표시용 UI 전용 필드
+  avatarType?: "male" | "female";
+  avatarVariant?: number;
 };
 
 export function CommunityPostDetailPage() {
@@ -59,23 +62,24 @@ export function CommunityPostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 댓글 상태 (현재는 프론트 로컬 전용)
+  // ✅ 이제 댓글은 백엔드와 동기화
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
-  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
 
   const requireLogin = () => navigate("/login");
 
-  // ---------------------------
-  // 📌 게시글 추천/비추천 기능
-  // ---------------------------
+  // --------------------------------
+  // 📌 게시글 추천/비추천 (그대로 사용)
+  // --------------------------------
   const handleLikePost = async () => {
     if (!user) return requireLogin();
     if (!post || !postId) return;
 
-    // 현재 상태 기준 → 내가 되고 싶은 상태 계산
-    const nextReaction = post.isLiked ? 0 : 1; // 좋아요 눌러져 있으면 취소, 아니면 좋아요
+    const nextReaction = post.isLiked ? 0 : 1;
 
     try {
       const res = await api.post(`/community/posts/${postId}/reactions`, {
@@ -110,7 +114,7 @@ export function CommunityPostDetailPage() {
     if (!user) return requireLogin();
     if (!post || !postId) return;
 
-    const nextReaction = post.isDisliked ? 0 : -1; // 비추천 눌러져 있으면 취소, 아니면 비추천
+    const nextReaction = post.isDisliked ? 0 : -1;
 
     try {
       const res = await api.post(`/community/posts/${postId}/reactions`, {
@@ -141,28 +145,24 @@ export function CommunityPostDetailPage() {
     }
   };
 
-  // ---------------------------
-  // 📌 댓글 추천/비추천
-  // ---------------------------
-  const handleLikeComment = (commentId: string, parentId?: string) => {
+  // --------------------------------
+  // 📌 댓글 추천/비추천 (지금은 프론트 로컬)
+  //    → 나중에 백엔드 연동되면 API 호출로 바꾸면 됨
+  // --------------------------------
+  const handleLikeComment = (commentId: number, parentId?: number) => {
     setComments((prev) =>
       prev.map((comment) => {
         // 대댓글
-        if (parentId && comment.id === parentId && comment.replies) {
+        if (parentId && comment.commentId === parentId && comment.replies) {
           return {
             ...comment,
             replies: comment.replies.map((reply) =>
-              reply.id === commentId
+              reply.commentId === commentId
                 ? {
                     ...reply,
-                    likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1,
-                    dislikes: reply.isLiked
-                      ? reply.dislikes
-                      : reply.isDisliked
-                      ? (reply.dislikes || 1) - 1
-                      : reply.dislikes,
-                    isLiked: !reply.isLiked,
-                    isDisliked: false,
+                    likeCount: reply.mine
+                      ? reply.likeCount // 여긴 예시, 실제 로직은 바꿀 수 있음
+                      : reply.likeCount + 1,
                   }
                 : reply
             ),
@@ -170,17 +170,10 @@ export function CommunityPostDetailPage() {
         }
 
         // 일반 댓글
-        if (comment.id === commentId) {
+        if (comment.commentId === commentId) {
           return {
             ...comment,
-            likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1,
-            dislikes: comment.isLiked
-              ? comment.dislikes
-              : comment.isDisliked
-              ? (comment.dislikes || 1) - 1
-              : comment.dislikes,
-            isLiked: !comment.isLiked,
-            isDisliked: false,
+            likeCount: comment.likeCount + 1,
           };
         }
 
@@ -189,47 +182,27 @@ export function CommunityPostDetailPage() {
     );
   };
 
-  const handleDislikeComment = (commentId: string, parentId?: string) => {
+  const handleDislikeComment = (commentId: number, parentId?: number) => {
     setComments((prev) =>
       prev.map((comment) => {
-        // 대댓글
-        if (parentId && comment.id === parentId && comment.replies) {
+        if (parentId && comment.commentId === parentId && comment.replies) {
           return {
             ...comment,
             replies: comment.replies.map((reply) =>
-              reply.id === commentId
+              reply.commentId === commentId
                 ? {
                     ...reply,
-                    dislikes: reply.isDisliked
-                      ? (reply.dislikes || 1) - 1
-                      : (reply.dislikes || 0) + 1,
-                    likes: reply.isDisliked
-                      ? reply.likes
-                      : reply.isLiked
-                      ? reply.likes - 1
-                      : reply.likes,
-                    isDisliked: !reply.isDisliked,
-                    isLiked: false,
+                    dislikeCount: reply.dislikeCount + 1,
                   }
                 : reply
             ),
           };
         }
 
-        // 일반 댓글
-        if (comment.id === commentId) {
+        if (comment.commentId === commentId) {
           return {
             ...comment,
-            dislikes: comment.isDisliked
-              ? (comment.dislikes || 1) - 1
-              : (comment.dislikes || 0) + 1,
-            likes: comment.isDisliked
-              ? comment.likes
-              : comment.isLiked
-              ? comment.likes - 1
-              : comment.likes,
-            isDisliked: !comment.isDisliked,
-            isLiked: false,
+            dislikeCount: comment.dislikeCount + 1,
           };
         }
 
@@ -238,66 +211,131 @@ export function CommunityPostDetailPage() {
     );
   };
 
-  // ---------------------------
-  // 댓글 작성 (프론트 로컬 전용)
-  // ---------------------------
-  const handlePostComment = () => {
-    if (!user) return requireLogin();
-    if (!commentText.trim()) return;
+  // --------------------------------
+  // 📌 댓글/대댓글 로딩 함수 (백엔드 연동)
+  // --------------------------------
+  const loadComments = async () => {
+  if (!postId) return;
 
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      author: String(user.id),
-      authorName: (user as any).nickname || user.email || "익명",
-      authorLevel: 1,
-      avatarType: "male",
+  try {
+    const res = await api.get(`/community/posts/${postId}/comments`);
+    const data = res.data as Comment[];
+
+    // 아바타용 임시 필드 추가
+    const withAvatar: Comment[] = data.map((c) => ({
+      ...c,
+      avatarType: "male",     // UI용 임시 값
       avatarVariant: 1,
-      content: commentText,
-      createdAt: "방금 전",
-      likes: 0,
-      dislikes: 0,
-      isLiked: false,
-      isDisliked: false,
-    };
+      replies: (c.replies ?? []).map((r) => ({
+        ...r,
+        avatarType: "male",
+        avatarVariant: 1,
+      })),
+    }));
 
-    setComments((prev) => [newComment, ...prev]);
-    setCommentText("");
+    setComments(withAvatar);
+  } catch (e) {
+    console.error("댓글 불러오기 실패", e);
+  }
+};
+
+  // --------------------------------
+  // 📌 댓글 작성 (루트 댓글, 백엔드 연동)
+  // --------------------------------
+  const handlePostComment = async () => {
+    if (!user) return requireLogin();
+    if (!commentText.trim() || !postId) return;
+
+    try {
+      await api.post(`/community/posts/${postId}/comments`, {
+        content: commentText,
+        parentCommentId: null,
+      });
+
+      setCommentText("");
+      await loadComments();
+    } catch (e) {
+      console.error("댓글 작성 실패", e);
+      alert("댓글 작성 중 오류가 발생했습니다.");
+    }
   };
 
-  const handlePostReply = (commentId: string) => {
+  // --------------------------------
+  // 📌 대댓글 작성 (백엔드 연동)
+  // --------------------------------
+  const handlePostReply = async (parentCommentId: number) => {
     if (!user) return requireLogin();
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || !postId) return;
 
-    const newReply: Comment = {
-      id: `${commentId}-${Date.now()}`,
-      author: String(user.id),
-      authorName: (user as any).nickname || user.email || "익명",
-      authorLevel: 1,
-      avatarType: "male",
-      avatarVariant: 1,
-      content: replyText,
-      createdAt: "방금 전",
-      likes: 0,
-      dislikes: 0,
-      isLiked: false,
-      isDisliked: false,
-    };
+    try {
+      await api.post(`/community/posts/${postId}/comments`, {
+        content: replyText,
+        parentCommentId,
+      });
 
-    setComments((prev) =>
-      prev.map((comment) =>
-        comment.id === commentId
-          ? { ...comment, replies: [...(comment.replies || []), newReply] }
-          : comment
-      )
-    );
-
-    setReplyText("");
-    setReplyTo(null);
+      setReplyText("");
+      setReplyTo(null);
+      await loadComments();
+    } catch (e) {
+      console.error("대댓글 작성 실패", e);
+      alert("대댓글 작성 중 오류가 발생했습니다.");
+    }
   };
 
-  // ---------------------------
-  // 게시글 로딩
-  // ---------------------------
+  // 댓글 수정 시작
+const startEditComment = (comment: Comment) => {
+  if (!user) return requireLogin();
+  // 본인 댓글만
+  if (!comment.mine) return;
+
+  setEditingCommentId(comment.commentId);
+  setEditText(comment.content);
+};
+
+// 수정 취소
+const cancelEditComment = () => {
+  setEditingCommentId(null);
+  setEditText("");
+};
+
+// 댓글 수정 제출
+const submitEditComment = async (commentId: number) => {
+  if (!user) return requireLogin();
+  if (!editText.trim()) return;
+
+  try {
+    await api.put(`/community/comments/${commentId}`, {
+      content: editText,
+    });
+
+    setEditingCommentId(null);
+    setEditText("");
+    await loadComments();
+  } catch (e) {
+    console.error("댓글 수정 실패", e);
+    alert("댓글 수정 중 오류가 발생했습니다.");
+  }
+};
+
+// 댓글 삭제
+const deleteComment = async (commentId: number) => {
+  if (!user) return requireLogin();
+
+  if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
+
+  try {
+    await api.delete(`/community/comments/${commentId}`);
+    await loadComments();
+  } catch (e) {
+    console.error("댓글 삭제 실패", e);
+    alert("댓글 삭제 중 오류가 발생했습니다.");
+  }
+};
+
+
+  // --------------------------------
+  // 📌 게시글 로딩
+  // --------------------------------
   useEffect(() => {
     if (!postId) return;
 
@@ -309,7 +347,6 @@ export function CommunityPostDetailPage() {
         const res = await api.get(`/community/posts/${postId}`);
         const data = res.data as any;
 
-        // 백엔드에서 myReaction 내려준다고 가정 (없으면 0)
         const myReaction: number = data.myReaction ?? 0;
 
         setPost({
@@ -327,6 +364,12 @@ export function CommunityPostDetailPage() {
     };
 
     fetchPost();
+  }, [postId]);
+
+  // 📌 댓글은 별도로 로딩
+  useEffect(() => {
+    loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
   if (loading)
@@ -368,7 +411,7 @@ export function CommunityPostDetailPage() {
           {post.content}
         </div>
 
-        {/* 📌 게시글 추천/비추천 버튼 */}
+        {/* 게시글 추천/비추천 버튼 */}
         <div className="flex items-center gap-4 mb-10">
           <button
             onClick={handleLikePost}
@@ -424,152 +467,242 @@ export function CommunityPostDetailPage() {
             </div>
           )}
 
-          {/* 댓글 리스트 (프론트 로컬 상태) */}
+          {/* 댓글 리스트 (백엔드 데이터 기반) */}
           <div className="space-y-8">
-            {comments.map((comment) => (
-              <div key={comment.id} className="border-b border-white/10 pb-6">
-                <div className="flex gap-3">
-                  <Avatar
-                    type={comment.avatarType || "male"}
-                    variant={comment.avatarVariant || 1}
-                    size={48}
-                  />
+                    {comments.map((comment) => (
+          <div
+            key={comment.commentId}
+            className="border-b border-white/10 pb-6"
+          >
+            <div className="flex gap-3">
+              <Avatar
+                type={comment.avatarType || "male"}
+                variant={comment.avatarVariant || 1}
+                size={48}
+              />
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-white font-medium">
-                        {comment.authorName}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {comment.createdAt}
-                      </span>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-white font-medium">
+                    {comment.nickname}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(comment.createdAt).toLocaleString()}
+                  </span>
+                </div>
+
+                {/* 🔧 수정 모드 vs 일반 모드 */}
+                {editingCommentId === comment.commentId ? (
+                  <div className="mb-3 space-y-2">
+                    <Textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="bg-white/5 text-white text-sm"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button size="sm" variant="outline" onClick={cancelEditComment}>
+                        취소
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => submitEditComment(comment.commentId)}
+                      >
+                        수정 완료
+                      </Button>
                     </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-300 mb-3">{comment.content}</p>
+                )}
 
-                    <p className="text-gray-300 mb-3">{comment.content}</p>
+                {/* 댓글 추천/비추천 + 답글 + (본인일 때만) 수정/삭제 */}
+                <div className="flex items-center gap-4 mb-2">
+                  <button
+                    onClick={() => handleLikeComment(comment.commentId)}
+                    className={`flex items-center gap-1 text-sm ${
+                      comment.likeCount > 0
+                        ? "text-purple-400"
+                        : "text-gray-400 hover:text-purple-400"
+                    }`}
+                  >
+                    <ThumbsUp className="w-3 h-3" />
+                    {comment.likeCount}
+                  </button>
 
-                    {/* 댓글 추천/비추천 */}
-                    <div className="flex items-center gap-4 mb-2">
+                  <button
+                    onClick={() => handleDislikeComment(comment.commentId)}
+                    className={`flex items-center gap-1 text-sm ${
+                      comment.dislikeCount > 0
+                        ? "text-red-400"
+                        : "text-gray-400 hover:text-red-400"
+                    }`}
+                  >
+                    <ThumbsDown className="w-3 h-3" />
+                    {comment.dislikeCount}
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setReplyTo(
+                        replyTo === comment.commentId ? null : comment.commentId
+                      )
+                    }
+                    className="text-sm text-gray-400 hover:text-purple-400"
+                  >
+                    답글
+                  </button>
+
+                  {/* 🔥 내 댓글일 때만 */}
+                  {comment.mine && (
+                    <>
                       <button
-                        onClick={() => handleLikeComment(comment.id)}
-                        className={`flex items-center gap-1 text-sm ${
-                          comment.isLiked
-                            ? "text-purple-400"
-                            : "text-gray-400 hover:text-purple-400"
-                        }`}
+                        onClick={() => startEditComment(comment)}
+                        className="text-sm text-gray-400 hover:text-blue-400"
                       >
-                        <ThumbsUp className="w-3 h-3" />
-                        {comment.likes}
+                        수정
                       </button>
-
                       <button
-                        onClick={() => handleDislikeComment(comment.id)}
-                        className={`flex items-center gap-1 text-sm ${
-                          comment.isDisliked
-                            ? "text-red-400"
-                            : "text-gray-400 hover:text-red-400"
-                        }`}
+                        onClick={() => deleteComment(comment.commentId)}
+                        className="text-sm text-gray-400 hover:text-red-400"
                       >
-                        <ThumbsDown className="w-3 h-3" />
-                        {comment.dislikes ?? 0}
+                        삭제
                       </button>
+                    </>
+                  )}
+                </div>
 
-                      <button
-                        onClick={() =>
-                          setReplyTo(replyTo === comment.id ? null : comment.id)
-                        }
-                        className="text-sm text-gray-400 hover:text-purple-400"
+                {/* 대댓글 작성 */}
+                {replyTo === comment.commentId && user && (
+                  <div className="mt-3 space-y-2">
+                    <Textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="답글을 작성하세요..."
+                      className="bg-white/5 text-white text-sm"
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" onClick={() => setReplyTo(null)}>
+                        취소
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={!replyText.trim()}
+                        onClick={() => handlePostReply(comment.commentId)}
                       >
-                        답글
-                      </button>
+                        답글 작성
+                      </Button>
                     </div>
+                  </div>
+                )}
 
-                    {/* 대댓글 작성 */}
-                    {replyTo === comment.id && user && (
-                      <div className="mt-3 space-y-2">
-                        <Textarea
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          placeholder="답글을 작성하세요..."
-                          className="bg-white/5 text-white text-sm"
+                {/* 대댓글 리스트 */}
+                {comment.replies?.length ? (
+                  <div className="mt-4 ml-10 space-y-4">
+                    {comment.replies.map((reply) => (
+                      <div key={reply.commentId} className="flex gap-3">
+                        <Avatar
+                          type={reply.avatarType || "male"}
+                          variant={reply.avatarVariant || 1}
+                          size={36}
                         />
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" onClick={() => setReplyTo(null)}>
-                            취소
-                          </Button>
-                          <Button
-                            size="sm"
-                            disabled={!replyText.trim()}
-                            onClick={() => handlePostReply(comment.id)}
-                          >
-                            답글 작성
-                          </Button>
-                        </div>
-                      </div>
-                    )}
 
-                    {/* 대댓글 리스트 */}
-                    {comment.replies?.length ? (
-                      <div className="mt-4 ml-10 space-y-4">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-3">
-                            <Avatar
-                              type={reply.avatarType || "male"}
-                              variant={reply.avatarVariant || 1}
-                              size={36}
-                            />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-white text-sm">
+                              {reply.nickname}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(reply.createdAt).toLocaleString()}
+                            </span>
+                          </div>
 
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-white text-sm">
-                                  {reply.authorName}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  {reply.createdAt}
-                                </span>
-                              </div>
-
-                              <p className="text-gray-300 text-sm mb-2">
-                                {reply.content}
-                              </p>
-
-                              <div className="flex items-center gap-4">
-                                <button
-                                  onClick={() =>
-                                    handleLikeComment(reply.id, comment.id)
-                                  }
-                                  className={`flex items-center gap-1 text-xs ${
-                                    reply.isLiked
-                                      ? "text-purple-400"
-                                      : "text-gray-400 hover:text-purple-400"
-                                  }`}
+                          {editingCommentId === reply.commentId ? (
+                            <div className="mb-2 space-y-2">
+                              <Textarea
+                                value={editText}
+                                onChange={(e) => setEditText(e.target.value)}
+                                className="bg-white/5 text-white text-sm"
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={cancelEditComment}
                                 >
-                                  <ThumbsUp className="w-3 h-3" />
-                                  {reply.likes}
-                                </button>
-
-                                <button
+                                  취소
+                                </Button>
+                                <Button
+                                  size="sm"
                                   onClick={() =>
-                                    handleDislikeComment(reply.id, comment.id)
+                                    submitEditComment(reply.commentId)
                                   }
-                                  className={`flex items-center gap-1 text-xs ${
-                                    reply.isDisliked
-                                      ? "text-red-400"
-                                      : "text-gray-400 hover:text-red-400"
-                                  }`}
                                 >
-                                  <ThumbsDown className="w-3 h-3" />
-                                  {reply.dislikes ?? 0}
-                                </button>
+                                  수정 완료
+                                </Button>
                               </div>
                             </div>
+                          ) : (
+                            <p className="text-gray-300 text-sm mb-2">
+                              {reply.content}
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() =>
+                                handleLikeComment(reply.commentId, comment.commentId)
+                              }
+                              className={`flex items-center gap-1 text-xs ${
+                                reply.likeCount > 0
+                                  ? "text-purple-400"
+                                  : "text-gray-400 hover:text-purple-400"
+                              }`}
+                            >
+                              <ThumbsUp className="w-3 h-3" />
+                              {reply.likeCount}
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                handleDislikeComment(reply.commentId, comment.commentId)
+                              }
+                              className={`flex items-center gap-1 text-xs ${
+                                reply.dislikeCount > 0
+                                  ? "text-red-400"
+                                  : "text-gray-400 hover:text-red-400"
+                              }`}
+                            >
+                              <ThumbsDown className="w-3 h-3" />
+                              {reply.dislikeCount}
+                            </button>
+
+                            {/* 대댓글도 내 거면 수정/삭제 */}
+                            {reply.mine && (
+                              <>
+                                <button
+                                  onClick={() => startEditComment(reply)}
+                                  className="text-xs text-gray-400 hover:text-blue-400"
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  onClick={() => deleteComment(reply.commentId)}
+                                  className="text-xs text-gray-400 hover:text-red-400"
+                                >
+                                  삭제
+                                </button>
+                              </>
+                            )}
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    ) : null}
+                    ))}
                   </div>
-                </div>
+                ) : null}
               </div>
-            ))}
+            </div>
+          </div>
+        ))}
           </div>
         </div>
         {/* 댓글 섹션 끝 */}
