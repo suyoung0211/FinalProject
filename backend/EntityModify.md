@@ -142,7 +142,6 @@ dto/response, request안에 있던 폴더구조 다 다시 밖에있는 response
 - 현실적으로 크롤링이 불가능한 부분이 있어서 변경
 - rss 에 있는 title 과 description 으로 AI 제목하는 방향으로 변경
 
-<<<<<<< HEAD
 ------------------
 11/25 11:00
 
@@ -170,7 +169,6 @@ IssueEntity에
         SYSTEM, ADMIN, AI, USER
     }
     USER 추가
-=======
 
 ## 11/28
 ### Users 테이블(칼럼 수정)
@@ -180,5 +178,3 @@ IssueEntity에
 ### RSS_Feeds 테이블(칼럼 추가)
 - sourceName 추가
     -> 뉴스 가져오는 언론사 추가
-
->>>>>>> UserEntityModify
