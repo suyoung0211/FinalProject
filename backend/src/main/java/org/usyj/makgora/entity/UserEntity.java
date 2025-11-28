@@ -47,7 +47,7 @@ public class UserEntity {
     private String verificationEmail;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10, nullable = false)
+    @Column(length = 30, nullable = false)
     @Builder.Default
     private Status status = Status.ACTIVE;
 
@@ -69,9 +69,9 @@ public class UserEntity {
     }
 
     public enum Role {
-        SUPER_ADMIN,
         USER,
-        ADMIN
+        ADMIN,
+        SUPER_ADMIN
     }
 
     public enum Status {

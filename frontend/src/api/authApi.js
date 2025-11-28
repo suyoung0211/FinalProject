@@ -20,3 +20,6 @@ export const searchAdminUsersApi = (loginId) => api.get("/admin/users/search", {
 
 // 특정 유저 조회
 export const getAdminUserByLoginIdApi = (loginId) => api.get(`/admin/users/${loginId}`);
+
+// Admin 계정 추가
+export const createAdminApi = (body) => api.post("/admin/create", body);

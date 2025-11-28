@@ -102,7 +102,7 @@ export function LoginPage() {
       login(userData, accessToken);
 
       // ✅ 유저 역할 확인 후 이동
-      if (userData.role === "ADMIN") {
+      if (userData.role === "SUPER_ADMIN" || userData.role === "ADMIN") {
         navigate("/admin"); // 관리자 페이지
       } else {
         navigate("/"); // 일반 사용자 홈

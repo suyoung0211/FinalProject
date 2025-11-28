@@ -1,31 +1,30 @@
 import { useState, useEffect } from "react";
 import { getAllAdminUsersApi } from "../../api/authApi";
 import { Users, DollarSign, TrendingUp, MessageSquare, Search, Plus, Edit, Ban, Trash2 } from "lucide-react";
-import { Avatar } from "../Avatar"; // 아바타 컴포넌트 가정
-import { Button } from '../ui/button'; // 버튼 컴포넌트 가정
+import { Avatar } from "../Avatar";
+import { Button } from '../ui/button';
+import CreateAdminModal from "./CreateAdminModal";
 
 export function Dashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
 
-  // 사용자 목록 API 호출
+  const fetchUsers = async () => {
+    try {
+      const res = await getAllAdminUsersApi();
+      setUsers(res.data);
+      console.log("API 응답 데이터:", res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await getAllAdminUsersApi();
-        setUsers(res.data);
-        console.log("API 응답 데이터:", res.data); // ← 여기에 유저 정보가 나옵니다.
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
 
-  // 검색 적용
   const filteredUsers = users.filter(user =>
     user.loginId.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -44,9 +43,9 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 flex-1 overflow-auto p-6 relative">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Users className="w-8 h-8 text-blue-400" />
@@ -94,17 +93,22 @@ export function Dashboard() {
               </p>
             )}
           </div>
-          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm">
-            <Plus className="w-4 h-4 mr-2" />
-            사용자 추가
-          </Button>
+          <div>
+            <Button
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm"
+              onClick={() => setOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              관리자 추가
+            </Button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">사용자</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">인증   이메일</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">인증 이메일</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">포인트</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">레벨</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">상태</th>
@@ -131,20 +135,11 @@ export function Dashboard() {
                         </div>
                       </div>
                     </td>
-                    {/* 인증 이메일 */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{user.email}</td>
-
-                    {/* 유저 포인트 */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{user.verificationEmail}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-400 font-bold">{user.points?.toLocaleString()}P</td>
-
-                    {/* 유저 레벨 */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-400 font-bold">Lv.{user.level}</td>
-
-                    {/*  */}
                     <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(user.status)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                      {new Date(user.createdAt).toISOString().split('T')[0]}
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{new Date(user.createdAt).toISOString().split('T')[0]}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <button className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors">
@@ -175,6 +170,15 @@ export function Dashboard() {
           </table>
         </div>
       </div>
+
+      {/* 모달 */}
+      <CreateAdminModal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          fetchUsers(); // 모달 닫으면 최신 데이터 불러오기
+        }}
+      />
     </div>
   );
 }
