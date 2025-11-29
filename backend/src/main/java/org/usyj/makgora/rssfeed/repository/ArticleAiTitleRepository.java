@@ -14,6 +14,9 @@ public interface ArticleAiTitleRepository extends JpaRepository<ArticleAiTitleEn
     // 특정 기사에 대한 모든 요약 조회
     List<ArticleAiTitleEntity> findByArticle(RssArticleEntity article);
 
+    // 🔥 반드시 추가해야 하는 메서드
+    ArticleAiTitleEntity findByArticle_Id(Integer articleId);
+    
     // 특정 기사 + 모델명으로 요약 조회
     Optional<ArticleAiTitleEntity> findByArticleAndModelName(RssArticleEntity article, String modelName);
 

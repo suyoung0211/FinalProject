@@ -22,6 +22,7 @@ public class CommunityCommentService {
 
     private final CommunityCommentRepository communityCommentRepository;
     private final CommunityPostRepository communityPostRepository;
+    private final CommunityPostReactionService postReactionService;
     private final UserRepository userRepository;
 
     /**
@@ -105,6 +106,7 @@ public class CommunityCommentService {
                 .build();
 
         CommunityCommentEntity saved = communityCommentRepository.save(entity);
+        postReactionService.addComment(postId);
         return toResponse(saved, userId);
     }
 

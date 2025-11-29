@@ -112,9 +112,14 @@ export function MainPage() {
     }
   };
 
-  const filteredIssues = hotIssues.filter((a) =>
-    a.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredIssues = hotIssues.filter((a) => {
+  const q = searchQuery.toLowerCase();
+
+  const titleMatch = a.title?.toLowerCase().includes(q);
+  const aiTitleMatch = a.aiTitle?.toLowerCase().includes(q);
+
+  return titleMatch || aiTitleMatch;
+});
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">

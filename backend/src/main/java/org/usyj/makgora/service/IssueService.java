@@ -1,7 +1,9 @@
-// src/main/java/org/usyj/makgora/service/IssueService.java
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.IssueEntity;
@@ -10,7 +12,6 @@ import org.usyj.makgora.response.issue.IssueResponse;
 import org.usyj.makgora.response.issue.IssueWithVotesResponse;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,21 +20,20 @@ public class IssueService {
     private final IssueRepository issueRepository;
     private final VoteService voteService;
 
-    /** 🔹 AI가 생성한 추천 이슈 목록 */
+    /** 🔹 AI 추천 이슈 */
     @Transactional(readOnly = true)
     public List<IssueResponse> getRecommendedIssues() {
-        List<IssueEntity> issues = issueRepository
-                .findTop30ByCreatedByAndStatusOrderByCreatedAtDesc(
+        return issueRepository
+                .findTop20ByCreatedByAndStatusOrderByCreatedAtDesc(
                         IssueEntity.CreatedBy.AI,
                         IssueEntity.Status.APPROVED
-                );
-
-        return issues.stream()
+                )
+                .stream()
                 .map(IssueResponse::from)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    /** (필요하면 그대로 유지) 이슈 + 투표 묶음 조회 */
+    /** 🔹 단일 이슈 + 투표 */
     @Transactional(readOnly = true)
     public IssueWithVotesResponse getIssueWithVotes(Integer issueId) {
         IssueEntity issue = issueRepository.findById(issueId)
@@ -45,10 +45,24 @@ public class IssueService {
         );
     }
 
+    /** 🔹 전체 이슈 + 투표 */
     @Transactional(readOnly = true)
     public List<IssueWithVotesResponse> getAllIssuesWithVotes() {
         return issueRepository.findAll().stream()
                 .map(i -> getIssueWithVotes(i.getId()))
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    /** 🔹 최신 이슈 페이지네이션 (무한스크롤) */
+    @Transactional(readOnly = true)
+    public List<IssueResponse> getLatestIssues(int limit) {
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        return issueRepository
+                .findByStatusOrderByCreatedAtDesc(IssueEntity.Status.APPROVED, pageable)
+                .stream()
+                .map(IssueResponse::from)
+                .toList();
     }
 }

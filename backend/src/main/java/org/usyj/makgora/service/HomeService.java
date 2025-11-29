@@ -27,39 +27,36 @@ public class HomeService {
     private final RssArticleRepository articleRepository;
     private final ArticleAiTitleRepository aiTitleRepository;
 
+
+    /** 공통: AI 제목 우선 가져오기 */
+    private String getDisplayTitle(RssArticleEntity article) {
+        ArticleAiTitleEntity ai = aiTitleRepository.findByArticle_Id(article.getId());
+        return (ai != null && ai.getAiTitle() != null)
+                ? ai.getAiTitle()
+                : article.getTitle();
+    }
+
+
     public HomeResponse getHomeData() {
 
-        /* -----------------------
-           1) 뉴스 슬라이드 (최신 10개)
-        ----------------------- */
-        List<RssArticleEntity> slideArticles =
-                articleRepository.findAll().stream()
-                        .filter(a -> a.getThumbnailUrl() != null)
-                        .sorted(Comparator.comparing(RssArticleEntity::getPublishedAt).reversed())
-                        .limit(10)
-                        .toList();
+        /* 1) 뉴스 슬라이드 */
+        List<RssArticleEntity> slideArticles = articleRepository.findAll().stream()
+                .filter(a -> a.getThumbnailUrl() != null)
+                .sorted(Comparator.comparing(RssArticleEntity::getPublishedAt).reversed())
+                .limit(10)
+                .toList();
 
-        List<SlideNewsDto> newsSlides =
-                slideArticles.stream()
-                        .map(a -> {
-                            String displayTitle = aiTitleRepository
-                                    .findByArticleAndModelName(a, "default")
-                                    .map(ArticleAiTitleEntity::getAiTitle)
-                                    .orElse(a.getTitle()); // 🔥 기본 제목으로 대체
-
-                            return SlideNewsDto.builder()
-                                    .articleId(a.getId())
-                                    .aiTitle(displayTitle)
-                                    .thumbnail(a.getThumbnailUrl())
-                                    .publishedAt(a.getPublishedAt())
-                                    .build();
-                        })
-                        .toList();
+        List<SlideNewsDto> newsSlides = slideArticles.stream()
+                .map(a -> SlideNewsDto.builder()
+                        .articleId(a.getId())
+                        .aiTitle(getDisplayTitle(a))
+                        .thumbnail(a.getThumbnailUrl())
+                        .publishedAt(a.getPublishedAt())
+                        .build())
+                .toList();
 
 
-        /* -----------------------
-           2) TOP3 투표 (기존)
-        ----------------------- */
+        /* 2) TOP 3 투표 */
         List<TopVoteDto> topVotes = voteRepository.findTop3ByOrderByTotalPointsDesc()
                 .stream()
                 .map(v -> TopVoteDto.builder()
@@ -73,78 +70,54 @@ public class HomeService {
                 .toList();
 
 
-        /* -----------------------
-           3) 최근 24시간 핫이슈
-        ----------------------- */
+        /* 3) 최근 24시간 핫이슈 */
         LocalDateTime limit = LocalDateTime.now().minusDays(1);
 
         List<HotIssueDto> hotIssues = articleRepository.findAll().stream()
                 .filter(a -> a.getPublishedAt() != null && a.getPublishedAt().isAfter(limit))
-                .map(a -> {
-                    String displayTitle = aiTitleRepository
-                            .findByArticleAndModelName(a, "default")
-                            .map(ArticleAiTitleEntity::getAiTitle)
-                            .orElse(a.getTitle()); // 🔥 기본 제목 대체
-
-                    return HotIssueDto.builder()
-                            .articleId(a.getId())
-                            .title(a.getTitle()) // 원제목 (보관용)
-                            .aiTitle(displayTitle) // 🔥 실제 프론트에서 보여줄 제목
-                            .thumbnail(a.getThumbnailUrl())
-                            .publishedAt(a.getPublishedAt())
-                            .categories(
-                                    a.getCategories().stream()
-                                            .map(c -> c.getName())
-                                            .toList()
-                            )
-                            .build();
-                })
+                .map(a -> HotIssueDto.builder()
+                        .articleId(a.getId())
+                        .title(a.getTitle())                  // 원본
+                        .aiTitle(getDisplayTitle(a))          // ★ AI 제목
+                        .thumbnail(a.getThumbnailUrl())
+                        .publishedAt(a.getPublishedAt())
+                        .categories(a.getCategories().stream()
+                                .map(c -> c.getName())
+                                .toList())
+                        .build())
                 .toList();
 
 
-        /* -----------------------
-           4) 최신 뉴스 20개
-        ----------------------- */
+        /* 4) 최신 뉴스 20개 */
         List<HotIssueDto> latestIssues = articleRepository.findAll().stream()
                 .sorted(Comparator.comparing(RssArticleEntity::getPublishedAt).reversed())
                 .limit(20)
-                .map(a -> {
-                    String displayTitle = aiTitleRepository
-                            .findByArticleAndModelName(a, "default")
-                            .map(ArticleAiTitleEntity::getAiTitle)
-                            .orElse(a.getTitle()); // 🔥 기본 제목 대체
-
-                    return HotIssueDto.builder()
-                            .articleId(a.getId())
-                            .title(a.getTitle())
-                            .aiTitle(displayTitle)
-                            .thumbnail(a.getThumbnailUrl())
-                            .publishedAt(a.getPublishedAt())
-                            .categories(
-                                    a.getCategories().stream()
-                                            .map(c -> c.getName())
-                                            .toList()
-                            )
-                            .build();
-                })
+                .map(a -> HotIssueDto.builder()
+                        .articleId(a.getId())
+                        .title(a.getTitle())
+                        .aiTitle(getDisplayTitle(a))          // ★ AI 제목
+                        .thumbnail(a.getThumbnailUrl())
+                        .publishedAt(a.getPublishedAt())
+                        .categories(a.getCategories().stream()
+                                .map(c -> c.getName())
+                                .toList())
+                        .build())
                 .toList();
 
 
-        /* -----------------------
-           5) AI 배너
-        ----------------------- */
+        /* 5) AI 배너 */
         AiBannerDto banner = null;
 
-        Optional<ArticleAiTitleEntity> latestAi =
-                aiTitleRepository.findAll().stream()
-                        .filter(a -> a.getAiTitle() != null)
-                        .max(Comparator.comparing(ArticleAiTitleEntity::getUpdatedAt));
+        ArticleAiTitleEntity latestAi = aiTitleRepository.findAll().stream()
+                .filter(a -> a.getAiTitle() != null)
+                .max(Comparator.comparing(ArticleAiTitleEntity::getUpdatedAt))
+                .orElse(null);
 
-        if (latestAi.isPresent()) {
-            RssArticleEntity article = latestAi.get().getArticle();
+        if (latestAi != null) {
+            RssArticleEntity article = latestAi.getArticle();
             banner = AiBannerDto.builder()
                     .articleId(article.getId())
-                    .aiTitle(latestAi.get().getAiTitle())
+                    .aiTitle(latestAi.getAiTitle())
                     .thumbnail(article.getThumbnailUrl())
                     .build();
         }
