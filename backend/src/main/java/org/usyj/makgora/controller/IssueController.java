@@ -34,4 +34,9 @@ public class IssueController {
     public ResponseEntity<List<IssueWithVotesResponse>> getAllIssuesWithVotes() {
         return ResponseEntity.ok(issueService.getAllIssuesWithVotes());
     }
+
+    @GetMapping("/latest")
+public ResponseEntity<List<IssueResponse>> getLatestIssues() {
+    return ResponseEntity.ok(issueService.getLatestIssues(20));
+}
 }

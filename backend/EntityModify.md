@@ -212,4 +212,20 @@ redis관련(조회수/댓글수/추천수 계산) 패키지 설정
 communitycommentrepository에 추가(설명 주석 첨부)
 
 aiadmincontroller에 postmapping방식 수정
---------------------
+---------------------------------------------------
+11/29 16:00
+MakgoraApplication에 @EnableScheduling추가
+
+CommunityCommentService에 createComment부분에 
+postReactionService.addComment(postId); 추가
+=> 댓글 갯수 db저장용(게시글id로 가져와 저장)
+
+ArticleAiTitleRepository에 홈페이지 기사 제목 aititle변경용 findByArticle_Id 추가
+
+python쪽 log확인용 logging추가
+
+CommunityScoreSyncScheduler 로직 변경
+=> request시 redis임시저장(계산)후 DB저장하는 단방향 방식에서 
+request, response 모두 DB 확인 후 거치는 방식으로 DB 직접 수정에도 대응가능하게 바꿈
+
+mainpage 검색 aititle버전으로 바꿈
