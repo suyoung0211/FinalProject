@@ -136,67 +136,27 @@ export function CommunityPostDetailPage() {
   // 📌 댓글 추천/비추천 (지금은 프론트 로컬)
   //    → 나중에 백엔드 연동되면 API 호출로 바꾸면 됨
   // --------------------------------
-  const handleLikeComment = (commentId: number, parentId?: number) => {
-    setComments((prev) =>
-      prev.map((comment) => {
-        // 대댓글
-        if (parentId && comment.commentId === parentId && comment.replies) {
-          return {
-            ...comment,
-            replies: comment.replies.map((reply) =>
-              reply.commentId === commentId
-                ? {
-                    ...reply,
-                    likeCount: reply.mine
-                      ? reply.likeCount // 여긴 예시, 실제 로직은 바꿀 수 있음
-                      : reply.likeCount + 1,
-                  }
-                : reply
-            ),
-          };
-        }
+  const handleLikeComment = async (commentId: number) => {
+  if (!user) return requireLogin();
 
-        // 일반 댓글
-        if (comment.commentId === commentId) {
-          return {
-            ...comment,
-            likeCount: comment.likeCount + 1,
-          };
-        }
+  try {
+    await api.post(`/community/comments/${commentId}/like`);
+    await loadComments();  // 최신 데이터 다시 불러오기
+  } catch (e) {
+    console.error("댓글 추천 실패", e);
+  }
+};
 
-        return comment;
-      })
-    );
-  };
+  const handleDislikeComment = async (commentId: number) => {
+  if (!user) return requireLogin();
 
-  const handleDislikeComment = (commentId: number, parentId?: number) => {
-    setComments((prev) =>
-      prev.map((comment) => {
-        if (parentId && comment.commentId === parentId && comment.replies) {
-          return {
-            ...comment,
-            replies: comment.replies.map((reply) =>
-              reply.commentId === commentId
-                ? {
-                    ...reply,
-                    dislikeCount: reply.dislikeCount + 1,
-                  }
-                : reply
-            ),
-          };
-        }
-
-        if (comment.commentId === commentId) {
-          return {
-            ...comment,
-            dislikeCount: comment.dislikeCount + 1,
-          };
-        }
-
-        return comment;
-      })
-    );
-  };
+  try {
+    await api.post(`/community/comments/${commentId}/dislike`);
+    await loadComments();  // 최신 데이터 다시 불러오기
+  } catch (e) {
+    console.error("댓글 비추천 실패", e);
+  }
+};
 
   // --------------------------------
   // 📌 댓글/대댓글 로딩 함수 (백엔드 연동)
@@ -376,7 +336,7 @@ const deleteComment = async (commentId: number) => {
       </div>
     );
 
-  const isMyPost = user && String(user.loginId) === String(post.authorId);
+  const isMyPost = user && String(user.nickname) === String(post.authorId);
 
   return (
     <div className="min-h-screen text-white p-8">
@@ -637,7 +597,7 @@ const deleteComment = async (commentId: number) => {
                           <div className="flex items-center gap-4">
                             <button
                               onClick={() =>
-                                handleLikeComment(reply.commentId, comment.commentId)
+                                handleLikeComment(reply.commentId)
                               }
                               className={`flex items-center gap-1 text-xs ${
                                 reply.likeCount > 0
@@ -651,7 +611,7 @@ const deleteComment = async (commentId: number) => {
 
                             <button
                               onClick={() =>
-                                handleDislikeComment(reply.commentId, comment.commentId)
+                                handleDislikeComment(reply.commentId)
                               }
                               className={`flex items-center gap-1 text-xs ${
                                 reply.dislikeCount > 0

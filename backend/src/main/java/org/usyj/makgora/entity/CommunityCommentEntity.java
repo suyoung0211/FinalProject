@@ -60,12 +60,20 @@ public class CommunityCommentEntity {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "like_count")
+    private Integer likeCount;
+
+    @Column(name = "dislike_count")
+    private Integer dislikeCount;
+
     /** INSERT 발생 시 자동 시간 설정 */
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) createdAt = now;
         if (updatedAt == null) updatedAt = now;
+        if (likeCount == null) likeCount = 0;
+        if (dislikeCount == null) dislikeCount = 0;
     }
 
     /** UPDATE 발생 시 자동 수정시간 업데이트 */
