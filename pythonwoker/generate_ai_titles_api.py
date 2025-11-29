@@ -3,6 +3,10 @@ import os
 import sys
 from fastapi import FastAPI
 from pydantic import BaseModel
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
@@ -28,14 +32,18 @@ app = FastAPI()
 # 1) 단일 article Issue 생성
 @app.post("/generate-for-article")
 def generate_for_article(req: ArticleIdRequest):
+    logger.info(f"[API] /generate-for-article called, articleId={req.articleId}")
     result = run_issue_for_article(req.articleId)
+    logger.info(f"[API] /generate-for-article result={result}")
     return result
 
 
 # 2) 단일 커뮤니티 게시글 Issue 생성
 @app.post("/generate-for-community")
 def generate_for_community(req: CommunityPostIdRequest):
+    logger.info(f"[API] /generate-for-community called, communityPostId={req.communityPostId}")
     result = run_issue_for_community(req.communityPostId)
+    logger.info(f"[API] /generate-for-community result={result}")
     return result
 
 
