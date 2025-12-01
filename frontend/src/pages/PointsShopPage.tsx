@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { getItems, getMyItems, purchaseItem } from "../api/storeApi";
+import { Header } from "../components/layout/Header";
 
 /** 🔥 아이템 타입 정의 */
 interface ShopItem {
@@ -158,19 +159,10 @@ export function PointsShopPage({ onBack }: any) {
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
 
       {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={onBack} className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">Mak'gora</span>
-          </button>
-        </div>
-      </header>
+      <Header activeMenu="store" />
 
       {/* CONTENT */}
-      <div className="container mx-auto px-4 pt-24">
+      <div className="container mx-auto px-24 pt-36">
 
         {/* Category Tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto">
@@ -201,10 +193,17 @@ export function PointsShopPage({ onBack }: any) {
               key={item.id}
               className={`bg-white/5 border rounded-2xl overflow-hidden hover:scale-105 transition ${getRarityColor(item.rarity)}`}
             >
-              <div className="aspect-square flex items-center justify-center text-8xl">
-                {item.emoji}
+              <div className="aspect-square flex items-center justify-center bg-black/20">
+                {item.emoji.startsWith("http") ? (
+                  <img
+                    src={item.emoji}
+                    alt={item.name}
+                    className="w-24 h-24 object-contain"
+                  />
+                ) : (
+                  <span className="text-6xl">{item.emoji}</span>
+                )}
               </div>
-
               <div className="p-4">
                 <h3 className="text-white font-semibold mb-1">{item.name}</h3>
                 <p className="text-gray-400 text-sm mb-4">{item.description}</p>
@@ -241,8 +240,16 @@ export function PointsShopPage({ onBack }: any) {
           <div className="bg-slate-900 border border-white/20 rounded-2xl p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold text-white mb-6">구매 확인</h2>
 
-            <div className="aspect-square flex items-center justify-center text-8xl mb-6">
-              {selectedItem.emoji}
+            <div className="aspect-square flex items-center justify-center mb-6">
+              {selectedItem.emoji.startsWith("http") ? (
+                <img
+                  src={selectedItem.emoji}
+                  alt={selectedItem.name}
+                  className="w-32 h-32 object-contain"
+                />
+              ) : (
+                <span className="text-8xl">{selectedItem.emoji}</span>
+              )}
             </div>
 
             <p className="text-white mb-4 text-center">
