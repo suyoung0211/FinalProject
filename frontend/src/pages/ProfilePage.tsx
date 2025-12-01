@@ -1,8 +1,8 @@
 import { ArrowLeft, User, Mail, Coins, TrendingUp, Trophy, Calendar, BarChart3, Award, Target, Flame, Edit2, Save, X, Lock, Shield } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { useState } from 'react';
-import { Avatar, AvatarSelector } from './Avatar';
+import { Avatar, AvatarSelector } from      '../components/Avatar';
 
 interface UserProfile {
   username: string;
