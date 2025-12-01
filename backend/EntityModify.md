@@ -270,3 +270,5 @@ VoteStatusHistoryEntity 추가 (상태 변경 기록 저장용)
 취소 관리자 API 추가 /api/votes/{voteId}/admin/cancel
 
 -----------------------------
+ArticleReactionEntity추가 => 기사 좋아요/싫어요
+RssArticleEntity 좋아요 싫어요 => ArticleReactionEntity에 이관

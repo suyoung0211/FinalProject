@@ -20,7 +20,7 @@ public class ArticleScoreSyncScheduler {
     private final RssArticleRepository articleRepo;
     private final IssueTriggerPushService triggerPushService;
 
-    @Scheduled(fixedDelay = 10000) // 10초마다
+    // @Scheduled(fixedDelay = 10000) // 10초마다
     @Transactional
     public void syncScores() {
 

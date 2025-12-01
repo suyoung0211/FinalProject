@@ -12,6 +12,8 @@ import {VoteListPage} from './pages/VoteListPage';
 import {VoteDetailPage} from './pages/VoteDetailPage';
 import { PointsShopPage } from './pages/PointsShopPage';
 import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { ArticleListPage } from "./pages/ArticleListPage";   // 뉴스 리스트 페이지
+// import { ArticleDetailPage } from "./pages/ArticleDetailPage"; // 상세페이지(나중 개발)
 
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
@@ -42,6 +44,8 @@ export default function App() {
             <Route path="/store" element={<PointsShopPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/article" element={<ArticleListPage />} />
+            {/* <Route path="/article/:articleId" element={<ArticleDetailPage />} /> */}
             {/* 관리자 페이지 */}
             <Route path="/admin/*" element={<AdminPage />} />
             <Route path="/admin22" element={<AdminPage22 />} />

@@ -61,7 +61,7 @@ public class VoteController {
     }
 
     /** ⑥ 관리자: 투표 종료 */
-    @PostMapping("/{voteId}/finish")
+    @PostMapping("/{voteId}/admin/finish")
     public ResponseEntity<?> finishVote(@PathVariable Integer voteId) {
         return ResponseEntity.ok(voteService.finishVote(voteId));
     }
@@ -76,7 +76,7 @@ public class VoteController {
     }
 
     /** ⑧ 관리자: 보상 지급 */
-    @PostMapping("/{voteId}/reward")
+    @PostMapping("/{voteId}/admin/reward")
     public ResponseEntity<?> rewardVote(@PathVariable Integer voteId) {
         return ResponseEntity.ok(voteService.rewardVote(voteId));
     }

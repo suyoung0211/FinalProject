@@ -17,65 +17,76 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
-
+    
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws IOException, ServletException {
+protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+        throws IOException, ServletException {
 
-        String path = req.getRequestURI();
-        String method = req.getMethod();
+    String path = req.getRequestURI();
+    String method = req.getMethod();
 
-        // Vote GET은 공개 BUT my 조회는 제외
-        boolean isPublicVoteGet =
-                method.equals("GET")
-                && path.startsWith("/api/votes/")
-                && !path.startsWith("/api/votes/my");
+    System.out.println("=== [JWT FILTER DEBUG] ========================");
+    System.out.println("Request URI: " + path);
+    System.out.println("Method     : " + method);
+    System.out.println("Headers    : Authorization=" + req.getHeader("Authorization"));
+    System.out.println("==============================================");
 
-        // JWT 검사를 생략할 경로들
-        boolean skip =
-                path.equals("/api/auth/login") ||
-                path.equals("/api/auth/register") ||
-                path.equals("/api/auth/refresh") ||
-                path.startsWith("/api/email") ||
-                path.startsWith("/api/home") ||
-                path.startsWith("/api/issues/") && method.equals("GET") ||
-                isPublicVoteGet;
+    boolean skip =
+        path.equals("/api/auth/login") ||
+        path.equals("/api/auth/register") ||
+        path.equals("/api/auth/refresh") ||
+        path.startsWith("/api/email") ||
+        path.startsWith("/api/home") ||
 
-        if (skip) {
-            chain.doFilter(req, res);
-            return;
-        }
+        // ⭐ 기사 GET 허용 — 여기에서 진짜로 찍히는 path가 뭔지 확인 가능
+        (method.equals("GET") && path.startsWith("/api/articles")) ||
 
-        // Access Token 추출
-        String token = null;
+        // ⭐ 이슈 GET
+        (method.equals("GET") && path.startsWith("/api/issues")) ||
 
-        String header = req.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            token = header.substring(7);
-        }
+        // ⭐ 투표 GET (my 제외)
+        (method.equals("GET") && path.startsWith("/api/votes") && !path.startsWith("/api/votes/my"));
 
-        if (token == null && req.getCookies() != null) {
-            for (Cookie c : req.getCookies()) {
-                if ("accessToken".equals(c.getName())) {
-                    token = c.getValue();
-                    break;
-                }
+    System.out.println("Skip? " + skip);
+
+    if (skip) {
+        System.out.println("→ SKIPPED JWT AUTH");
+        chain.doFilter(req, res);
+        return;
+    }
+
+    System.out.println("→ JWT AUTH CHECK START");
+
+    String token = null;
+    String header = req.getHeader("Authorization");
+
+    if (header != null && header.startsWith("Bearer ")) {
+        token = header.substring(7);
+    }
+
+    if (token == null && req.getCookies() != null) {
+        for (Cookie c : req.getCookies()) {
+            if ("accessToken".equals(c.getName())) {
+                token = c.getValue();
+                break;
             }
         }
-
-        // JWT 유효성 검사
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            String email = jwtTokenProvider.getEmail(token);
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities()
-                    );
-
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        }
-
-        chain.doFilter(req, res);
     }
+
+    System.out.println("Token Found? " + (token != null));
+
+    if (token != null && jwtTokenProvider.validateToken(token)) {
+        String email = jwtTokenProvider.getEmail(token);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities())
+        );
+        System.out.println("JWT VALID → AUTH SUCCESS");
+    } else {
+        System.out.println("JWT INVALID OR NOT FOUND");
+    }
+
+    chain.doFilter(req, res);
+}
 }

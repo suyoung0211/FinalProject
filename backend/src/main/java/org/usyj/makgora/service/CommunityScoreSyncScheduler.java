@@ -19,7 +19,7 @@ public class CommunityScoreSyncScheduler {
     private final CommunityPostRepository postRepo;
     private final IssueTriggerPushService triggerPushService;
 
-    @Scheduled(fixedDelay = 10000)
+    // @Scheduled(fixedDelay = 10000)
     @Transactional
     public void syncScores() {
 

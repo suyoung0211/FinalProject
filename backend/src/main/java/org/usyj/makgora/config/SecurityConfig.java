@@ -55,6 +55,8 @@ public class SecurityConfig {
 
         // ⭐ 이슈 전체 GET 허용 (핵심)
         .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
+        // ⭐ 기사 조회 허용
+        .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
 
         // 투표 GET 허용
         .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()

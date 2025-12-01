@@ -35,7 +35,7 @@ public class HomeController {
     @GetMapping("/articles/category/{name}")
 public List<HotIssueDto> getArticlesByCategory(@PathVariable String name) {
 
-    List<RssArticleEntity> articles = RssArticleRepository.findByCategory(name);
+    List<RssArticleEntity> articles = RssArticleRepository.findAllByCategoryName(name);
 
     return articles.stream()
             .map(a -> {
