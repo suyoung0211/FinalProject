@@ -57,8 +57,8 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
 
         // 투표 GET 허용
+        .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
         .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/vote/**").permitAll()
 
         // 커뮤니티 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
