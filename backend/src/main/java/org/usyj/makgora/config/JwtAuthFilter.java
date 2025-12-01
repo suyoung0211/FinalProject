@@ -23,42 +23,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws IOException, ServletException {
 
         String path = req.getRequestURI();
-        System.out.println("🔎 요청 URL : " + path);
-        System.out.println("🔍 [JWT FILTER] RAW Request URI = " + req.getRequestURI());
-        System.out.println("🔍 [JWT FILTER] RAW Method = " + req.getMethod());
+        String method = req.getMethod();
 
-        // 🔹 JWT 검사를 생략할 URL
+        // Vote GET은 공개 BUT my 조회는 제외
+        boolean isPublicVoteGet =
+                method.equals("GET")
+                && path.startsWith("/api/votes/")
+                && !path.startsWith("/api/votes/my");
+
+        // JWT 검사를 생략할 경로들
         boolean skip =
-        path.equals("/api/auth/login") ||
-        path.equals("/api/auth/register") ||
-        path.equals("/api/auth/refresh") ||
-        path.startsWith("/api/email") ||
-        path.startsWith("/api/home") ||
-
-        // 🔹 공개 Issue API
-        path.equals("/api/issues/recommended") ||
-        path.equals("/api/issues/latest") ||
-        (path.startsWith("/api/issues/") && req.getMethod().equals("GET")) ||
-
-        // 🔹 공개 Vote API (GET만 허용)
-        (path.startsWith("/api/votes/") && req.getMethod().equals("GET")) ||
-        (path.startsWith("/api/vote/") && req.getMethod().equals("GET"));   
+                path.equals("/api/auth/login") ||
+                path.equals("/api/auth/register") ||
+                path.equals("/api/auth/refresh") ||
+                path.startsWith("/api/email") ||
+                path.startsWith("/api/home") ||
+                path.startsWith("/api/issues/") && method.equals("GET") ||
+                isPublicVoteGet;
 
         if (skip) {
             chain.doFilter(req, res);
             return;
         }
 
-        // 🔹 Access Token 추출: 헤더 우선, 없으면 쿠키
+        // Access Token 추출
         String token = null;
 
-        // 1️⃣ Authorization 헤더 확인
         String header = req.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             token = header.substring(7);
         }
 
-        // 2️⃣ 쿠키 확인 (헤더 없을 때)
         if (token == null && req.getCookies() != null) {
             for (Cookie c : req.getCookies()) {
                 if ("accessToken".equals(c.getName())) {
@@ -68,7 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
         }
 
-        // 🔹 토큰이 존재하고 유효하면 SecurityContext 설정
+        // JWT 유효성 검사
         if (token != null && jwtTokenProvider.validateToken(token)) {
             String email = jwtTokenProvider.getEmail(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);

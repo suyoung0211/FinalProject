@@ -516,45 +516,116 @@ public OddsResponse getOdds(Integer voteId) {
 @Transactional(readOnly = true)
 public List<MyVoteListResponse> getMyVotes(Integer userId) {
 
-    List<VoteUserEntity> list = voteUserRepository.findByUserId(userId);
+    List<VoteUserEntity> myVotes = voteUserRepository.findByUserId(userId);
 
-    return list.stream().map(vu -> {
+    return myVotes.stream().map(vu -> {
 
         VoteEntity vote = vu.getVote();
         VoteOptionChoiceEntity choice = vu.getChoice();
 
-        String resultStatus;
+        String issueTitle = vote.getIssue().getTitle();
 
-        if (Boolean.TRUE.equals(vu.getIsCancelled())) {
+        String resultStatus;
+        Integer rewardAmount = null;
+
+        boolean isCancelled = Boolean.TRUE.equals(vu.getIsCancelled());
+
+        // ==============================
+        // ① 취소된 경우
+        // ==============================
+        if (isCancelled) {
             resultStatus = "CANCELLED";
-        } else if (vote.getStatus() == VoteEntity.Status.REWARDED) {
-            if (vote.getCorrectChoice() != null && vote.getCorrectChoice().getId().equals(choice.getId())) {
+            rewardAmount = 0;
+        }
+
+        // ==============================
+        // ② 정산이 완료된 경우 → 즉 WIN/LOSE + 금액 계산됨
+        // ==============================
+        else if (vote.getStatus() == VoteEntity.Status.REWARDED) {
+
+            boolean win = vote.getCorrectChoice() != null &&
+                    vote.getCorrectChoice().getId().equals(choice.getId());
+
+            // ⚠️ findByVoteId() 1회 호출 → 재사용 가능
+            List<VoteUserEntity> allBets =
+                    voteUserRepository.findByVoteId(vote.getId())
+                            .stream()
+                            .filter(x -> !Boolean.TRUE.equals(x.getIsCancelled()))
+                            .toList();
+
+            int totalPool = allBets.stream()
+                    .mapToInt(VoteUserEntity::getPointsBet)
+                    .sum();
+
+            int correctPool = allBets.stream()
+                    .filter(x -> x.getChoice().getId().equals(vote.getCorrectChoice().getId()))
+                    .mapToInt(VoteUserEntity::getPointsBet)
+                    .sum();
+
+            double odds = (double) totalPool / (double) correctPool;
+            double feeRate = vote.getFeeRate();
+
+            if (win) {
                 resultStatus = "WIN";
+
+                int originalReward = (int) Math.floor(vu.getPointsBet() * odds);
+                int rewardAfterFee = (int) Math.floor(originalReward * (1 - feeRate));
+
+                rewardAmount = rewardAfterFee - vu.getPointsBet(); // 순이익(+)
             } else {
                 resultStatus = "LOSE";
+                rewardAmount = -vu.getPointsBet(); // 순손실(-)
             }
-        } else if (vote.getStatus() == VoteEntity.Status.RESOLVED) {
-            if (vote.getCorrectChoice() != null && vote.getCorrectChoice().getId().equals(choice.getId())) {
-                resultStatus = "WIN";
-            } else {
-                resultStatus = "LOSE";
-            }
-        } else {
-            resultStatus = "PENDING"; // 아직 진행중 or 미정산
+        }
+
+        // ==============================
+        // ③ 정답은 확정되었지만 아직 정산 전
+        // ==============================
+        else if (vote.getStatus() == VoteEntity.Status.RESOLVED) {
+
+            boolean win = vote.getCorrectChoice() != null &&
+                    vote.getCorrectChoice().getId().equals(choice.getId());
+
+            resultStatus = win ? "WIN" : "LOSE";
+            rewardAmount = null;  // 정산 전이므로 금액 없음
+        }
+
+        // ==============================
+        // ④ 아직 진행중 (베팅한 상태)
+        // ==============================
+        else {
+            resultStatus = "PENDING";
+            rewardAmount = null;
         }
 
         return MyVoteListResponse.builder()
-                .voteUserId(vu.getId())
-                .voteId(vote.getId())
-                .voteTitle(vote.getTitle())
-                .choiceId(choice.getId())
-                .choiceText(choice.getChoiceText())
-                .pointsBet(vu.getPointsBet())
-                .result(resultStatus)
-                .voteEndAt(vote.getEndAt())
-                .voteStatus(vote.getStatus().name())
-                .build();
-
+        // 🆔 이 베팅 내역(vote_user_id)의 PK
+        .voteUserId(vu.getId())
+        // 🗳 이 베팅이 속한 vote_id
+        .voteId(vote.getId())
+        // 🏷 투표 제목 (예: “비트코인 다음 주 상승할까?”)
+        .voteTitle(vote.getTitle())
+        // 📰 이 투표가 속한 이슈의 제목
+        .issueTitle(issueTitle)
+        // 🆔 내가 찍은 choice_id
+        .choiceId(choice.getId())
+        // 📝 내가 선택한 선택지 텍스트 (예: “상승한다”)
+        .choiceText(choice.getChoiceText())
+        // 💰 내가 걸었던 포인트 금액
+        .pointsBet(vu.getPointsBet())
+        // 📊 정산 후 내 순이익/순손실 값 (예: +120 / -100)
+        // • 정산 전이라면 null
+        // • 취소되면 0
+        .rewardAmount(rewardAmount)
+        // 🏆 결과 WIN / LOSE / PENDING / CANCELLED
+        .result(resultStatus)
+        // ⭐ 투표 생성일 추가
+        .voteCreatedAt(vote.getCreatedAt())   
+        // ⏳ 투표 종료 날짜/시간
+        .voteEndAt(vote.getEndAt())
+        // 📌 투표 상태 (ONGOING / RESOLVED / REWARDED / CANCELLED)
+        .voteStatus(vote.getStatus().name())
+        .build();
     }).toList();
 }
 
@@ -618,12 +689,20 @@ public VoteStatisticsResponse getMyStatistics(Integer userId) {
     int total = wins + losses + pending;
 
     return VoteStatisticsResponse.builder()
+            // 📌 유저가 참여한 전체 투표 수 (취소 + 진행중 + 승리 + 패배 다 포함)
             .totalBets(total)
+            // 🏆 유저가 이긴 투표 횟수 (정답 선택 = 본인 선택)
             .wins(wins)
+            // ❌ 유저가 진 투표 횟수 (정답 선택 ≠ 본인 선택)
             .losses(losses)
+            // ⏳ 진행 중 / 정답 미확정 / 취소된 투표 수
             .pending(pending)
+            // 📊 승률 = 승리 / (승 + 패)
+            //    (진행중/취소는 승률에서 제외)
             .winRate(total > 0 ? (double) wins / (wins + losses) : 0.0)
+            // 🔥 현재 진행 중인 연승 기록 (가장 최근 투표부터 연속 승리한 횟수)
             .currentWinStreak(currentStreak)
+            // 🏅 유저가 기록한 최대 연승 기록
             .maxWinStreak(maxStreak)
             .build();
 }
