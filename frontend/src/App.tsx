@@ -12,6 +12,7 @@ import {VoteListPage} from './pages/VoteListPage';
 import {VoteDetailPage} from './pages/VoteDetailPage';
 import { PointsShopPage } from './pages/PointsShopPage';
 import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { ProfilePageContainer } from "./pages/ProfilePageContainer";
 
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/store" element={<PointsShopPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/profile" element={<ProfilePageContainer />} />
             {/* 관리자 페이지 */}
             <Route path="/admin/*" element={<AdminPage />} />
             <Route path="/admin22" element={<AdminPage22 />} />

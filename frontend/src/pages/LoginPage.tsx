@@ -105,7 +105,7 @@ export function LoginPage() {
       if (userData.role === "SUPER_ADMIN" || userData.role === "ADMIN") {
         navigate("/admin"); // 관리자 페이지
       } else {
-        navigate("/"); // 일반 사용자 홈
+        navigate("/"); // 메인 페이지로 이동
       }
     } catch (error: any) {
       console.error(error);
