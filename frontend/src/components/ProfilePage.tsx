@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useState } from 'react';
 import { Avatar, AvatarSelector } from './Avatar';
+import { Header } from "./layout/Header";
 
 interface UserProfile {
   username: string;
@@ -188,6 +189,8 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+       <Header activeMenu="vote" />
+
       {/* Header */}
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">

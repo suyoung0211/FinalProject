@@ -2,6 +2,7 @@ import { ArrowLeft, Trophy, TrendingUp, User, Coins, ChevronDown, LogOut, Shoppi
 import { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { getRankingTop } from "../api/rankApi";
+import { Header } from '../components/layout/Header';
 
 interface User {
   id: string;
@@ -90,58 +91,11 @@ export function LeaderboardPage({
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
 
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo */}
-            <button onClick={onBack} className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">Mak'gora</span>
-            </button>
-
-            {/* 메뉴 & 프로필 */}
-            <div className="flex items-center gap-6">
-              {/* 메뉴 */}
-              <nav className="hidden md:flex items-center gap-6 mr-4">
-                <button onClick={onVote} className="text-gray-300 hover:text-white">투표</button>
-                <button onClick={onCommunity} className="text-gray-300 hover:text-white">커뮤니티</button>
-                <button onClick={onNews} className="text-gray-300 hover:text-white">뉴스</button>
-                <button className="text-purple-400 font-medium">리더보드</button>
-                <button onClick={onPointsShop} className="text-gray-300 hover:text-white">포인트 상점</button>
-              </nav>
-
-              {/* 프로필 */}
-              {user ? (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowProfileMenu(!showProfileMenu)}
-                    className="flex items-center gap-3 px-4 py-2 bg-white/5 border border-white/20 rounded-full hover:bg-white/10"
-                  >
-                    <User className="w-5 h-5 text-white" />
-                    <span className="hidden sm:block text-white">{user.name}</span>
-                    <ChevronDown className={`w-4 h-4 text-gray-400 transition ${showProfileMenu ? "rotate-180" : ""}`} />
-                  </button>
-
-                  {showProfileMenu && (
-                    <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-white/20 rounded-2xl p-2 shadow-xl">
-                      <button onClick={onProfile} className="w-full text-left p-3 text-gray-300 hover:bg-white/10 rounded-xl">프로필</button>
-                      <button onClick={onPointsShop} className="w-full text-left p-3 text-gray-300 hover:bg-white/10 rounded-xl">포인트 상점</button>
-                      <button onClick={onLogout} className="w-full text-left p-3 text-red-400 hover:bg-red-500/10 rounded-xl">로그아웃</button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Button onClick={onLogin}>로그인</Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header activeMenu="leaderboard" />
+            
 
       {/* 내용 */}
-      <div className="container mx-auto px-4 py-8 pt-24">
+      <div className="container mx-auto px-4 py-8 pt-48">
         <div className="max-w-6xl mx-auto">
 
           {/* Title */}
