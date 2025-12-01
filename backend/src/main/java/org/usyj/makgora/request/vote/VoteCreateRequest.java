@@ -10,19 +10,15 @@ import lombok.Setter;
 @Getter
 @Setter
 public class VoteCreateRequest {
-
-    private Integer issueId; // 어떤 이슈의 투표인지
     private String title;
     private LocalDateTime endAt;
+    private List<VoteOptionRequest> options;
 
-    private List<VoteOptionCreateRequest> options;
-
-    @Getter
-    @Setter
-    public static class VoteOptionCreateRequest {
+    @Getter @Setter
+    public static class VoteOptionRequest {
         private String optionTitle;
         private LocalDate startDate;
         private LocalDate endDate;
-        private List<String> choices; // ex: ["YES", "NO"] or ["A", "B", "C"]
+        private List<String> choices;  // ["YES", "NO"]
     }
 }

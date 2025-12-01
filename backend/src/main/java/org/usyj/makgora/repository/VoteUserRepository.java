@@ -5,26 +5,22 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.entity.VoteOptionEntity;
+import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.entity.VoteOptionChoiceEntity;
 import org.usyj.makgora.entity.VoteUserEntity;
 
 @Repository
 public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> {
 
-  List<VoteUserEntity> findByVoteId(Long voteId);
+    Optional<VoteUserEntity> findByUserIdAndVoteId(Integer userId, Integer voteId);
 
-  List<VoteUserEntity> findByUserId(Long userId);
+    boolean existsByUserIdAndVoteId(Integer userId, Integer voteId);
 
-  List<VoteUserEntity> findByOptionId(Long optionId);
+    boolean existsByUserAndChoice(UserEntity user, VoteOptionChoiceEntity choice);
 
-  boolean existsByUserIdAndVoteId(Integer userId, Integer voteId);
+    List<VoteUserEntity> findByChoiceId(Long choiceId);
 
-  Optional<VoteUserEntity> findByUserIdAndVoteId(Long userId, Long voteId);
-
-  int countByOptionId(Long optionId);
-
-  long countByVote(VoteEntity vote);
-
-  long countByOption(VoteOptionEntity option);
+    List<VoteUserEntity> findByVoteId(Integer voteId);
+    
+    List<VoteUserEntity> findByUserId(Integer userId);
 }

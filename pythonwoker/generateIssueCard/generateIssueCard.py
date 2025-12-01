@@ -118,26 +118,35 @@ def generate_issue_card(title, content):
     content_text = content or title
 
     prompt = f"""
-    아래 내용을 기반으로 Mak'gora Issue 카드를 생성하라.
-    반드시 JSON만 출력하고, 설명 문장은 절대 쓰지 마라.
+    아래 기사를 기반으로 Mak'gora Issue 카드를 JSON 형식으로 생성하라.
+    출력은 반드시 'JSON만' 생성하고, 설명 문장·기타 텍스트는 절대 작성하지 마라.
+    모든 문장은 반드시 한국어로 출력하라.
 
-    제목: {title}
-    내용: {content_text[:2000]}
+    기사 제목: {title}
+    기사 내용: {content_text[:2000]}
 
-    출력(JSON):
+    출력(JSON 구조):
+
     {{
-        "issue_title": "",
-        "issue_summary": "",
-        "key_points": [],
-        "importance": "",
-        "vote_type": ""
+        "issue_title": "문자열",
+        "issue_summary": "문자열",
+        "ai_points": {{
+            "key_points": ["핵심 포인트1", "핵심 포인트2"],
+            "importance": "낮음 | 중간 | 높음 중 하나",
+            "vote_type": "YESNO | MULTICHOICE 중 하나"
+        }}
     }}
+
+    주의:
+    - 반드시 JSON 객체 하나만 출력하라.
+    - ai_points는 절대로 배열이 아닌 JSON 오브젝트여야 한다.
+    - key_points는 반드시 문자열 배열로 생성하라.
     """
 
     response = client.chat.completions.create(
         model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=300,
+        max_tokens=400,
         temperature=0.7,
     )
 
@@ -146,22 +155,30 @@ def generate_issue_card(title, content):
     try:
         data = json.loads(raw)
     except:
+        # JSON 파싱 실패시 기본 값
         data = {
             "issue_title": title,
             "issue_summary": "",
-            "key_points": [],
-            "importance": "중간",
-            "vote_type": "YESNO"
+            "ai_points": {
+                "key_points": [],
+                "importance": "중간",
+                "vote_type": "YESNO"
+            }
         }
 
-    # key_points가 문자열로 올 경우 방어
-    kp = data.get("key_points", [])
-    if isinstance(kp, str):
+    # 방어 코드: key_points가 문자열로 오면 리스트로 변환
+    ai_points = data.get("ai_points", {})
+    if isinstance(ai_points, str):
         try:
-            kp = json.loads(kp)
+            ai_points = json.loads(ai_points)
         except:
-            kp = []
-    data["key_points"] = kp
+            ai_points = {}
+
+    # 그래도 key_points가 없으면 기본 제공
+    if not isinstance(ai_points.get("key_points", []), list):
+        ai_points["key_points"] = []
+
+    data["ai_points"] = ai_points
 
     return data
 
@@ -171,6 +188,13 @@ def generate_issue_card(title, content):
 
 def save_issue(source, ref, ai):
     logger.info(f"[Issue] save_issue called: source={source}")
+
+    ai_points_obj = ai.get("ai_points", {
+        "key_points": [],
+        "importance": "중간",
+        "vote_type": "YESNO"
+    })
+
     issue = IssueEntity(
         article_id=ref.article_id if source == "RSS" else None,
         community_post_id=ref.post_id if source == "COMMUNITY" else None,
@@ -179,12 +203,16 @@ def save_issue(source, ref, ai):
         thumbnail=getattr(ref, "thumbnail_url", None),
         source=source,
         ai_summary=ai["issue_summary"],
-        ai_points=json.dumps(ai["key_points"], ensure_ascii=False),
+
+        # 🔥 ai_points 오브젝트 그대로 저장
+        ai_points=json.dumps(ai_points_obj, ensure_ascii=False),
+
         status="APPROVED",
         created_by="AI",
         created_at=datetime.now(),
         updated_at=datetime.now(),
     )
+
     session.add(issue)
     return issue
 
