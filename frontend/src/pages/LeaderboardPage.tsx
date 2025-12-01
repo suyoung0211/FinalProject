@@ -49,23 +49,24 @@ export function LeaderboardPage({
 
   /** 🔥 서버에서 랭킹 가져오기 */
   const fetchLeaderboard = async (tab: LeaderboardTab) => {
-    setLoading(true);
+  setLoading(true);
 
-    const typeMap: Record<LeaderboardTab, string> = {
-      points: "POINTS",
-      winRate: "WINRATE",
-      streak: "STREAK"
-    };
-
-    try {
-      const res = await getRankingTop(typeMap[tab]);
-      setLeaderboard(res.data.data || []);
-    } catch (e) {
-      console.error("🔥 랭킹 불러오기 실패", e);
-    } finally {
-      setLoading(false);
-    }
+  const typeMap: Record<LeaderboardTab, string> = {
+    points: "POINTS",
+    winRate: "WINRATE",
+    streak: "STREAK"
   };
+
+  try {
+    const res = await getRankingTop(typeMap[tab]);
+    console.log("랭킹 응답:", res.data); // 한 번 찍어보면 진짜 배열일 거야
+    setLeaderboard(res.data || []);
+  } catch (e) {
+    console.error("🔥 랭킹 불러오기 실패", e);
+  } finally {
+    setLoading(false);
+  }
+};
 
   /** 처음 로딩 + 탭 변경 시마다 호출 */
   useEffect(() => {

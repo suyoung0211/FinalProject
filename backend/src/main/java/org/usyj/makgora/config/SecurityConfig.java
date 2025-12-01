@@ -62,6 +62,7 @@ public class SecurityConfig {
 
         // 커뮤니티 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
 
         // 아래는 인증 필요한 API (GET 제외)
         // .requestMatchers("/api/issues/articles/**").authenticated() // ← 이 위치는 여기로
