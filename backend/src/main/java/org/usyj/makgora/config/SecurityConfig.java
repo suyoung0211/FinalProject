@@ -40,41 +40,44 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-                // ⭐ Preflight 허용
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // ⭐ 비인가 허용되는 엔드포인트
-                .requestMatchers(
-                        "/api/auth/login",
-                        "/api/auth/register",
-                        "/api/auth/refresh",
-                        "/api/email/**",
-                        "/api/home/**"
-                ).permitAll()
+        // 인증 없이 허용되는 API
+        .requestMatchers(
+                "/api/auth/login",
+                "/api/auth/register",
+                "/api/auth/refresh",
+                "/api/email/**",
+                "/api/home/**",
+                "/api/issues/recommended",
+                "/api/issues/latest"
+        ).permitAll()
 
-                // 🔥 투표 조회(GET) 허용 (프론트에서 VotePage 불러올 수 있도록)
-                .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/vote/**").permitAll()
+        // ⭐ 이슈 전체 GET 허용 (핵심)
+        .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
 
-                // ⭐ 커뮤니티: 조회는 모두 허용, 작성/수정/삭제는 인증 필요
-                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
+        // 투표 GET 허용
+        .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/vote/**").permitAll()
 
-                // ⭐ 로그아웃은 반드시 인증 필요
-                .requestMatchers(HttpMethod.POST, "/api/auth/logout/**").authenticated()
+        // 커뮤니티 조회 허용
+        .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
 
-                // ⭐ 보호 API
-                .requestMatchers("/api/user/**").authenticated()
-                .requestMatchers("/api/vote/**").authenticated()
-                .requestMatchers("/api/issues/articles/**").authenticated()
-                .requestMatchers("/api/comment/**").authenticated()
-                
+        // 아래는 인증 필요한 API (GET 제외)
+        // .requestMatchers("/api/issues/articles/**").authenticated() // ← 이 위치는 여기로
 
-                .anyRequest().authenticated()
-            )
+        .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
+        .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
+        .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
+
+        .requestMatchers("/api/user/**").authenticated()
+        .requestMatchers("/api/vote/**").authenticated()
+        .requestMatchers("/api/comment/**").authenticated()
+
+        .anyRequest().authenticated()
+)
+
             .logout(logout -> logout.disable())
 
             // JWT 필터 삽입

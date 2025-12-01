@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.entity.IssueEntity;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,8 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
 
     // 상태별 투표 조회
     List<VoteEntity> findByStatus(VoteEntity.Status status);
+
+    List<VoteEntity> findByStatusAndEndAtBefore(VoteEntity.Status status, LocalDateTime time);
 
     // 특정 이슈 + 상태로 투표 조회
     List<VoteEntity> findByIssueAndStatus(IssueEntity issue, VoteEntity.Status status);

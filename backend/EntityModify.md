@@ -229,3 +229,44 @@ CommunityScoreSyncScheduler 로직 변경
 request, response 모두 DB 확인 후 거치는 방식으로 DB 직접 수정에도 대응가능하게 바꿈
 
 mainpage 검색 aititle버전으로 바꿈
+
+voteEntity에 optionEntity맵핑 +
+
+private Boolean rewarded = false;
+
+정답 선택지 맵핑 추가
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "correct_choice_id")
+private VoteOptionChoiceEntity correctChoice;
+
+ENUM 확장
+public enum Status {
+        ONGOING,      // 진행중 (투표 가능한 상태)
+        FINISHED,     // 종료 (투표 마감됨, 정답은 아직)
+        RESOLVED,     // 정답 확정됨 (= correctChoice 저장됨)
+        REWARDED,     // 정산 완료 (배당까지 처리됨)
+        CANCELLED     // 취소됨
+    }
+
+VoteEntity에 주요 필드 추가
+- correctChoice	정답 선택지 저장
+- rewarded	보상 지급 완료 여부
+- status 확장	ONGOING / FINISHED / RESOLVED / REWARDED / CANCELLED
+
+VoteOptionChoiceEntity에 odds 저장하도록 변경
+
+투표 참여 시 VoteEntity의 totalPoints / totalParticipants 증가
+
+투표 취소 시 통계 + 투표 종료 기능 추가 finishVote()
+voteUser.isCancelled
+
+정답 확정(resolveVote) 구현 + 보상 분배 rewardVote() 작성
+실시간 배당 조회 API + 서비스 추가 = /api/votes/{voteId}/odds
+유저 마이페이지 투표 관련 기능 추가
+=> 내가 한 모든 투표 조회 /api/votes/my 
+=> 투표 통계(승률, 연승 등) /api/votes/my/stats
+
+VoteStatusHistoryEntity 추가 (상태 변경 기록 저장용)
+취소 관리자 API 추가 /api/votes/{voteId}/admin/cancel
+
+-----------------------------

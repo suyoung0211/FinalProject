@@ -10,6 +10,8 @@ import org.usyj.makgora.entity.IssueEntity;
 import org.usyj.makgora.repository.IssueRepository;
 import org.usyj.makgora.response.issue.IssueResponse;
 import org.usyj.makgora.response.issue.IssueWithVotesResponse;
+import org.usyj.makgora.response.vote.VoteResponse;
+import org.usyj.makgora.request.vote.VoteCreateRequest;
 
 import java.util.List;
 
@@ -19,6 +21,18 @@ public class IssueService {
 
     private final IssueRepository issueRepository;
     private final VoteService voteService;
+
+    /** 🔥 투표 생성 */
+    @Transactional
+    public VoteResponse createVote(Integer issueId, VoteCreateRequest req) {
+        return voteService.createVote(issueId, req);
+    }
+
+    /** 🔹 특정 Issue의 투표 목록 */
+    @Transactional(readOnly = true)
+    public List<VoteResponse> getVotesForIssue(Integer issueId) {
+        return voteService.getVotesForIssue(issueId);
+    }
 
     /** 🔹 AI 추천 이슈 */
     @Transactional(readOnly = true)
@@ -53,12 +67,10 @@ public class IssueService {
                 .toList();
     }
 
-    /** 🔹 최신 이슈 페이지네이션 (무한스크롤) */
+    /** 🔹 최신 이슈 */
     @Transactional(readOnly = true)
     public List<IssueResponse> getLatestIssues(int limit) {
-
         Pageable pageable = PageRequest.of(0, limit);
-
         return issueRepository
                 .findByStatusOrderByCreatedAtDesc(IssueEntity.Status.APPROVED, pageable)
                 .stream()

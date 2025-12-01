@@ -1,15 +1,12 @@
-// ----------------------------------------------
-// src/pages/MainPage.tsx (핫이슈 섹션 복구 버전)
-// ----------------------------------------------
+// ------------------------------------------------------------
+// src/pages/MainPage.tsx  (이슈리스트 포함 전체 최신 버전)
+// ------------------------------------------------------------
 
 import {
   TrendingUp,
   Flame,
   Globe,
-  Users,
   Briefcase,
-  Zap,
-  DollarSign,
   Search,
   User,
   ChevronDown,
@@ -21,12 +18,22 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 import { fetchHomeData, fetchArticlesByCategory } from "../api/homeApi";
+import { fetchRecommendedIssues, fetchLatestIssues } from "../api/issueApi";
 
 import NewsSlider from "../components/home/NewsSlider";
 import LatestNewsSidebar from "../components/home/LatestNewsSidebar";
 import LatestNewsList from "../components/home/LatestNewsList";
 
-// 타입 정의
+// 👉 사이트 이슈 타입
+interface IssueItem {
+  id: number;
+  title: string;
+  aiTitle: string | null;
+  thumbnail: string | null;
+  createdAt: string;
+  category: string | null;
+}
+
 interface HotIssue {
   articleId: number;
   title: string;
@@ -47,51 +54,74 @@ export function MainPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // API 데이터 상태
+  // 🔥 기존 홈 데이터 상태
   const [newsSlides, setNewsSlides] = useState<SlideNews[]>([]);
   const [hotIssues, setHotIssues] = useState<HotIssue[]>([]);
   const [latestIssues, setLatestIssues] = useState<HotIssue[]>([]);
+
+  // 🔥 사이트 이슈 상태
+  const [recommendedIssues, setRecommendedIssues] = useState<IssueItem[]>([]);
+  const [siteLatestIssues, setSiteLatestIssues] = useState<IssueItem[]>([]);
+
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingIssues, setLoadingIssues] = useState(false);
 
   const categories = [
-  { id: "all", label: "전체", icon: Globe },
+    { id: "all", label: "전체", icon: Globe },
+    { id: "World", label: "세계", icon: Globe },
+    { id: "Business", label: "경제", icon: Briefcase },
+    { id: "Environment", label: "환경", icon: Flame },
+  ];
 
-  { id: "World", label: "세계", icon: Globe },
-  { id: "Business", label: "경제", icon: Briefcase },
-  { id: "Environment", label: "환경", icon: Flame },
-];
-
-  // 초기 로딩
+  // -------------------------------------------------------
+  // 🔥 1) 홈 데이터 로딩
+  // -------------------------------------------------------
   useEffect(() => {
     loadHomeData();
+    loadSiteIssues();
   }, []);
 
   const loadHomeData = async () => {
-  try {
-    setLoading(true);
-    const res = await fetchHomeData();
+    try {
+      setLoading(true);
+      const res = await fetchHomeData();
 
-    console.log("🔥 홈 데이터 전체:", res.data);
-    console.log("🔥 hotIssues:", res.data.hotIssues);
+      setNewsSlides(res.data.newsSlides || []);
+      setHotIssues(res.data.hotIssues || []);
+      setLatestIssues(res.data.latestIssues || []);
+    } catch (err) {
+      console.error("홈 데이터 불러오기 오류:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    res.data.hotIssues?.forEach((item: any) => {
-      console.log("👉 카테고리:", item.categories);
-    });
+  // -------------------------------------------------------
+  // 🔥 2) 사이트 자체 이슈 로딩
+  // -------------------------------------------------------
+  const loadSiteIssues = async () => {
+    try {
+      setLoadingIssues(true);
 
-    setNewsSlides(res.data.newsSlides || []);
-    setHotIssues(res.data.hotIssues || []);
-    setLatestIssues(res.data.latestIssues || []);
-  } catch (err) {
-    console.error("홈 데이터 불러오기 오류:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+      const [rec, latest] = await Promise.all([
+        fetchRecommendedIssues(),
+        fetchLatestIssues(),
+      ]);
 
-  // 카테고리 변경 시 핫이슈만 갱신
+      setRecommendedIssues(rec.data || []);
+      setSiteLatestIssues(latest.data || []);
+    } catch (err) {
+      console.error("사이트 이슈 불러오기 오류:", err);
+    } finally {
+      setLoadingIssues(false);
+    }
+  };
+
+  // -------------------------------------------------------
+  // 🔥 카테고리 변경 시 핫이슈만 갱신
+  // -------------------------------------------------------
   useEffect(() => {
     if (selectedCategory === "all") {
       loadHomeData();
@@ -113,17 +143,16 @@ export function MainPage() {
   };
 
   const filteredIssues = hotIssues.filter((a) => {
-  const q = searchQuery.toLowerCase();
-
-  const titleMatch = a.title?.toLowerCase().includes(q);
-  const aiTitleMatch = a.aiTitle?.toLowerCase().includes(q);
-
-  return titleMatch || aiTitleMatch;
-});
+    const q = searchQuery.toLowerCase();
+    return (
+      a.title?.toLowerCase().includes(q) ||
+      a.aiTitle?.toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* HEADER */}
+      {/* ---------------- HEADER ---------------- */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
         <div className="w-full max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -134,10 +163,10 @@ export function MainPage() {
           </div>
 
           <nav className="hidden md:flex gap-6 items-center text-gray-300">
-            <button onClick={() => navigate("/community")} className="hover:text-white transition">커뮤니티</button>
-            <button onClick={() => navigate("/vote")} className="hover:text-white transition">투표하기</button>
-            <button onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))} className="hover:text-white transition">리더보드</button>
-            <button onClick={() => (user ? navigate("/store") : navigate("/login"))} className="hover:text-white transition">포인트 상점</button>
+            <button onClick={() => navigate("/community")} className="hover:text-white">커뮤니티</button>
+            <button onClick={() => navigate("/vote")} className="hover:text-white">투표하기</button>
+            <button onClick={() => (user ? navigate("/leaderboard") : navigate("/login"))} className="hover:text-white">리더보드</button>
+            <button onClick={() => (user ? navigate("/store") : navigate("/login"))} className="hover:text-white">포인트 상점</button>
           </nav>
 
           <div>
@@ -153,22 +182,19 @@ export function MainPage() {
         </div>
       </header>
 
-      {/* SLIDER + SIDE (2:1) */}
+      {/* ---------------- SLIDER + SIDE ---------------- */}
       <section className="w-full max-w-[1440px] mx-auto px-6 pt-32">
         <div className="flex gap-6">
-          {/* LEFT */}
           <div className="flex-[2]">
             <NewsSlider slides={newsSlides} />
           </div>
-
-          {/* RIGHT */}
           <div className="flex-[1]">
             <LatestNewsSidebar items={latestIssues} />
           </div>
         </div>
       </section>
 
-      {/* CATEGORY */}
+      {/* ---------------- CATEGORY ---------------- */}
       <section className="w-full px-6 mt-8">
         <div className="max-w-[1440px] mx-auto flex gap-3 justify-center flex-wrap">
           {categories.map((cat) => {
@@ -191,7 +217,7 @@ export function MainPage() {
         </div>
       </section>
 
-      {/* SEARCH */}
+      {/* ---------------- SEARCH ---------------- */}
       <section className="w-full px-6 pt-6">
         <div className="max-w-[700px] mx-auto relative">
           <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -204,21 +230,64 @@ export function MainPage() {
         </div>
       </section>
 
-      {/* 🔥 HOT ISSUES 섹션 복구됨! */}
-      <section className="w-full px-6 mt-10 pb-20">
+      {/* ---------------- HOT ISSUES ---------------- */}
+      <section className="w-full px-6 mt-10">
         <div className="max-w-[1440px] mx-auto">
           <h2 className="text-2xl font-bold text-white mb-6">핫이슈</h2>
-
           {loading && <p className="text-gray-300">불러오는 중...</p>}
-
           <LatestNewsList items={filteredIssues} />
+        </div>
+      </section>
+
+      {/* ---------------- SITE ISSUES ---------------- */}
+      <section className="w-full px-6 mt-16 pb-24">
+        <div className="max-w-[1440px] mx-auto">
+
+          {/* 추천 이슈 */}
+          <h2 className="text-2xl font-bold text-white mb-4">오늘의 추천 이슈</h2>
+          {loadingIssues ? (
+            <p className="text-gray-300 mb-6">불러오는 중...</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+              {recommendedIssues.map((i) => (
+                <div
+                  key={i.id}
+                  className="p-4 bg-white/10 rounded-xl text-white cursor-pointer hover:bg-white/20 transition"
+                  onClick={() => navigate(`/issue/${i.id}`)}
+                >
+                  <p className="font-bold">{i.aiTitle || i.title}</p>
+                  <p className="text-sm text-gray-300 mt-1">{i.category || "카테고리 없음"}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 최신 이슈 */}
+          <h2 className="text-2xl font-bold text-white mb-4">최신 이슈</h2>
+          {loadingIssues ? (
+            <p className="text-gray-300">불러오는 중...</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {siteLatestIssues.map((i) => (
+                <div
+                  key={i.id}
+                  className="p-4 bg-white/10 rounded-xl text-white cursor-pointer hover:bg-white/20 transition"
+                  onClick={() => navigate(`/issue/${i.id}`)}
+                >
+                  <p className="font-bold">{i.aiTitle || i.title}</p>
+                  <p className="text-sm text-gray-300 mt-1">{i.category || "카테고리 없음"}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>
   );
 }
 
-// Dropdown 그대로 유지
+
+// ---------------- USER DROPDOWN ----------------
 function UserDropdown({ user, onLogout }: { user: any; onLogout?: () => void }) {
   const [open, setOpen] = useState(false);
   return (

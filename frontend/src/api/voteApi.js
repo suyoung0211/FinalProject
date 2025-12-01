@@ -1,36 +1,42 @@
-import axios from "axios";
+import api from "./api";
 
-const API = axios.create({
-  baseURL: "http://localhost:8080/api",
-  withCredentials: true,   // ★ 쿠키 기반 refresh 사용하는 경우 필요
-});
+// 투표 상세 조회
+export const fetchVoteDetail = (voteId) =>
+  api.get(`/votes/${voteId}`);
 
-// ★ JWT 붙이기
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// ✔ 투표 전체 목록 불러오기
-export const fetchVoteList = async () => {
-  const res = await API.get("/votes/list"); // 백엔드에서 제공 필요
-  return res.data;
-};
-
-// ✔ 투표 상세
-export const fetchVoteDetail = async (voteId) => {
-  const res = await API.get(`/votes/${voteId}`);
-  return res.data;
-};
-
-// ✔ 투표 요청 (옵션 선택 + 포인트 배팅)
-export const submitVote = async (voteId, optionId, points) => {
-  const res = await API.post(`/votes/${voteId}/submit`, {
-    optionId,
+// 투표 참여
+export const participateVote = (voteId, choiceId, points) =>
+  api.post(`/votes/${voteId}/participate`, {
+    choiceId,
     points,
   });
-  return res.data;
-};
+
+// 🔥 투표 목록 조회 API 추가 (VoteListPage에서 사용 중)
+export const fetchVoteList = () =>
+  api.get(`/votes`);
+
+// 내가 해당 투표에서 한 선택 조회
+export const fetchMyVote = (voteId) =>
+  api.get(`/votes/${voteId}/my`);
+
+// 내가 한 투표 취소
+export const cancelMyVote = (voteUserId) =>
+  api.patch(`/votes/my/${voteUserId}/cancel`);
+
+// 관리자: 투표 종료
+export const finishVote = (voteId) =>
+  api.post(`/votes/${voteId}/finish`);
+
+// 관리자: 정답 확정
+export const resolveVote = (voteId, choiceId) =>
+  api.post(`/votes/${voteId}/resolve/${choiceId}`);
+
+// 관리자: 보상 지급
+export const rewardVote = (voteId) =>
+  api.post(`/votes/${voteId}/reward`);
+
+// 관리자: 투표 취소
+export const cancelVoteAdmin = (voteId, reason) =>
+  api.patch(`/votes/${voteId}/admin/cancel`, {
+    reason,
+  });

@@ -29,13 +29,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // 🔹 JWT 검사를 생략할 URL
         boolean skip =
-                path.equals("/api/auth/login") ||
-                path.equals("/api/auth/register") ||
-                path.equals("/api/auth/refresh") ||
-                path.startsWith("/api/email") ||
-                path.startsWith("/api/home") ||  
-                path.startsWith("/api/votes") ||   
-                path.startsWith("/api/vote");   
+        path.equals("/api/auth/login") ||
+        path.equals("/api/auth/register") ||
+        path.equals("/api/auth/refresh") ||
+        path.startsWith("/api/email") ||
+        path.startsWith("/api/home") ||
+
+        // 🔹 공개 Issue API
+        path.equals("/api/issues/recommended") ||
+        path.equals("/api/issues/latest") ||
+        (path.startsWith("/api/issues/") && req.getMethod().equals("GET")) ||
+
+        // 🔹 공개 Vote API (GET만 허용)
+        (path.startsWith("/api/votes/") && req.getMethod().equals("GET")) ||
+        (path.startsWith("/api/vote/") && req.getMethod().equals("GET"));   
 
         if (skip) {
             chain.doFilter(req, res);

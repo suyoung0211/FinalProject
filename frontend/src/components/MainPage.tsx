@@ -2,7 +2,7 @@ import { TrendingUp, Flame, Clock, Globe, Briefcase, Zap, Users, DollarSign, Arr
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useState } from 'react';
-import headerBanner from 'figma:asset/3c5c32ad58521f0458ddaa92581808acfdcd9748.png';
+// import headerBanner from 'figma:asset/3c5c32ad58521f0458ddaa92581808acfdcd9748.png';
 
 interface UserProfile {
   username: string;
