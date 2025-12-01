@@ -14,6 +14,7 @@ import { PointsShopPage } from './pages/PointsShopPage';
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ProfilePageContainer } from "./pages/ProfilePageContainer";
 
+
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
 
