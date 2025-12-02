@@ -98,4 +98,9 @@ public ResponseEntity<?> getMyVotes(@AuthenticationPrincipal CustomUserDetails u
 public ResponseEntity<?> getMyVoteStatistics(@AuthenticationPrincipal CustomUserDetails user) {
     return ResponseEntity.ok(voteService.getMyStatistics(user.getId()));
 }
+
+@GetMapping("/list")
+public ResponseEntity<?> getVoteList() {
+    return ResponseEntity.ok(voteService.getAllVotes());
+}
 }

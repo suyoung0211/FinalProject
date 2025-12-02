@@ -13,7 +13,7 @@ export const participateVote = (voteId, choiceId, points) =>
 
 // 🔥 투표 목록 조회 API 추가 (VoteListPage에서 사용 중)
 export const fetchVoteList = () =>
-  api.get(`/votes`);
+  api.get(`/votes/list`);
 
 // 내가 해당 투표에서 한 선택 조회
 export const fetchMyVote = (voteId) =>

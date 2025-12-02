@@ -35,6 +35,7 @@ public class RssFeedCollector {
     private boolean runRssOnStartup;
 
     // 서버 시작 시 자동 실행
+    @Async
     @EventListener(ApplicationReadyEvent.class)
     public void runAtStartup() {
         // runRssOnStartup이 false면 바로 종료 → 개발 단계에서 불필요한 작업 방지

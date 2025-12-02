@@ -14,14 +14,13 @@ import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-
+import org.usyj.makgora.repository.ArticleListRepository;
 import org.usyj.makgora.request.article.ArticleCommentRequest;
 import org.usyj.makgora.response.article.ArticleCommentResponse;
 import org.usyj.makgora.response.article.ArticleReactionResponse;
 import org.usyj.makgora.response.article.ArticleListResponse;   // ⭐ 추가됨
 
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
-import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 import org.usyj.makgora.security.CustomUserDetails;
 
@@ -41,7 +40,7 @@ public class ArticleController {
     private final ArticleCommentService commentService;
     private final ArticleReactionService reactionService;
     private final ArticleViewService viewService;
-    private final RssArticleRepository articleRepo;
+    private final ArticleListRepository articleRepo;
     private final ArticleAiTitleRepository aiTitleRepo;
 
      @GetMapping
@@ -59,7 +58,7 @@ public ResponseEntity<?> getArticleList(
         result = articleRepo.findAll(pageable);
     } else {
         // ✅ 이름 딱 이거 써야 함: findByCategoryName
-        result = articleRepo.findByCategoryName(category, pageable);
+        result = articleRepo.findByCategoryPaged(category, pageable);
     }
 
     Page<ArticleListResponse> mapped = result.map(a -> {

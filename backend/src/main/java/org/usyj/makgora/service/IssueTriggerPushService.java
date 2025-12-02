@@ -37,7 +37,7 @@ public class IssueTriggerPushService {
      * 커뮤니티 게시글의 점수가 임계치를 넘었을 때,
      * Redis Queue에 "cp:{postId}" 형태로 넣어둔다.
      */
-    public void checkAndPushCommunity(int postId, int score) {
+    public void checkAndPushCommunity(long postId, int score) {
 
         if (score < THRESHOLD) return;
 

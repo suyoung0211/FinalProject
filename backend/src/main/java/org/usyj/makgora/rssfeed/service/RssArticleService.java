@@ -84,4 +84,6 @@ public class RssArticleService {
         private int skipped;
         private int total;
     }
+
+    
 }

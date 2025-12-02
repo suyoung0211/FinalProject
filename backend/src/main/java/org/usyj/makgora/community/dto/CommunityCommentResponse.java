@@ -22,8 +22,8 @@ public class CommunityCommentResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private int likeCount;
-    private int dislikeCount;
+    private Long likeCount;
+    private Long dislikeCount;
 
     private boolean mine; // 현재 로그인 유저가 쓴 댓글인지
 

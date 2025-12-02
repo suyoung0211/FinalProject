@@ -57,6 +57,8 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
         // ⭐ 기사 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
+        // ⭐ 기사 카테고리 허용
+.requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
         // 투표 GET 허용
         .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
@@ -74,7 +76,6 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
 
         .requestMatchers("/api/user/**").authenticated()
-        .requestMatchers("/api/vote/**").authenticated()
         .requestMatchers("/api/comment/**").authenticated()
 
         .anyRequest().authenticated()
