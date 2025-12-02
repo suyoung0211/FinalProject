@@ -25,8 +25,9 @@ public class BBCSource implements RssFeedSource {
     @Override
     public Map<String, String> getCategoryFeeds() {
         Map<String, String> map = new HashMap<>();
-        map.put("World", "https://feeds.bbci.co.uk/news/world/rss.xml");
-        map.put("Business", "https://feeds.bbci.co.uk/news/business/rss.xml");
+        map.put("경제", "https://feeds.bbci.co.uk/news/business/rss.xml");
+        map.put("스포츠", "https://feeds.bbci.co.uk/sport/cricket/rss.xml");
+        map.put("연예/문화", "https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml");
         return map;
     }
 
