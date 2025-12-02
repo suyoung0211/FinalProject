@@ -35,9 +35,9 @@ public class RankingEntity {
     @Column(name = "updated_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     private LocalDateTime updatedAt;
 
-    public enum RankingType {
-        points,
-        winrate,
-        streak
-    }
+   public enum RankingType {
+    POINTS,
+    WINRATE,
+    STREAK
+}
 }

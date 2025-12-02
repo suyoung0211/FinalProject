@@ -13,7 +13,7 @@ import java.util.Random;
 
 @Component
 @RequiredArgsConstructor
-public class DataInitializer {
+public class RankingDataInitializer {
 
     private final UserRepository userRepository;
     private final RankingRepository rankingRepository;
@@ -46,7 +46,7 @@ public class DataInitializer {
             // 2) POINTS 랭킹 생성
             RankingEntity pointsRanking = RankingEntity.builder()
                     .user(user)
-                    .rankingType(RankingType.points)
+                    .rankingType(RankingType.POINTS)
                     .ranking(i)
                     .score(user.getPoints())
                     .build();
@@ -56,7 +56,7 @@ public class DataInitializer {
             // 3) WINRATE 랭킹 생성 (0~100)
             RankingEntity winrateRanking = RankingEntity.builder()
                     .user(user)
-                    .rankingType(RankingType.winrate)
+                    .rankingType(RankingType.WINRATE)
                     .ranking(i)
                     .score(random.nextInt(101))
                     .build();
@@ -66,7 +66,7 @@ public class DataInitializer {
             // 4) STREAK 랭킹 생성 (0~15)
             RankingEntity streakRanking = RankingEntity.builder()
                     .user(user)
-                    .rankingType(RankingType.streak)
+                    .rankingType(RankingType.STREAK)
                     .ranking(i)
                     .score(random.nextInt(16))
                     .build();
