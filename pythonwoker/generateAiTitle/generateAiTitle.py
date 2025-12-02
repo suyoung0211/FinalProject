@@ -103,6 +103,12 @@ def run_generate_ai_titles():
                 article_result["status"] = "SKIPPED_MAX_TRY"
                 result_summary.append(article_result)
                 continue
+            
+            # 이미 AI 제목이 존재하면 생성 건너뛰기
+            if existing.ai_title and existing.status == "SUCCESS":
+                article_result["status"] = "ALREADY_EXISTS"
+                result_summary.append(article_result)
+                continue
 
             try:
                 content_for_prompt = article.content if article.content else article.title

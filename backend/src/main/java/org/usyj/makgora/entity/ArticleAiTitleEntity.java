@@ -48,7 +48,7 @@ public class ArticleAiTitleEntity {
     @Column(name = "model_name", length = 100)
     private String modelName;
 
-    // 제목 생성 상태: PENDING / PROCESSING / SUCCESS / FAILED
+    // 제목 생성 상태
     @Column(name = "status", nullable = false, length = 20)
     private String status;
 
