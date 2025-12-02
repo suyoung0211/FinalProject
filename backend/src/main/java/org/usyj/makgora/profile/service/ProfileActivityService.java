@@ -6,9 +6,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.community.repository.CommunityCommentRepository;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
-import org.usyj.makgora.entity.CommunityCommentEntity;
+import org.usyj.makgora.dto.UnifiedCommentResponse;
+import org.usyj.makgora.dto.UnifiedCommentResponse.CommentSource;
 import org.usyj.makgora.entity.CommunityPostEntity;
 import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.entity.VoteEntity;
@@ -19,6 +19,7 @@ import org.usyj.makgora.profile.dto.RecentCommunityActivityResponse.CommunityAct
 import org.usyj.makgora.profile.dto.RecentVoteActivityResponse;
 import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.repository.VoteUserRepository;
+import org.usyj.makgora.service.UnifiedCommentService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,54 +28,57 @@ import lombok.RequiredArgsConstructor;
 public class ProfileActivityService {
 
     private final CommunityPostRepository postRepository;
-    private final CommunityCommentRepository commentRepository;
     private final UserRepository userRepository;
     private final VoteUserRepository voteUserRepository;
+    private final UnifiedCommentService unifiedCommentService;
 
     @Transactional(readOnly = true)
-    public List<RecentCommunityActivityResponse> getRecentCommunityActivities(Integer userId, int limit) {
+public List<RecentCommunityActivityResponse> getRecentCommunityActivities(Integer userId, int limit) {
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        List<RecentCommunityActivityResponse> result = new ArrayList<>();
+    List<RecentCommunityActivityResponse> result = new ArrayList<>();
 
-        // 1) 내가 작성한 글
-        List<CommunityPostEntity> posts =
-                postRepository.findByUserOrderByCreatedAtDesc(user);
+    // 1) 내가 작성한 글 (기존 그대로)
+    List<CommunityPostEntity> posts =
+            postRepository.findByUserOrderByCreatedAtDesc(user);
 
-        posts.forEach(post -> result.add(
-                RecentCommunityActivityResponse.builder()
-                        .activityId(post.getPostId())
-                        .type(CommunityActivityType.POST)
-                        .postId(post.getPostId())
-                        .postTitle(post.getTitle())
-                        .contentPreview(cut(post.getContent()))
-                        .createdAt(post.getCreatedAt())
-                        .build()
-        ));
+    posts.forEach(post -> result.add(
+            RecentCommunityActivityResponse.builder()
+                    .activityId(post.getPostId())
+                    .type(CommunityActivityType.POST)
+                    .postId(post.getPostId())
+                    .postTitle(post.getTitle())
+                    .contentPreview(cut(post.getContent()))
+                    .createdAt(post.getCreatedAt())
+                    .build()
+    ));
 
-        // 2) 내가 작성한 댓글
-        List<CommunityCommentEntity> comments =
-                commentRepository.findByUserId(userId);
+    // 🔥 2) 내가 작성한 댓글 - UnifiedCommentService 사용
+    List<UnifiedCommentResponse> userComments =
+            unifiedCommentService.getUserComments(userId);
 
-        comments.forEach(c -> result.add(
-                RecentCommunityActivityResponse.builder()
-                        .activityId(c.getCommentId())
-                        .type(CommunityActivityType.COMMENT)
-                        .postId(c.getPost().getPostId())
-                        .postTitle(c.getPost().getTitle())
-                        .contentPreview(cut(c.getContent()))
-                        .createdAt(c.getCreatedAt())
-                        .build()
-        ));
+    userComments.stream()
+            // ✅ 커뮤니티 댓글만 필터링
+            .filter(c -> c.getSource() == CommentSource.COMMUNITY)
+            .forEach(c -> result.add(
+                    RecentCommunityActivityResponse.builder()
+                            .activityId(c.getCommentId())
+                            .type(CommunityActivityType.COMMENT)
+                            .postId(c.getSourceId())          // 커뮤니티에서는 postId
+                            .postTitle(c.getSourceTitle())    // 게시글 제목
+                            .contentPreview(cut(c.getContent()))
+                            .createdAt(c.getCreatedAt())
+                            .build()
+            ));
 
-        // 3) 전체를 시간순으로 정렬하고 limit만큼 자르기
-        return result.stream()
-                .sorted(Comparator.comparing(RecentCommunityActivityResponse::getCreatedAt).reversed())
-                .limit(limit)
-                .toList();
-    }
+    // 3) 전체를 시간순으로 정렬하고 limit만큼 자르기 (기존 로직 유지)
+    return result.stream()
+            .sorted(Comparator.comparing(RecentCommunityActivityResponse::getCreatedAt).reversed())
+            .limit(limit)
+            .toList();
+}
 
     /**
      * 프로필 > 최근 활동(투표)
