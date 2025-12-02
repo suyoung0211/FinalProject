@@ -69,7 +69,7 @@ public class RssFeedService {
                 totalFetched += dtos.size();
 
                 // 5. batch 저장 (중복 처리 포함)
-                articleService.saveArticlesBatch(feed, dtos, defaultCategory);
+                articleService.saveArticlesBatch(feed, dtos);
 
                 // 6. 피드 마지막 수집 시간 업데이트
                 feedService.updateLastFetched(feed);
