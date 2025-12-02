@@ -50,8 +50,13 @@ def generate_for_community(req: CommunityPostIdRequest):
 # 3) AI 제목 전체 생성
 @app.post("/generate-ai-titles")
 def generate_ai_titles():
-    run_generate_ai_titles()
-    return {"status": "success", "message": "ai titles generated"}
+    # run_generate_ai_titles가 기사별 상태 리스트를 반환하도록 이미 수정
+    results = run_generate_ai_titles()
+    return {
+        "status": "completed",
+        "message": "AI 제목 생성 완료",
+        "results": results  # 각 기사별 상태와 오류 정보를 포함
+    }
 
 
 if __name__ == "__main__":
