@@ -33,7 +33,7 @@ export function Header({ activeMenu }: HeaderProps) {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0F0F1A]/90 backdrop-blur-xl border-b border-white/10">
-      <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="container mx-auto px-22 py-7 flex items-center justify-between">
 
         {/* LOGO */}
         <div
@@ -43,7 +43,7 @@ export function Header({ activeMenu }: HeaderProps) {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-white font-bold">
             M
           </div>
-          <span className="text-xl font-bold text-white">Mak'gora</span>
+          <span className="text-2xl font-bold text-white">Mak'gora</span>
         </div>
 
         {/* MENU */}

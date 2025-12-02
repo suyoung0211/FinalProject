@@ -1,4 +1,11 @@
-import { createContext, useState, useEffect, ReactNode } from "react";
+import { 
+  createContext, 
+  useState, 
+  useEffect, 
+  ReactNode, 
+  Dispatch,
+  SetStateAction
+} from "react";
 import { logoutApi, getMyInfoApi } from "../api/authApi";
 
 export interface UserType {
@@ -13,8 +20,11 @@ export interface UserType {
 export interface AuthContextType {
   user: UserType | null;
   token: string | null;
-  setUser: (user: UserType | null) => void;       // ⭐ 추가
-  setToken: (token: string | null) => void;       // ⭐ 추가
+
+  // ⭐ React의 SetStateAction으로 변경!
+  setUser: Dispatch<SetStateAction<UserType | null>>;
+  setToken: Dispatch<SetStateAction<string | null>>;
+
   login: (user: UserType, access: string) => void;
   logout: () => void;
 }
@@ -27,13 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedAccess = localStorage.getItem("accessToken");
+
     if (savedAccess) {
       setToken(savedAccess);
 
       getMyInfoApi()
-        .then((res: any) => {
-          setUser(res.data);
-        })
+        .then((res: any) => setUser(res.data))
         .catch(() => {
           setUser(null);
           setToken(null);
@@ -50,9 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await logoutApi();
-    } catch (e) {
-      console.error("Logout API error:", e);
-    }
+    } catch (_) {}
 
     localStorage.removeItem("accessToken");
     setToken(null);
@@ -64,8 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         token,
-        setUser,   // ⭐ 추가됨
-        setToken,  // ⭐ 추가됨
+        setUser,   // 🔥 콜백 지원됨
+        setToken,
         login,
         logout,
       }}
