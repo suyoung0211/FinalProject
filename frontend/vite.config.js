@@ -9,6 +9,15 @@ export default defineConfig({
         plugins: [["babel-plugin-react-compiler"]],
       },
     }),
-    tailwindcss(), // ⭐ Tailwind v4 플러그인 추가
+    tailwindcss(),
   ],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
 })

@@ -25,13 +25,12 @@ public class RankingController {
 
     /** 🔥 랭킹 타입별 TOP 10 */
     @GetMapping("/top/{type}")
-    public ResponseEntity<?> getTop10(@PathVariable RankingType type) {
-        return ResponseEntity.ok(service.getTop10(type));
-    }
+public ResponseEntity<?> getTop10(@PathVariable RankingType type) {
+    return ResponseEntity.ok(service.getTop10(type));
+}
 
-    /** 🔥 특정 랭킹 타입 전체 조회 */
-    @GetMapping("/{type}")
-    public ResponseEntity<?> getRanking(@PathVariable RankingType type) {
-        return ResponseEntity.ok(service.getRankingByType(type));
-    }
+@GetMapping("/{type}")
+public ResponseEntity<?> getRanking(@PathVariable RankingType type) {
+    return ResponseEntity.ok(service.getRankingByType(type));
+}
 }

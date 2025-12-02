@@ -78,6 +78,9 @@ public class StoreService {
         // 포인트 차감
         user.setPoints(user.getPoints() - item.getPrice());
 
+        // ⭐ DB 반영
+        userRepository.save(user);
+
         // 구매 엔티티 생성
         UserStoreEntity record = UserStoreEntity.builder()
                 .user(user)
