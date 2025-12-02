@@ -1,8 +1,11 @@
 package org.usyj.makgora.rssfeed.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.entity.RssFeedEntity;
@@ -16,28 +19,16 @@ import java.util.Set;
 @Repository
 public interface RssArticleRepository extends JpaRepository<RssArticleEntity, Integer> {
 
-    // 특정 RSS 피드에 속한 기사 조회
     List<RssArticleEntity> findByFeed(RssFeedEntity feed);
 
-    // 링크로 단일 기사 조회 (고유)
-    Optional<RssArticleEntity> findByLink(String link);
-
-    // 제목으로 기사 검색 (부분 검색은 JPQL이나 @Query 필요)
-    List<RssArticleEntity> findByTitleContaining(String keyword);
-
-    // 링크 중복 체크
     boolean existsByLink(String link);
 
-    // 썸네일 저장
+    Optional<RssArticleEntity> findByLink(String link);
+
     @Transactional
     @Modifying
     @Query("UPDATE RssArticleEntity a SET a.thumbnailUrl = :thumbnail WHERE a.id = :id")
     void updateThumbnail(Integer id, String thumbnail);
 
-    // 특정 feed에서 링크가 존재하는 것만 조회
     List<RssArticleEntity> findByFeedAndLinkIn(RssFeedEntity feed, Set<String> links);
-
-     // 카테고리로 기사 조회
-    @Query("SELECT a FROM RssArticleEntity a JOIN a.categories c WHERE c.name = :category")
-List<RssArticleEntity> findByCategory(String category);
 }

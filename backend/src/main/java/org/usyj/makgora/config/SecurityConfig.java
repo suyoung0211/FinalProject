@@ -41,7 +41,7 @@ public class SecurityConfig {
 
             .authorizeHttpRequests(auth -> auth
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
+        .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
         // 인증 없이 허용되는 API
         .requestMatchers(
                 "/api/auth/login",
@@ -55,6 +55,10 @@ public class SecurityConfig {
 
         // ⭐ 이슈 전체 GET 허용 (핵심)
         .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
+        // ⭐ 기사 조회 허용
+        .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
+        // ⭐ 기사 카테고리 허용
+.requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
         // 투표 GET 허용
         .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
@@ -62,6 +66,7 @@ public class SecurityConfig {
 
         // 커뮤니티 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+        
 
         // 아래는 인증 필요한 API (GET 제외)
         // .requestMatchers("/api/issues/articles/**").authenticated() // ← 이 위치는 여기로
@@ -72,10 +77,9 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
 
         .requestMatchers("/api/user/**").authenticated()
-        .requestMatchers("/api/vote/**").authenticated()
         .requestMatchers("/api/comment/**").authenticated()
-
-        .anyRequest().authenticated()
+        .requestMatchers("/api/store/**").authenticated()
+        .anyRequest().permitAll()
 )
 
             .logout(logout -> logout.disable())

@@ -1,5 +1,6 @@
 {
     "java.dependency.packagePresentation": "hierarchical",
     "java.compile.nullAnalysis.mode": "disabled",
-    "terminal.integrated.defaultProfile.windows": "Command Prompt"
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "java.debug.settings.onBuildFailureProceed": true
 }

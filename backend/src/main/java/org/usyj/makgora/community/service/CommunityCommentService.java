@@ -2,6 +2,7 @@ package org.usyj.makgora.community.service;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.community.dto.CommunityCommentRequest;
@@ -24,68 +25,59 @@ public class CommunityCommentService {
     private final CommunityPostRepository communityPostRepository;
     private final CommunityPostReactionService postReactionService;
     private final UserRepository userRepository;
+    private final StringRedisTemplate redis;
 
-    /**
-     * 특정 게시글의 댓글/대댓글 목록 조회
-     * - DB에서 평탄하게 가져온 후
-     * - parent(부모 댓글) 기준으로 트리 구조로 조립
-     */
+    private String commentKey(Long commentId, String type) {
+        return "cc:" + commentId + ":" + type;
+    }
+
+    private long getCommentCount(Long commentId, String type) {
+        String v = redis.opsForValue().get(commentKey(commentId, type));
+        return (v == null) ? 0L : Long.parseLong(v);
+    }
+
+    /** 댓글 목록 조회 */
     @Transactional(readOnly = true)
     public List<CommunityCommentResponse> getCommentsByPost(Long postId, Integer currentUserId) {
-        // 1) 게시글 존재 여부 체크
+
         communityPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
-        // 2) 해당 게시글의 모든 댓글/대댓글 가져오기 (작성 시간 순)
         List<CommunityCommentEntity> entities =
                 communityCommentRepository.findByPost_PostIdOrderByCreatedAtAsc(postId);
 
-        // 3) Entity -> DTO 1차 변환 + Map에 저장
         Map<Long, CommunityCommentResponse> dtoMap = new LinkedHashMap<>();
+
         for (CommunityCommentEntity entity : entities) {
-            CommunityCommentResponse dto = toResponse(entity, currentUserId);
-            // toResponse에서 replies를 new ArrayList<>()로 넣어주고 있으니 setReplies는 필요 없음
-            dtoMap.put(dto.getCommentId(), dto);
+            dtoMap.put(entity.getCommentId(), toResponse(entity, currentUserId));
         }
 
-        // 4) parent 기준으로 트리 구성
         List<CommunityCommentResponse> roots = new ArrayList<>();
 
         for (CommunityCommentEntity entity : entities) {
-            Long commentId = entity.getCommentId();
-            Long parentId = (entity.getParent() != null)
-                    ? entity.getParent().getCommentId()
-                    : null;
 
-            CommunityCommentResponse current = dtoMap.get(commentId);
+            Long commentId = entity.getCommentId();
+            Long parentId = (entity.getParent() != null) ? entity.getParent().getCommentId() : null;
+
+            CommunityCommentResponse dto = dtoMap.get(commentId);
 
             if (parentId == null) {
-                // 루트 댓글
-                roots.add(current);
+                roots.add(dto);
             } else {
-                // 대댓글 → 부모 아래에 추가
-                CommunityCommentResponse parent = dtoMap.get(parentId);
-                if (parent != null) {
-                    parent.getReplies().add(current);
-                } else {
-                    // (이상 케이스) 부모를 못 찾으면 그냥 루트에라도 붙여둠
-                    roots.add(current);
-                }
+                dtoMap.get(parentId).getReplies().add(dto);
             }
         }
 
         return roots;
     }
 
-
-    /**
-     * 댓글/대댓글 작성
-     */
+    /** 댓글 작성 */
     public CommunityCommentResponse createComment(
             Long postId,
             Integer userId,
             CommunityCommentRequest request
     ) {
+
         CommunityPostEntity post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
@@ -93,31 +85,40 @@ public class CommunityCommentService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         CommunityCommentEntity parent = null;
+
         if (request.getParentCommentId() != null) {
             parent = communityCommentRepository.findById(request.getParentCommentId())
                     .orElseThrow(() -> new IllegalArgumentException("부모 댓글을 찾을 수 없습니다."));
         }
 
-        CommunityCommentEntity entity = CommunityCommentEntity.builder()
-                .post(post)
-                .user(user)
-                .parent(parent)
-                .content(request.getContent())
-                .build();
+        CommunityCommentEntity saved = communityCommentRepository.save(
+                CommunityCommentEntity.builder()
+                        .post(post)
+                        .user(user)
+                        .parent(parent)
+                        .content(request.getContent())
+                        .build()
+        );
 
-        CommunityCommentEntity saved = communityCommentRepository.save(entity);
+        Long commentId = saved.getCommentId();
+
+        // 🔥 댓글 좋아요/싫어요 Redis 초기값 세팅
+        redis.opsForValue().set(commentKey(commentId, "like"), "0");
+        redis.opsForValue().set(commentKey(commentId, "dislike"), "0");
+
+        // 🔥 게시글 댓글 수 증가 (Redis Only)
         postReactionService.addComment(postId);
+
         return toResponse(saved, userId);
     }
 
-    /**
-     * 댓글 수정 (본인만 가능)
-     */
+    /** 댓글 수정 */
     public CommunityCommentResponse updateComment(
             Long commentId,
             Integer userId,
             CommunityCommentRequest request
     ) {
+
         CommunityCommentEntity comment = communityCommentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
@@ -126,16 +127,12 @@ public class CommunityCommentService {
         }
 
         comment.setContent(request.getContent());
-        // @PreUpdate 덕분에 updatedAt은 자동 갱신
-
-        CommunityCommentEntity updated = communityCommentRepository.save(comment);
-        return toResponse(updated, userId);
+        return toResponse(comment, userId);
     }
 
-    /**
-     * 댓글 삭제 (본인만 가능)
-     */
+    /** 댓글 삭제 */
     public void deleteComment(Long commentId, Integer userId) {
+
         CommunityCommentEntity comment = communityCommentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
@@ -144,34 +141,34 @@ public class CommunityCommentService {
         }
 
         communityCommentRepository.delete(comment);
+
+        // 🔥 댓글 감소는 정책에 따라 선택
+        // postReactionService.decreaseComment(comment.getPost().getPostId());
     }
 
-    /**
-     * Entity -> DTO 변환 메서드
-     * (추천/비추천 필드는 엔티티에 없으니 일단 0으로 채워둔 상태)
-     */
+    /** DTO 변환 */
     private CommunityCommentResponse toResponse(CommunityCommentEntity entity, Integer currentUserId) {
-        boolean mine = (currentUserId != null)
-                && entity.getUser().getId().equals(currentUserId);
+
+        boolean mine = (currentUserId != null) &&
+                entity.getUser().getId().equals(currentUserId);
+
+        long likeCount = getCommentCount(entity.getCommentId(), "like");
+        long dislikeCount = getCommentCount(entity.getCommentId(), "dislike");
 
         return CommunityCommentResponse.builder()
                 .commentId(entity.getCommentId())
                 .postId(entity.getPost().getPostId())
-                .parentCommentId(
-                        entity.getParent() != null
-                                ? entity.getParent().getCommentId()
-                                : null
-                )
+                .parentCommentId(entity.getParent() != null ?
+                        entity.getParent().getCommentId() : null)
                 .userId(entity.getUser().getId())
                 .nickname(entity.getUser().getNickname())
                 .content(entity.getContent())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
-                .likeCount(entity.getLikeCount())     // 엔티티에 없어서 임시 0
-                .dislikeCount(entity.getDislikeCount())  // 엔티티에 없어서 임시 0
+                .likeCount(likeCount)
+                .dislikeCount(dislikeCount)
                 .mine(mine)
                 .replies(new ArrayList<>())
                 .build();
     }
-
 }

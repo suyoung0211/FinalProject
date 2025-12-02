@@ -34,4 +34,14 @@ public interface ArticleCommentRepository extends JpaRepository<ArticleCommentEn
      */
     @Query("SELECT COUNT(c) FROM ArticleCommentEntity c WHERE c.article.id = :articleId")
     long countByArticleId(@Param("articleId") Integer articleId);
+
+    // 기사 기준 전체 댓글/대댓글 조회 (작성 시간 순)
+    List<ArticleCommentEntity> findByArticle_IdOrderByCreatedAtAsc(Integer articleId);
+
+    @Query("SELECT COUNT(c) FROM ArticleCommentEntity c WHERE c.article.id = :articleId")
+long countCommentsByArticle(@Param("articleId") Integer articleId);
+
+@Query("SELECT COALESCE(SUM(c.likeCount), 0) FROM ArticleCommentEntity c WHERE c.article.id = :articleId")
+long sumCommentLikesByArticle(@Param("articleId") Integer articleId);
+
 }

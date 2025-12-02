@@ -44,7 +44,7 @@ interface MyItemResponse {
 
 export function PointsShopPage({ onBack }: any) {
 
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   useEffect(() => {
   console.log("🧪 현재 user:", user);
   console.log("🧪 userPoints 초기값:", userPoints);
@@ -122,19 +122,29 @@ export function PointsShopPage({ onBack }: any) {
 
   /** 🔥 구매 처리 */
   const confirmPurchase = async () => {
-    if (!selectedItem) return;
-    try {
-      await purchaseItem(selectedItem.id);
-      alert("구매 완료!");
+  if (!selectedItem) return;
+  try {
+    await purchaseItem(selectedItem.id);
+    alert("구매 완료!");
 
-      setUserPoints(prev => prev - selectedItem.price);
-      setMyItems(prev => [...prev, selectedItem.id]);
-      setShowPurchaseModal(false);
-      setSelectedItem(null);
-    } catch (e) {
-      alert("포인트 부족 또는 오류 발생!");
-    }
-  };
+    // 상점 페이지 로컬 포인트 갱신
+    setUserPoints(prev => prev - selectedItem.price);
+
+    // 내 아이템 추가
+    setMyItems(prev => [...prev, selectedItem.id]);
+
+    // ⭐ 헤더 포인트 업데이트 (가장 중요!!)
+    setUser((prev) => ({
+      ...prev,
+      points: prev.points - selectedItem.price,
+    }));
+
+    setShowPurchaseModal(false);
+    setSelectedItem(null);
+  } catch (e) {
+    alert("포인트 부족 또는 오류 발생!");
+  }
+};
 
   /** 🔥 카테고리 필터링 */
   const filteredItems = shopItems.filter(
