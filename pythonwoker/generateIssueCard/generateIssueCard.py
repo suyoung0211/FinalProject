@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 import logging
-import traceback    
+import traceback
 from dotenv import load_dotenv
 from openai import OpenAI
 from sqlalchemy import (
@@ -52,7 +52,6 @@ class RssArticleEntity(Base):
     issue_created = Column(Boolean, nullable=False, default=False)
 
 
-
 class CommunityPostEntity(Base):
     __tablename__ = "community_posts"
 
@@ -70,9 +69,7 @@ class CommunityPostEntity(Base):
     user_id = Column(Integer, nullable=False, default=1)
 
     view_count = Column(Integer, default=0)
-
     post_type = Column(String(20))
-
 
 
 class IssueEntity(Base):
@@ -166,7 +163,7 @@ def generate_issue_card(title, content):
             }
         }
 
-    # 방어 코드: key_points가 문자열로 오면 리스트로 변환
+    # 방어 코드: ai_points가 문자열로 오면 JSON 파싱 시도
     ai_points = data.get("ai_points", {})
     if isinstance(ai_points, str):
         try:
@@ -174,7 +171,7 @@ def generate_issue_card(title, content):
         except:
             ai_points = {}
 
-    # 그래도 key_points가 없으면 기본 제공
+    # key_points 보정
     if not isinstance(ai_points.get("key_points", []), list):
         ai_points["key_points"] = []
 
@@ -203,10 +200,7 @@ def save_issue(source, ref, ai):
         thumbnail=getattr(ref, "thumbnail_url", None),
         source=source,
         ai_summary=ai["issue_summary"],
-
-        # 🔥 ai_points 오브젝트 그대로 저장
         ai_points=json.dumps(ai_points_obj, ensure_ascii=False),
-
         status="APPROVED",
         created_by="AI",
         created_at=datetime.now(),
@@ -248,7 +242,6 @@ def run_issue_for_article(article_id):
         session.rollback()
         return {"status": "error", "message": str(e)}
 
-
 # ======================================
 # 2) 단일 Community Issue 생성
 # ======================================
@@ -263,7 +256,6 @@ def run_issue_for_community(post_id):
 
         logger.info(f"[Issue] Found CommunityPost: title={post.title}")
 
-        # 중복 Issue 생성 방지
         exists = session.query(IssueEntity).filter_by(community_post_id=post_id).first()
         if exists:
             logger.info(f"[Issue] Issue already exists for post_id={post_id}")

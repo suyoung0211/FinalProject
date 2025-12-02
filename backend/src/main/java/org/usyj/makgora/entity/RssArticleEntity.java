@@ -45,7 +45,7 @@ public class RssArticleEntity {
     @Column(nullable = false, length = 500)
     private String title;
 
-    @Column(nullable = false, length = 2000, unique = true)
+    @Column(nullable = false, length = 500)
     private String link;
 
     @Lob

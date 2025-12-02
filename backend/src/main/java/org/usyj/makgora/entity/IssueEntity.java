@@ -36,6 +36,7 @@ public class IssueEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(length = 500)
     private String thumbnail;
 
     @Lob
