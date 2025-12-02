@@ -34,29 +34,50 @@ public class UserInfoService {
     }
 
     // 🔹 관리자용: 모든 사용자 정보 조회
-    public List<AdminUserInfoResponse> getAllUsers() {
+    public List<AdminUserInfoResponse> getAllUsers(UserEntity currentUser) {
         return repo.findAll().stream()
-                   .map(this::toAdminDto)
-                   .collect(Collectors.toList());
+                .filter(user -> filterDeletedAndSuperAdmin(user, currentUser))
+                .map(this::toAdminDto)
+                .collect(Collectors.toList());
     }
 
-    // 🔹 관리자: loginId 포함 사용자 검색
-    public List<AdminUserInfoResponse> searchUsersByLoginId(String loginIdPart) {
-        return repo.findByLoginIdContaining(loginIdPart).stream()
-                   .map(this::toAdminDto)
-                   .collect(Collectors.toList());
+    // 🔹 관리자: nickname 포함 사용자 검색
+    public List<AdminUserInfoResponse> searchUsersByNickname(String nickname, UserEntity currentUser) {
+        return repo.findByNicknameContaining(nickname).stream()
+                .filter(user -> filterDeletedAndSuperAdmin(user, currentUser))
+                .map(this::toAdminDto)
+                .collect(Collectors.toList());
     }
 
     // 🔹 관리자: 특정 사용자 단일 조회
-    public AdminUserInfoResponse getUserByLoginId(String loginId) {
-        UserEntity user = repo.findByLoginId(loginId)
+    public AdminUserInfoResponse getUserById(int id, UserEntity currentUser) {
+        UserEntity user = repo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!filterDeletedAndSuperAdmin(user, currentUser)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+
         return toAdminDto(user);
+    }
+
+    // 🔹 DELETED/슈퍼어드민 필터링 헬퍼
+    private boolean filterDeletedAndSuperAdmin(UserEntity user, UserEntity currentUser) {
+        // DELETED 상태는 슈퍼어드민만 조회 가능
+        if (user.getStatus() == UserEntity.Status.DELETED && currentUser.getRole() != UserEntity.Role.SUPER_ADMIN) {
+            return false;
+        }
+        // 슈퍼어드민은 일반 어드민이 조회 불가
+        if (user.getRole() == UserEntity.Role.SUPER_ADMIN && currentUser.getRole() != UserEntity.Role.SUPER_ADMIN) {
+            return false;
+        }
+        return true;
     }
 
     // 🔹 DTO 변환 helper
     private AdminUserInfoResponse toAdminDto(UserEntity user) {
         return new AdminUserInfoResponse(
+                user.getId(),
                 user.getLoginId(),
                 user.getNickname(),
                 user.getLevel(),
