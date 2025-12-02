@@ -28,7 +28,9 @@ public class GuardianSource implements RssFeedSource {
     @Override
     public Map<String, String> getCategoryFeeds() {
         Map<String, String> map = new HashMap<>();
-        map.put("Environment", "https://www.theguardian.com/uk/environment/rss");
+        map.put("경제", "https://www.theguardian.com/uk/business/rss");
+        map.put("스포츠", "https://www.theguardian.com/uk/sport/rss");
+        map.put("연예/문화", "https://www.theguardian.com/uk/culture/rss");
         return map;
     }
 

@@ -1,8 +1,8 @@
 import { ArrowLeft, BarChart3, Rss, FileCheck, Vote, MessageSquare, ShoppingBag, FileText, Shield } from 'lucide-react';
 import { AdminPageProps } from '../types';
 import { NavLink, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { Dashboard } from '../components/admin/Dashboard';
-import { RssFeeds } from '../components/admin/RssFeeds';
+import { Dashboard } from '../components/admin/dashboard/Dashboard';
+import { RssFeeds } from '../components/admin/rssFedds/RssFeeds';
 import { Issues } from '../components/admin/Issues';
 import { Votes } from '../components/admin/Votes';
 import { Community } from '../components/admin/Community';
