@@ -1,22 +1,37 @@
 import { useState, useEffect } from "react";
-import { getAllAdminUsersApi } from "../../api/authApi";
+import { getAllAdminUsersApi } from "../../../api/adminAPI";
 import { Users, DollarSign, TrendingUp, MessageSquare, Search, Plus, Edit, Ban, Trash2 } from "lucide-react";
-import { Avatar } from "../Avatar";
-import { Button } from '../ui/button';
+import { Avatar } from "../../Avatar";
+import { Button } from '../../ui/button';
 import CreateAdminModal from "./CreateAdminModal";
+import UserDetailModal from "./UserDetailModal";
+import UserActionButtons from "./UserActionButtons";
+import EditUserModal from "./EditUserModal";
 
 export function Dashboard() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const [modal, setModal] = useState<ModalType>({ type: null });
+
+  // 모달 관리 타입
+  type ModalType =
+    | { type: "CREATE_ADMIN" }
+    | { type: "USER_DETAIL"; user: any }
+    | { type: "EDIT_USER"; user: any }
+    | { type: null };
+
+  const openModal = (type: ModalType["type"], user?: any) => {
+    if (modal.type) return; // 관리자 모달 열려있으면 무시
+    setModal({ type, user });
+  };
 
   const fetchUsers = async () => {
     try {
       const res = await getAllAdminUsersApi();
       setUsers(res.data);
       console.log("API 응답 데이터:", res.data);
-    } catch (err) {
+    } catch (err) { 
       console.error(err);
     }
   };
@@ -32,10 +47,10 @@ export function Dashboard() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-xl">활성</span>;
+        return <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-xl">활성화</span>;
       case "INACTIVE":
-        return <span className="px-2 py-1 text-xs bg-gray-500/20 text-gray-400 rounded-xl">비활성</span>;
-      case "BANNED":
+        return <span className="px-2 py-1 text-xs bg-gray-500/20 text-gray-400 rounded-xl">비활성화</span>;
+      case "DELETED":
         return <span className="px-2 py-1 text-xs bg-red-500/20 text-red-400 rounded-xl">정지</span>;
       default:
         return <span className="px-2 py-1 text-xs bg-gray-500/20 text-gray-400 rounded-xl">{status}</span>;
@@ -60,7 +75,10 @@ export function Dashboard() {
             <span className="text-green-400 text-sm font-medium">+45K</span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">
-            {users.reduce((sum, u) => sum + (u.points || 0), 0).toLocaleString()}P
+            {users
+              .filter(u => u.role !== "ADMIN" && u.role !== "SUPER_ADMIN") // ADMIN/슈퍼어드민 제외
+              .reduce((sum, u) => sum + (u.points || 0), 0)
+              .toLocaleString()}P
           </div>
           <div className="text-sm text-gray-400">총 포인트</div>
         </div>
@@ -96,7 +114,7 @@ export function Dashboard() {
           <div>
             <Button
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm"
-              onClick={() => setOpen(true)}
+              onClick={() => openModal("CREATE_ADMIN")}
             >
               <Plus className="w-4 h-4 mr-2" />
               관리자 추가
@@ -119,7 +137,11 @@ export function Dashboard() {
             <tbody className="divide-y divide-white/5">
               {filteredUsers.length > 0 ? (
                 filteredUsers.map(user => (
-                  <tr key={user.loginId} className="hover:bg-white/5 transition-colors">
+                  <tr
+                    key={user.loginId}
+                    className="hover:bg-white/5 transition-colors"
+                    onClick={() => openModal("USER_DETAIL", user)}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden">
@@ -131,7 +153,7 @@ export function Dashboard() {
                         </div>
                         <div>
                           <div className="text-sm font-medium text-white">{user.nickname}</div>
-                          <div className="text-xs text-gray-400">@{user.loginId}</div>
+                          <div className="text-xs text-gray-400">@{user.role}</div>
                         </div>
                       </div>
                     </td>
@@ -140,18 +162,13 @@ export function Dashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-400 font-bold">Lv.{user.level}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(user.status)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{new Date(user.createdAt).toISOString().split('T')[0]}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <button className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 transition-colors">
-                          <Ban className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                      <UserActionButtons
+                        userId={user.id}        // user.id 반드시 있어야 함
+                        userData={user}         // 수정 시 초기값
+                        onUpdate={fetchUsers}   // 테이블 갱신 함수
+                        onEdit={() => openModal("EDIT_USER", user)}
+                      />
                     </td>
                   </tr>
                 ))
@@ -171,14 +188,33 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* 모달 */}
-      <CreateAdminModal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-          fetchUsers(); // 모달 닫으면 최신 데이터 불러오기
-        }}
-      />
+      {/* 관리자 생성 */}
+      {modal.type === "CREATE_ADMIN" && (
+        <CreateAdminModal
+          open={true}
+          onClose={() => setModal({ type: null })}
+          onUpdate={fetchUsers}
+        />
+      )}
+
+      {/* 유저 상세 */}
+      {modal.type === "USER_DETAIL" && modal.user && (
+        <UserDetailModal
+          open={true}
+          user={modal.user}
+          onClose={() => setModal({ type: null })}
+        />
+      )}
+
+      {/* 유저 정보 수정 */}
+      {modal.type === "EDIT_USER" && modal.user && (
+        <EditUserModal
+          userId={modal.user.id}
+          userData={modal.user}
+          onClose={() => setModal({ type: null })}
+          onUpdate={fetchUsers}
+        />
+      )}
     </div>
   );
 }

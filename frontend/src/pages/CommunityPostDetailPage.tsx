@@ -286,14 +286,19 @@ const deleteComment = async (commentId: number) => {
   useEffect(() => {
     if (!postId) return;
 
+    let isMounted = true; // 컴포넌트가 마운트되어 있는지 추적
+
     const fetchPost = async () => {
       try {
         setLoading(true);
         setError(null);
 
         const res = await api.get(`/community/posts/${postId}`);
-        const data = res.data as any;
+        
+        // 컴포넌트가 언마운트되었으면 상태 업데이트 안 함
+        if (!isMounted) return;
 
+        const data = res.data as any;
         const myReaction: number = data.myReaction ?? 0;
 
         setPost({
@@ -303,14 +308,22 @@ const deleteComment = async (commentId: number) => {
           isDisliked: myReaction === -1,
         });
       } catch (e) {
+        if (!isMounted) return;
         console.error(e);
         setError("게시글을 불러오지 못했습니다.");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchPost();
+
+    // cleanup 함수: 컴포넌트 언마운트 시 플래그 설정
+    return () => {
+      isMounted = false;
+    };
   }, [postId]);
 
   // 📌 댓글은 별도로 로딩

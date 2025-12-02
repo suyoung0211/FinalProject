@@ -45,8 +45,8 @@ public class RssArticleEntity {
     @Column(nullable = false, length = 500)
     private String title;
 
-    @Column(nullable = false, length = 2000)
-private String link;
+    @Column(nullable = false, length = 2000, unique = true)
+    private String link;
 
     @Lob
     private String content;
@@ -89,5 +89,5 @@ private String link;
     private Boolean issueCreated = false;
 
     @Column(nullable = false)
-private int aiSystemScore;
+    private int aiSystemScore;
 }

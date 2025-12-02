@@ -21,6 +21,7 @@ import { fetchCategories } from "../api/categoryApi";
 import NewsSlider from "../components/home/NewsSlider";
 import LatestNewsSidebar from "../components/home/LatestNewsSidebar";
 import LatestNewsList from "../components/home/LatestNewsList";
+import { Header } from "../components/layout/Header";
 
 // 타입 정의
 interface HotIssue {
@@ -130,35 +131,9 @@ export function MainPage() {
   });
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 pt-24">
-
-      {/* HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="w-full max-w-[1440px] mx-auto px-6 py-4 flex items-center justify-between">
-          
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-white">Mak'gora</span>
-          </div>
-
-          <nav className="hidden md:flex gap-6 items-center text-gray-300">
-            <button onClick={() => navigate("/community")} className="hover:text-white">커뮤니티</button>
-            <button onClick={() => navigate("/vote")} className="hover:text-white">투표하기</button>
-            <button onClick={() => navigate("/article")} className="hover:text-white">기사</button>
-          </nav>
-
-          {!user ? (
-            <div className="flex items-center gap-2">
-              <button onClick={() => navigate("/login?mode=signup")} className="text-gray-300 hover:text-white px-4 py-2">회원가입</button>
-              <button onClick={() => navigate("/login")} className="text-gray-300 hover:text-white px-4 py-2">로그인</button>
-            </div>
-          ) : (
-            <UserDropdown user={user} onLogout={logout} />
-          )}
-        </div>
-      </header>
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* ---------------- HEADER ---------------- */}
+      <Header activeMenu="" />
 
       {/* ---------------- SLIDER + SIDEBAR ---------------- */}
 <section className="w-full px-6 mt-10">

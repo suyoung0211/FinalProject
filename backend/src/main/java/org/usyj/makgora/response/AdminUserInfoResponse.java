@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AdminUserInfoResponse {
+    private int id;
     private String loginId;
     private String nickname;
     private int level;

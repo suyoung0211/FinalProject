@@ -1,4 +1,4 @@
-// src/main/java/org/usyj/makgora/service/IssueTriggerConsumer.java
+// // src/main/java/org/usyj/makgora/service/IssueTriggerConsumer.java
 package org.usyj.makgora.service;
 
 import java.time.Duration;

@@ -69,7 +69,10 @@ public class JwtTokenProvider {
         } catch (IllegalArgumentException e) {
             System.out.println("JWT empty");
         }
-        return false;
+        return false; // ✅ 만료된 토큰은 false 반환
+                      /* getUserId(), getEmail() 등도 실패
+                         Access Token 사용할 수 없음
+                      */
     }
 
     /** Token → User Email 추출 */

@@ -19,8 +19,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     // 활성 상태인 사용자만 찾기
     Optional<UserEntity> findByLoginIdAndStatus(String loginId, UserEntity.Status status);
     
-    // 🔹 loginId 일부 포함 검색
-    List<UserEntity> findByLoginIdContaining(String loginIdPart);
+    // 🔹 nickname 일부 포함 검색
+    List<UserEntity> findByNicknameContaining(String nickname);
 
     // 🔹 로그인 아이디 존재 여부 확인
     boolean existsByLoginId(String loginId);

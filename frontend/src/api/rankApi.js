@@ -1,5 +1,7 @@
-import axios from "axios";
+import api from "./api";
 
 export const getRankingTop = async (type) => {
-  return axios.get(`/api/rankings/top/${type}`);
+  return api.get(`/rankings/top/${type}`, {
+    withCredentials: false,
+  });
 };

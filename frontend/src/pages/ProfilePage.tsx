@@ -1,9 +1,26 @@
-import { ArrowLeft, User, Mail, Coins, TrendingUp, Trophy, Calendar, BarChart3, Award, Target, Flame, Edit2, Save, X, Lock, Shield } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { useState } from 'react';
-import { Avatar, AvatarSelector } from './Avatar';
-import { Header } from "./layout/Header";
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Coins,
+  TrendingUp,
+  Trophy,
+  Calendar,
+  BarChart3,
+  Award,
+  Target,
+  Flame,
+  Edit2,
+  Save,
+  X,
+  Lock,
+  Shield,
+} from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { useState, useEffect } from 'react';
+import { Avatar, AvatarSelector } from '../components/Avatar';
+import api from '../api/api';
 
 interface UserProfile {
   username: string;
@@ -15,11 +32,38 @@ interface UserProfile {
   avatarVariant?: number;
 }
 
+// ✅ 백엔드 RecentCommunityActivityResponse DTO와 매핑되는 타입
+interface RecentCommunityActivity {
+  activityId: number;          // 글이면 postId, 댓글이면 commentId
+  type: 'POST' | 'COMMENT';    // CommunityActivityType enum
+  postId: number;              // 게시글 상세로 이동할 때 필요
+  postTitle: string;
+  contentPreview: string;
+  createdAt: string;           // LocalDateTime → 문자열로 직렬화됨
+}
+
+// ✅ 백엔드 RecentVoteActivityResponse DTO와 매핑되는 타입
+interface RecentVoteActivity {
+  voteUserId: number;
+  voteId: number;
+  voteTitle: string;
+  issueTitle?: string | null;
+  choiceId: number;
+  choiceText: string;
+  pointsBet: number;
+  rewardAmount: number | null; // WIN/LOSE 정산 이후 순이익/손실, 그 외 null
+  result: 'WIN' | 'LOSE' | 'PENDING' | 'CANCELLED';
+  voteCreatedAt: string;
+  voteEndAt: string;
+  createdAt: string;           // 내가 베팅한 시각
+}
+
 interface ProfilePageProps {
   onBack: () => void;
   user: UserProfile;
   onUpdateUser?: (user: UserProfile) => void;
   onAdminPage?: () => void;
+  onGoVotePage?: () => void;   // 👈 추가
 }
 
 export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: ProfilePageProps) {
@@ -33,7 +77,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
   const [editedName, setEditedName] = useState(user.name);
   const [editedEmail, setEditedEmail] = useState(user.email);
   const [selectedAvatar, setSelectedAvatar] = useState<{ type: 'male' | 'female'; variant: number } | null>(
-    user.avatarType && user.avatarVariant 
+    user.avatarType && user.avatarVariant
       ? { type: user.avatarType, variant: user.avatarVariant }
       : null
   );
@@ -44,6 +88,63 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
 
   // 관리자 여부 확인 (username이 'admin'인 경우)
   const isAdmin = user.username === 'admin';
+
+  // ✅ 최근 커뮤니티 활동 상태 (백엔드 연동)
+  const [communityActivities, setCommunityActivities] = useState<RecentCommunityActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(true);
+  const [activitiesError, setActivitiesError] = useState<string | null>(null);
+
+  // ✅ 최근 투표 활동 상태 (백엔드 연동)
+  const [voteActivities, setVoteActivities] = useState<RecentVoteActivity[]>([]);
+  const [voteLoading, setVoteLoading] = useState(true);
+  const [voteError, setVoteError] = useState<string | null>(null);
+
+  // ✅ 최근 활동 탭 (커뮤니티 / 투표)
+  const [activeActivityTab, setActiveActivityTab] = useState<'community' | 'vote'>('community');
+
+  // ✅ 프로필 - 최근 커뮤니티 & 투표 활동 목록 불러오기
+  useEffect(() => {
+    const fetchCommunityActivities = async () => {
+      try {
+        setActivitiesLoading(true);
+        setActivitiesError(null);
+
+        // 백엔드: GET /api/profile/activities/community?limit=10
+        const res = await api.get<RecentCommunityActivity[]>('/profile/activities/community', {
+          params: { limit: 10 },
+        });
+
+        setCommunityActivities(res.data);
+      } catch (error) {
+        console.error('최근 커뮤니티 활동 불러오기 실패', error);
+        setActivitiesError('최근 커뮤니티 활동을 불러오지 못했습니다.');
+      } finally {
+        setActivitiesLoading(false);
+      }
+    };
+
+    const fetchVoteActivities = async () => {
+      try {
+        setVoteLoading(true);
+        setVoteError(null);
+
+        // 백엔드: GET /api/profile/activities/votes?limit=10
+        const res = await api.get<RecentVoteActivity[]>('/profile/activities/votes', {
+          params: { limit: 10 },
+        });
+
+        setVoteActivities(res.data);
+      } catch (error) {
+        console.error('최근 투표 활동 불러오기 실패', error);
+        setVoteError('최근 투표 활동을 불러오지 못했습니다.');
+      } finally {
+        setVoteLoading(false);
+      }
+    };
+
+    fetchCommunityActivities();
+    fetchVoteActivities();
+  }, []);
 
   const handleSave = () => {
     if (onUpdateUser) {
@@ -65,7 +166,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
     setEditedName(user.name);
     setEditedEmail(user.email);
     setSelectedAvatar(
-      user.avatarType && user.avatarVariant 
+      user.avatarType && user.avatarVariant
         ? { type: user.avatarType, variant: user.avatarVariant }
         : null
     );
@@ -75,23 +176,23 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
 
   const handlePasswordChange = () => {
     setPasswordError('');
-    
+
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError('모든 필드를 입력해주세요.');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       setPasswordError('새 비밀번호가 일치하지 않습니다.');
       return;
     }
-    
+
     if (newPassword.length < 8) {
       setPasswordError('비밀번호는 최소 8자 이상이어야 합니다.');
       return;
     }
-    
-    // 임시: 실제로는 백엔드로 요청을 보내야 함
+
+    // TODO: 실제로는 백엔드로 요청을 보내야 함
     alert('비밀번호가 성공적으로 변경되었습니다!');
     setIsChangingPassword(false);
     setCurrentPassword('');
@@ -109,13 +210,13 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
 
   const handleAdminCodeSubmit = () => {
     setAdminCodeError('');
-    
+
     if (!adminCode) {
       setAdminCodeError('관리자 코드를 입력해주세요.');
       return;
     }
-    
-    // 임시: 실제로는 백엔드로 요청을 보내야 함
+
+    // TODO: 실제로는 백엔드로 요청을 보내야 함
     if (adminCode === 'admin123') {
       alert('관리자 권한이 부여되었습니다!');
       setShowAdminModal(false);
@@ -131,7 +232,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
     setAdminCodeError('');
   };
 
-  // 임시 통계 데이터
+  // 임시 통계 데이터 (투표 쪽 - 나중에 백엔드 연동 예정)
   const stats = {
     totalBets: 24,
     wonBets: 18,
@@ -143,43 +244,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
     rank: 142,
   };
 
-  const recentActivities = [
-    {
-      id: 1,
-      question: '2025년 비트코인이 15만 달러를 돌파할까요?',
-      vote: 'YES',
-      amount: 200,
-      result: 'pending',
-      date: '2025-11-18',
-    },
-    {
-      id: 2,
-      question: '손흥민이 이번 시즌 20골 이상을 기록할까요?',
-      vote: 'NO',
-      amount: 150,
-      result: 'won',
-      profit: 120,
-      date: '2025-11-15',
-    },
-    {
-      id: 3,
-      question: 'Tesla 주가가 2025년 내 500달러를 돌파할까요?',
-      vote: 'YES',
-      amount: 300,
-      result: 'won',
-      profit: 240,
-      date: '2025-11-12',
-    },
-    {
-      id: 4,
-      question: 'AI가 2025년 내에 의사 면허 시험을 통과할까요?',
-      vote: 'YES',
-      amount: 250,
-      result: 'lost',
-      date: '2025-11-10',
-    },
-  ];
-
+  // 업적은 지금처럼 더미 유지 (추후 백엔드 연동 가능)
   const achievements = [
     { id: 1, name: '첫 투표', icon: Target, unlocked: true },
     { id: 2, name: '연승 달성', icon: Flame, unlocked: true },
@@ -187,10 +252,38 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
     { id: 4, name: '예측 전문가', icon: Award, unlocked: false },
   ];
 
+  // ✅ 투표 결과 뱃지 색상/텍스트
+  const renderVoteResultBadge = (result: RecentVoteActivity['result']) => {
+    if (result === 'WIN') {
+      return (
+        <div className="px-2 py-1 bg-green-500/20 rounded-full">
+          <span className="text-xs text-green-400 font-medium">승리</span>
+        </div>
+      );
+    }
+    if (result === 'LOSE') {
+      return (
+        <div className="px-2 py-1 bg-red-500/20 rounded-full">
+          <span className="text-xs text-red-400 font-medium">패배</span>
+        </div>
+      );
+    }
+    if (result === 'CANCELLED') {
+      return (
+        <div className="px-2 py-1 bg-gray-500/20 rounded-full">
+          <span className="text-xs text-gray-300 font-medium">취소</span>
+        </div>
+      );
+    }
+    return (
+      <div className="px-2 py-1 bg-yellow-500/20 rounded-full">
+        <span className="text-xs text-yellow-400 font-medium">진행중</span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-       <Header activeMenu="vote" />
-
       {/* Header */}
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
@@ -239,7 +332,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
               </div>
             )}
           </div>
-          
+
           <div className="flex items-start gap-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -322,8 +415,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
                     <span className="text-white font-bold">{stats.winRate}% 승률</span>
                   </div>
                 </div>
-                
-                {/* Admin Button - Right side of badges */}
+
                 {!isEditing && (
                   <Button
                     onClick={() => setShowAdminModal(true)}
@@ -377,60 +469,171 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Activities */}
+          {/* ✅ Recent Activities - 커뮤니티 / 투표 탭 */}
           <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-6">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-400" />
-              최근 활동
-            </h2>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all"
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-purple-400" />
+                최근 활동
+              </h2>
+              <div className="inline-flex rounded-full bg-black/30 border border-white/10 p-1 text-xs">
+                <button
+                  className={`px-3 py-1 rounded-full transition-all ${
+                    activeActivityTab === 'community'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                  onClick={() => setActiveActivityTab('community')}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-white font-medium text-sm flex-1">{activity.question}</h3>
-                    {activity.result === 'won' && (
-                      <div className="px-2 py-1 bg-green-500/20 rounded-full">
-                        <span className="text-xs text-green-400 font-medium">승리</span>
-                      </div>
-                    )}
-                    {activity.result === 'lost' && (
-                      <div className="px-2 py-1 bg-red-500/20 rounded-full">
-                        <span className="text-xs text-red-400 font-medium">패배</span>
-                      </div>
-                    )}
-                    {activity.result === 'pending' && (
-                      <div className="px-2 py-1 bg-yellow-500/20 rounded-full">
-                        <span className="text-xs text-yellow-400 font-medium">진행중</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`px-2 py-1 rounded ${
-                          activity.vote === 'YES'
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-red-500/20 text-red-400'
-                        }`}
-                      >
-                        {activity.vote}
-                      </span>
-                      <span className="text-gray-400">{activity.amount}P</span>
-                    </div>
-                    {activity.result === 'won' && (
-                      <span className="text-green-400 font-medium">+{activity.profit}P</span>
-                    )}
-                    {activity.result === 'lost' && (
-                      <span className="text-red-400 font-medium">-{activity.amount}P</span>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2">{activity.date}</div>
-                </div>
-              ))}
+                  커뮤니티
+                </button>
+                <button
+                  className={`px-3 py-1 rounded-full transition-all ${
+                    activeActivityTab === 'vote'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
+                  onClick={() => setActiveActivityTab('vote')}
+                >
+                  투표
+                </button>
+              </div>
             </div>
+
+            {/* 커뮤니티 활동 탭 */}
+            {activeActivityTab === 'community' && (
+              <>
+                {activitiesLoading && (
+                  <p className="text-sm text-gray-400">
+                    최근 커뮤니티 활동을 불러오는 중입니다...
+                  </p>
+                )}
+
+                {!activitiesLoading && activitiesError && (
+                  <p className="text-sm text-red-400">{activitiesError}</p>
+                )}
+
+                {!activitiesLoading && !activitiesError && communityActivities.length === 0 && (
+                  <p className="text-sm text-gray-400">아직 커뮤니티 활동이 없어요.</p>
+                )}
+
+                {!activitiesLoading && !activitiesError && communityActivities.length > 0 && (
+                  <div className="space-y-4">
+                    {communityActivities.map((activity) => (
+                      <div
+                        key={`${activity.type}-${activity.activityId}`}
+                        className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          {/* 활동 타입 뱃지 */}
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              activity.type === 'POST'
+                                ? 'bg-blue-500/20 text-blue-300'
+                                : 'bg-emerald-500/20 text-emerald-300'
+                            }`}
+                          >
+                            {activity.type === 'POST' ? '게시글 작성' : '댓글 작성'}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(activity.createdAt).toLocaleString('ko-KR')}
+                          </span>
+                        </div>
+
+                        {/* 게시글 제목 */}
+                        <h3 className="text-white font-medium text-sm mb-1 line-clamp-1">
+                          {activity.postTitle}
+                        </h3>
+
+                        {/* 내용 프리뷰 */}
+                        {activity.contentPreview && (
+                          <p className="text-xs text-gray-300 line-clamp-2">
+                            {activity.contentPreview}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* 투표 활동 탭 */}
+            {activeActivityTab === 'vote' && (
+              <>
+                {voteLoading && (
+                  <p className="text-sm text-gray-400">
+                    최근 투표 활동을 불러오는 중입니다...
+                  </p>
+                )}
+
+                {!voteLoading && voteError && (
+                  <p className="text-sm text-red-400">{voteError}</p>
+                )}
+
+                {!voteLoading && !voteError && voteActivities.length === 0 && (
+                  <p className="text-sm text-gray-400">아직 투표 기록이 없어요.</p>
+                )}
+
+                {!voteLoading && !voteError && voteActivities.length > 0 && (
+                  <div className="space-y-4">
+                    {voteActivities.map((v) => (
+                      <div
+                        key={v.voteUserId}
+                        className="bg-white/5 backdrop-blur border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-gray-400 mb-1">
+                              {v.issueTitle}
+                            </span>
+                            <h3 className="text-white font-medium text-sm line-clamp-1">
+                              {v.voteTitle}
+                            </h3>
+                          </div>
+                          {renderVoteResultBadge(v.result)}
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-300 text-xs">
+                              {v.choiceText}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              {v.pointsBet}P 베팅
+                            </span>
+                          </div>
+
+                          {/* 정산된 금액 표시 */}
+                          {v.rewardAmount !== null && v.result !== 'CANCELLED' && (
+                            <span
+                              className={`text-xs font-medium ${
+                                v.rewardAmount > 0
+                                  ? 'text-green-400'
+                                  : v.rewardAmount < 0
+                                  ? 'text-red-400'
+                                  : 'text-gray-300'
+                              }`}
+                            >
+                              {v.rewardAmount > 0 ? '+' : ''}
+                              {v.rewardAmount}P
+                            </span>
+                          )}
+
+                          {v.result === 'CANCELLED' && (
+                            <span className="text-xs text-gray-300">환불 완료</span>
+                          )}
+                        </div>
+
+                        <div className="text-xs text-gray-500 mt-2">
+                          {new Date(v.createdAt).toLocaleString('ko-KR')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Achievements */}
@@ -504,7 +707,9 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">현재 비밀번호</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  현재 비밀번호
+                </label>
                 <Input
                   type="password"
                   value={currentPassword}
@@ -514,7 +719,9 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">새 비밀번호</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  새 비밀번호
+                </label>
                 <Input
                   type="password"
                   value={newPassword}
@@ -524,7 +731,9 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">비밀번호 확인</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  비밀번호 확인
+                </label>
                 <Input
                   type="password"
                   value={confirmPassword}
@@ -570,7 +779,9 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">관리자 코드</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  관리자 코드
+                </label>
                 <Input
                   type="password"
                   value={adminCode}
