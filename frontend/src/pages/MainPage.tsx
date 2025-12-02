@@ -136,7 +136,7 @@ export function MainPage() {
       <Header activeMenu="" />
 
       {/* ---------------- SLIDER + SIDEBAR ---------------- */}
-<section className="w-full px-6 mt-10">
+<section className="w-full px-6 pt-[150px]">
   <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
     
     <div className="md:col-span-2">

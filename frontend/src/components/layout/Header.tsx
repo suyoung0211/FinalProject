@@ -34,7 +34,7 @@ export function Header({ activeMenu }: HeaderProps) {
           {[
             { key: "vote", label: "투표", path: "/vote" },
             { key: "community", label: "커뮤니티", path: "/community" },
-            { key: "news", label: "뉴스", path: "/" },
+            { key: "news", label: "뉴스", path: "/article" },
             { key: "leaderboard", label: "리더보드", path: "/leaderboard" },
             { key: "store", label: "포인트 상점", path: "/store" },
           ].map((item) => (
