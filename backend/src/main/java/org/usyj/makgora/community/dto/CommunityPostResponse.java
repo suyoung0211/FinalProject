@@ -2,18 +2,11 @@ package org.usyj.makgora.community.dto;
 
 import java.time.LocalDateTime;
 
-import org.usyj.makgora.entity.CommunityPostEntity;
-
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import org.usyj.makgora.entity.CommunityPostEntity;
 
 @Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class CommunityPostResponse {
 
@@ -21,39 +14,48 @@ public class CommunityPostResponse {
     private String title;
     private String content;
     private String postType;
-    private String author;
-    private String authorNickname;  // 프론트엔드 호환성을 위해 추가
-    private Integer authorId;       // 작성자 ID 추가
-    private LocalDateTime createdAt;
-    private Integer recommendationCount; // 추천 수
-    private Integer dislikeCount;        // 비추천 수
-    private Integer commentCount;
-    private Integer authorLevel;
-    private Integer viewCount;
 
+    private String author;
+    private String authorNickname;
+    private Integer authorId;
+    private Integer authorLevel;
+
+    private LocalDateTime createdAt;
+
+    private long recommendationCount;
+    private long dislikeCount;
+    private long commentCount;
+    private long viewCount;
+
+    // ❌ 이제 DB 값만 내려가는 fromEntity()는 금지
     public static CommunityPostResponse fromEntity(CommunityPostEntity entity) {
-        if (entity == null) {
-            throw new IllegalArgumentException("Entity cannot be null");
-        }
-        
-        if (entity.getUser() == null) {
-            throw new IllegalStateException("User is null for post ID: " + entity.getPostId());
-        }
-        
+        throw new UnsupportedOperationException(
+                "fromEntity()는 Redis 기반 구조와 충돌하므로 사용이 금지되었습니다. fromEntityWithCounts()를 사용하세요."
+        );
+    }
+
+    // ✔ Redis 카운트 기반 응답
+    public static CommunityPostResponse fromEntityWithCounts(
+            CommunityPostEntity entity,
+            long viewCount,
+            long commentCount,
+            long likeCount,
+            long dislikeCount
+    ) {
         return CommunityPostResponse.builder()
                 .postId(entity.getPostId())
                 .title(entity.getTitle())
                 .content(entity.getContent())
                 .postType(entity.getPostType())
-                .recommendationCount(entity.getRecommendationCount() != null ? entity.getRecommendationCount() : 0)
-                .dislikeCount(entity.getDislikeCount() != null ? entity.getDislikeCount() : 0)
-                .createdAt(entity.getCreatedAt())
                 .author(entity.getUser().getNickname())
                 .authorNickname(entity.getUser().getNickname())
                 .authorId(entity.getUser().getId())
-                .commentCount(entity.getComments() != null ? entity.getComments().size() : 0)  // 댓글 수 계산
-                .authorLevel(entity.getUser().getLevel() != null ? entity.getUser().getLevel() : 1)  // 작성자 레벨 (기본값 1)
-                .viewCount(entity.getViewCount())
+                .authorLevel(entity.getUser().getLevel())
+                .createdAt(entity.getCreatedAt())
+                .recommendationCount(likeCount)
+                .dislikeCount(dislikeCount)
+                .commentCount(commentCount)
+                .viewCount(viewCount)
                 .build();
     }
 }

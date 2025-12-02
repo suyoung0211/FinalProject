@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.repository.ArticleCommentRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
+import org.usyj.makgora.repository.ArticleReactionRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,6 +15,7 @@ public class RssArticleScoreService {
 
     private final RssArticleRepository articleRepo;
     private final ArticleCommentRepository commentRepo;
+    private final ArticleReactionRepository reactionRepo;
 
     /**
      * 기사 AI 점수 계산 공식
@@ -24,12 +26,19 @@ public class RssArticleScoreService {
      */
     public int calculateScore(RssArticleEntity article) {
 
-        long commentLikes = commentRepo.sumLikeCountByArticle(article.getId()); // 필요시 repo에 함수 생성
+        Integer articleId = article.getId();
+
+        long likeCount = reactionRepo.countLikes(articleId);
+        long dislikeCount = reactionRepo.countDisLikes(articleId);
+
+        long commentCount = commentRepo.countCommentsByArticle(articleId);
+        long commentLikes = commentRepo.sumCommentLikesByArticle(articleId);
 
         double score =
                 article.getViewCount() * 0.1 +
-                article.getLikeCount() * 1.0 +
-                article.getCommentCount() * 2.0 +
+                (likeCount * 1.0) +
+                (dislikeCount * 0.25) +
+                commentCount * 2.0 +
                 commentLikes * 1.0;
 
         return (int) score;

@@ -1,71 +1,61 @@
-// package org.usyj.makgora.service;
+package org.usyj.makgora.service;
 
-// import java.util.Set;
+import java.util.List;
 
-// import org.springframework.data.redis.core.StringRedisTemplate;
-// import org.springframework.scheduling.annotation.Scheduled;
-// import org.springframework.stereotype.Service;
-// import org.springframework.transaction.annotation.Transactional;
-// import org.usyj.makgora.community.repository.CommunityPostRepository;
-// import org.usyj.makgora.entity.CommunityPostEntity;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.community.repository.CommunityPostRepository;
+import org.usyj.makgora.entity.CommunityPostEntity;
 
-// import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
-// @Service
-// @RequiredArgsConstructor
-// public class CommunityScoreSyncScheduler {
+@Service
+@RequiredArgsConstructor
+public class CommunityScoreSyncScheduler {
 
-//     private final StringRedisTemplate redis;
-//     private final CommunityPostRepository postRepo;
-//     private final IssueTriggerPushService triggerPushService;
+    private final StringRedisTemplate redis;
+    private final CommunityPostRepository postRepo;
+    private final IssueTriggerPushService triggerPushService;
 
-//     @Scheduled(fixedDelay = 10000)
-//     @Transactional
-//     public void syncScores() {
+    private int getInt(String key) {
+        String value = redis.opsForValue().get(key);
+        return (value != null) ? Integer.parseInt(value) : 0;
+    }
 
-//         Set<String> keys = redis.keys("cp:*:view");
-//         if (keys == null) return;
+    @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
+    @Transactional
+    public void syncScores() {
 
-//         for (String viewKey : keys) {
+        // 📌 keys() 제거 — DB 기준으로 모든 글을 Sync
+        List<CommunityPostEntity> posts = postRepo.findAll();
+        if (posts.isEmpty()) return;
 
-//             int postId = extractId(viewKey);
+        for (CommunityPostEntity post : posts) {
 
-//             // -----------------------
-//             // 🔹 1) DB에서 현재값 가져오기
-//             // -----------------------
-//             CommunityPostEntity post = postRepo.findById((long) postId).orElse(null);
-//             if (post == null) continue;
+            long postId = post.getPostId();
 
-//             int dbViews = post.getViewCount();
-//             int dbLikes = post.getRecommendationCount();
-//             int dbComments = post.getCommentCount();
+            // 1) Redis 최신값 읽기
+            int views = getInt("cp:" + postId + ":view");
+            int likes = getInt("cp:" + postId + ":like");
+            int comments = getInt("cp:" + postId + ":comment");
 
-//             // -----------------------
-//             // 🔹 2) Redis는 그냥 캐시이므로
-//             //     무조건 DB 값으로 덮어쓴다
-//             // -----------------------
-//             redis.opsForValue().set("cp:" + postId + ":view", String.valueOf(dbViews));
-//             redis.opsForValue().set("cp:" + postId + ":like", String.valueOf(dbLikes));
-//             redis.opsForValue().set("cp:" + postId + ":comment", String.valueOf(dbComments));
+            // 2) DB 반영 (Redis → DB)
+            post.setViewCount(views);
+            post.setRecommendationCount(likes);
+            post.setCommentCount(comments);
 
-//             // -----------------------
-//             // 🔹 3) 점수 계산도 DB 기준
-//             // -----------------------
-//             int score = (int) (dbViews * 0.05 + dbLikes * 2 + dbComments * 2);
+            // 3) 점수 계산
+            int score = (int) (views * 0.05 + likes * 2 + comments * 2);
+            post.setAiSystemScore(score);
+            postRepo.save(post);
 
-//             post.setAiSystemScore(score);
-//             postRepo.save(post);
+            // 4) Redis에는 score만 남긴다
+            redis.opsForValue().set("cp:" + postId + ":score", String.valueOf(score));
 
-//             redis.opsForValue().set("cp:" + postId + ":score", String.valueOf(score));
-
-//             // -----------------------
-//             // 🔹 4) 임계치 넘으면 트리거
-//             // -----------------------
-//             triggerPushService.checkAndPushCommunity(postId, score);
-//         }
-//     }
-
-//     private int extractId(String key) {
-//         return Integer.parseInt(key.split(":")[1]);
-//     }
-// }
+            // 5) 임계치 체크 후 트리거
+            triggerPushService.checkAndPushCommunity(postId, score);
+        }
+    }
+}

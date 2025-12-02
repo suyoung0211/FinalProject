@@ -45,6 +45,16 @@ public class VoteService {
 
     historyRepository.save(history);
 }
+/** 🔥 모든 투표 리스트 조회 */
+@Transactional(readOnly = true)
+public List<VoteResponse> getAllVotes() {
+
+    List<VoteEntity> votes = voteRepository.findAll();
+
+    return votes.stream()
+            .map(v -> getVoteDetail(v.getId()))
+            .toList();
+}
 
     /** 🔥 1) 특정 Issue에 투표 생성 */
     @Transactional

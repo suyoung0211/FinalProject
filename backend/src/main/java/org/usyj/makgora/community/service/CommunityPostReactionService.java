@@ -21,124 +21,113 @@ public class CommunityPostReactionService {
     private final StringRedisTemplate redis;
     private static final String PREFIX = "cp:";
 
-    /* ============================================
-       📌 조회수 증가 (Redis + DB 동시 반영)
-     ============================================ */
-    public void addView(Long postId) {
+    /* ========================== 키 생성 =========================== */
 
-        // Redis 증가
-        redis.opsForValue().increment(PREFIX + postId + ":view");
-
-        // DB 증가
-        CommunityPostEntity post = postRepository.findById(postId).orElse(null);
-        if (post != null) {
-            post.setViewCount(post.getViewCount() + 1);
-            postRepository.save(post);
-        }
+    private String key(Long postId, String type) {
+        return PREFIX + postId + ":" + type;  // ex) cp:10:like
     }
 
-    /* ============================================
-       📌 댓글수 증가 (Redis + DB 동시 반영)
-     ============================================ */
-    public void addComment(Long postId) {
-
-        // Redis 증가
-        redis.opsForValue().increment(PREFIX + postId + ":comment");
-
-        // DB 증가
-        CommunityPostEntity post = postRepository.findById(postId).orElse(null);
-        if (post != null) {
-            post.setCommentCount(post.getCommentCount() + 1);
-            postRepository.save(post);
-        }
+    private long getCount(Long postId, String type) {
+        String v = redis.opsForValue().get(key(postId, type));
+        return (v == null) ? 0L : Long.parseLong(v);
     }
 
-    /* ============================================
-       📌 추천/비추천 (Redis + DB 동시 반영)
-     ============================================ */
-    @Transactional
-public CommunityPostReactionResponse reactToPost(Long postId, UserEntity user, Integer newValue) {
+    /* ========================== Safe Decrement ==================== */
 
-    CommunityPostEntity post = postRepository.findById(postId)
-            .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않음 id=" + postId));
+    private void safeDecrement(String redisKey) {
+        String v = redis.opsForValue().get(redisKey);
+        long current = (v == null) ? 0L : Long.parseLong(v);
 
-    // 기존 반응 조회
-    CommunityPostReactionEntity existing = reactionRepository
-            .findByPostAndUser(post, user)
-            .orElse(null);
-
-    int oldValue = existing != null ? existing.getReactionValue() : 0;
-
-    // ⚠ 동일값이면 아무 것도 업데이트 하지 않음
-    if (oldValue == newValue) {
-        return createResponse(postId, oldValue);
-    }
-
-    // ---------------------------------------------------------
-    // 1) DB 업데이트
-    // ---------------------------------------------------------
-    if (oldValue == 1) post.setRecommendationCount(Math.max(0, post.getRecommendationCount() - 1));
-    if (oldValue == -1) post.setDislikeCount(Math.max(0, post.getDislikeCount() - 1));
-
-    if (newValue == 1) post.setRecommendationCount(post.getRecommendationCount() + 1);
-    if (newValue == -1) post.setDislikeCount(post.getDislikeCount() + 1);
-
-    postRepository.save(post);
-
-    // ---------------------------------------------------------
-    // 2) Redis 를 DB 값으로 강제 sync
-    // ---------------------------------------------------------
-    redis.opsForValue().set(PREFIX + postId + ":like", String.valueOf(post.getRecommendationCount()));
-    redis.opsForValue().set(PREFIX + postId + ":dislike", String.valueOf(post.getDislikeCount()));
-
-    // ---------------------------------------------------------
-    // 3) 반응 엔티티 CRUD 처리
-    // ---------------------------------------------------------
-    if (newValue == 0) {
-        if (existing != null) reactionRepository.delete(existing);
-    } else {
-        if (existing == null) {
-            reactionRepository.save(
-                    CommunityPostReactionEntity.builder()
-                            .post(post)
-                            .user(user)
-                            .reactionValue(newValue)
-                            .build()
-            );
+        if (current > 0) {
+            redis.opsForValue().increment(redisKey, -1L);
         } else {
-            existing.setReactionValue(newValue);
+            redis.opsForValue().set(redisKey, "0");
         }
     }
 
-    return new CommunityPostReactionResponse(
-            post.getPostId(),
-            post.getRecommendationCount(),
-            post.getDislikeCount(),
-            newValue
-    );
-}
+    /* ========================== 조회수 증가 ======================== */
 
-    /* ============================================
-       📌 Redis 값 기반 응답 생성
-     ============================================ */
-    private CommunityPostReactionResponse createResponse(Long postId, int reactionValue) {
-
-        int like = (int) getRedisCount(postId, "like");
-        int dislike = (int) getRedisCount(postId, "dislike");
-
-        return new CommunityPostReactionResponse(
-                postId,
-                like,
-                dislike,
-                reactionValue
-        );
+    public void addView(Long postId) {
+        redis.opsForValue().increment(key(postId, "view"));
     }
 
-    /* ============================================
-       📌 Redis 값 읽기 helper
-     ============================================ */
-    private long getRedisCount(Long postId, String type) {
-        String v = redis.opsForValue().get(PREFIX + postId + ":" + type);
-        return (v == null) ? 0 : Long.parseLong(v);
+    /* ========================== 댓글수 증가 ======================== */
+
+    public void addComment(Long postId) {
+        redis.opsForValue().increment(key(postId, "comment"));
     }
+
+    /* ========================== 추천/비추천 ======================== */
+
+    @Transactional
+    public CommunityPostReactionResponse reactToPost(Long postId, UserEntity user, Integer newValue) {
+
+        CommunityPostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + postId));
+
+        CommunityPostReactionEntity existing = reactionRepository
+                .findByPostAndUser(post, user)
+                .orElse(null);
+
+        int oldValue = (existing != null) ? existing.getReactionValue() : 0;
+
+        String likeKey = key(postId, "like");
+        String dislikeKey = key(postId, "dislike");
+
+        // 0) same value -> nothing changes
+        if (oldValue == newValue) {
+            return new CommunityPostReactionResponse(
+                    postId,
+                    getCount(postId, "like"),
+                    getCount(postId, "dislike"),
+                    newValue
+            );
+        }
+
+        // 1) old 반응 제거
+        if (oldValue == 1) {
+            safeDecrement(likeKey);
+        } else if (oldValue == -1) {
+            safeDecrement(dislikeKey);
+        }
+
+        // 2) new 반응 적용
+        if (newValue == 1) {
+            redis.opsForValue().increment(likeKey, 1L);
+        } else if (newValue == -1) {
+            redis.opsForValue().increment(dislikeKey, 1L);
+        }
+
+        // 3) DB 기록 업데이트
+        if (newValue == 0) {
+            if (existing != null) reactionRepository.delete(existing);
+        } else {
+            if (existing == null) {
+                reactionRepository.save(
+                        CommunityPostReactionEntity.builder()
+                                .post(post)
+                                .user(user)
+                                .reactionValue(newValue)
+                                .build()
+                );
+            } else {
+                existing.setReactionValue(newValue);
+            }
+        }
+
+        long like = getCount(postId, "like");
+        long dislike = getCount(postId, "dislike");
+
+        return new CommunityPostReactionResponse(postId, like, dislike, newValue);
+    }
+
+    /* ========================= 외부 조회용 ========================= */
+
+    public long getViewCount(Long postId) { return getCount(postId, "view"); }
+
+    public long getCommentCount(Long postId) { return getCount(postId, "comment"); }
+
+    public long getLikeCount(Long postId) { return getCount(postId, "like"); }
+
+    public long getDislikeCount(Long postId) { return getCount(postId, "dislike"); }
 }
