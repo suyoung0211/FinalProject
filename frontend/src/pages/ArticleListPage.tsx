@@ -9,13 +9,9 @@ import { useNavigate } from "react-router-dom";
 
 // ⭐ 분리된 컴포넌트
 import CategoryFilter from "../components/articles/CategoryFilter";
-import MainNews from "../components/articles/MainNews";
-import SideNews from "../components/articles/SideNews";
 import NewsList from "../components/articles/NewsList";
 import RankingNews from "../components/articles/RankingNews";
 import LiveSlider from "../components/articles/LiveSlider";
-import PhotoSection from "../components/articles/PhotoSection";
-
 export interface Article {
   id: number;
   title: string;
@@ -127,12 +123,6 @@ export function ArticleListPage() {
         {/* 콘텐츠 */}
         {!loading && filteredArticles.length > 0 && (
           <>
-            {/* 메인 + 사이드 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-              {mainArticle && <MainNews article={mainArticle} />}
-              <SideNews articles={sideArticles} />
-            </div>
-
             {/* 리스트 + 랭킹 */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-12">
               <NewsList articles={listArticles} />
@@ -142,8 +132,6 @@ export function ArticleListPage() {
             {/* 라이브 슬라이더 */}
             <LiveSlider articles={sliderArticles} />
 
-            {/* 포토 섹션 */}
-            <PhotoSection articles={sliderArticles.slice(0, 2)} />
           </>
         )}
       </div>
