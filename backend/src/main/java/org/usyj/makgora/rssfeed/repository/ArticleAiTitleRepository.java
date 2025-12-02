@@ -12,7 +12,8 @@ import java.util.Optional;
 public interface ArticleAiTitleRepository extends JpaRepository<ArticleAiTitleEntity, Integer> {
 
     // 특정 기사에 대한 모든 요약 조회
-    List<ArticleAiTitleEntity> findByArticle(RssArticleEntity article);
+
+    Optional<ArticleAiTitleEntity> findByArticle(RssArticleEntity article);
 
     // 🔥 반드시 추가해야 하는 메서드
     ArticleAiTitleEntity findByArticle_Id(Integer articleId);

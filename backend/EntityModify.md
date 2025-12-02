@@ -272,3 +272,5 @@ VoteStatusHistoryEntity 추가 (상태 변경 기록 저장용)
 -----------------------------
 ArticleReactionEntity추가 => 기사 좋아요/싫어요
 RssArticleEntity 좋아요 싫어요 => ArticleReactionEntity에 이관
+ArticleAiTitleRepogitory 겹치는거 삭제(rssfeed쪽 살림)
+category관련 백엔드 아예 빼버려서 따로 ArticleCategory로 살림

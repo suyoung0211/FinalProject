@@ -12,7 +12,6 @@ import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.response.home.HomeResponse;
-import org.usyj.makgora.rssfeed.service.RssArticleService;
 import org.usyj.makgora.service.ArticleListService;
 import org.usyj.makgora.service.HomeService;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
