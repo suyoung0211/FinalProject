@@ -66,7 +66,7 @@ def generate_ai_title(title, content):
     """
     prompt = f"""
         다음 뉴스 제목과 내용을 보고, 클릭하고 싶은 매력적인 제목을 만들어 주세요.
-        - 제목 길이: 최대 50자
+        - 제목 길이: 반드시 50자 이내로 작성
         - 궁금증을 유발하는 제목
         - 핵심 키워드 포함
         - 응답은 제목 텍스트만 반환
@@ -75,8 +75,8 @@ def generate_ai_title(title, content):
         기사 내용: {content}
     """
     response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[{"role":"user","content":prompt}],
+        model="gpt-4.1",
+        messages=[{"role": "user", "content": prompt}],
         temperature=1.5,
         max_tokens=60
     )
@@ -86,6 +86,7 @@ def generate_ai_title(title, content):
 # AI 제목 생성 실행 함수
 # ===============================
 MAX_TRY = 3  # 최대 시도 횟수
+MAX_TITLE_LENGTH = 50  # 제목 최대 길이
 
 def run_generate_ai_titles():
     articles = session.query(RssArticleEntity).filter(RssArticleEntity.is_deleted == False).all()
@@ -95,7 +96,6 @@ def run_generate_ai_titles():
         article_result = {"article_id": article.article_id, "status": None, "error": None}
 
         try:
-            # 기존 AI 제목 조회
             existing = session.query(ArticleAiTitleEntity).filter_by(article_id=article.article_id).first()
 
             # 최대 시도 횟수 초과 시 스킵
@@ -104,13 +104,18 @@ def run_generate_ai_titles():
                 result_summary.append(article_result)
                 continue
 
-            # AI 제목 생성 시도
             try:
                 content_for_prompt = article.content if article.content else article.title
                 ai_title_text = generate_ai_title(article.title, content_for_prompt)
+
+                # 길이 체크
+                if len(ai_title_text) > MAX_TITLE_LENGTH:
+                    raise ValueError(f"AI 제목 길이 초과: {len(ai_title_text)}자")
+
                 status = "SUCCESS"
                 last_success_at = datetime.now()
                 last_error = None
+
             except Exception as e:
                 ai_title_text = None
                 status = "FAILED"
@@ -125,6 +130,7 @@ def run_generate_ai_titles():
                 existing.last_success_at = last_success_at
                 existing.updated_at = datetime.now()
                 existing.try_count += 1
+                session.add(existing)
             else:
                 new_ai_title = ArticleAiTitleEntity(
                     article_id=article.article_id,
@@ -137,31 +143,38 @@ def run_generate_ai_titles():
                 )
                 session.add(new_ai_title)
 
-            # 개별 기사별 커밋
+            # DB 커밋
             try:
                 session.commit()
             except Exception as db_e:
-                # DB 커밋 실패 시 rollback 후 실패 기록은 남김
+                # 커밋 실패 시 rollback 후 상태 기록만 하고 다음 기사로 진행
                 session.rollback()
-                status = "DB_COMMIT_FAILED"
-                last_error = f"{last_error or ''} | DB ERROR: {db_e}"
-                # 기존/새 엔티티 업데이트
+                error_msg = f"{last_error or ''} | DB ERROR: {db_e}"
+
+                # 상태 기록
                 if existing:
-                    existing.status = status
-                    existing.last_error = last_error
+                    existing.status = "DB_COMMIT_FAILED"
+                    existing.last_error = error_msg
                     existing.updated_at = datetime.now()
+                    session.add(existing)
                 else:
-                    new_ai_title.status = status
-                    new_ai_title.last_error = last_error
-                session.add(existing or new_ai_title)
-                session.commit()  # 재커밋 시도
-            finally:
-                article_result["status"] = status
-                article_result["error"] = last_error
+                    new_ai_title.status = "DB_COMMIT_FAILED"
+                    new_ai_title.last_error = error_msg
+                    session.add(new_ai_title)
+
+                # 로그 출력 후 다음 기사로 진행
+                print(f"[DB COMMIT FAILED] article_id={article.article_id}: {db_e}")
+                article_result["status"] = "DB_COMMIT_FAILED"
+                article_result["error"] = error_msg
                 result_summary.append(article_result)
+                continue  # 다음 기사로 이동
+
+            # 정상 커밋된 경우
+            article_result["status"] = status
+            article_result["error"] = last_error
+            result_summary.append(article_result)
 
         except Exception as outer_e:
-            # AI 생성이나 DB 처리 중 발생한 예외, 다음 기사 계속
             article_result["status"] = "PROCESS_ERROR"
             article_result["error"] = str(outer_e)
             result_summary.append(article_result)
