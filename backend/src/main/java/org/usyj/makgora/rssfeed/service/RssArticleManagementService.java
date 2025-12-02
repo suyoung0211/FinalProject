@@ -29,10 +29,12 @@ public class RssArticleManagementService {
      * 1️⃣ 중복 기사 처리: DB 또는 배치 내 중복
      * 2️⃣ 기사 카테고리 처리: DTO에서 카테고리 있으면 getOrCreateCategories 호출, 없으면 feed 기본 카테고리 사용
      * 3️⃣ 기사 엔터티 생성 후 저장
+     * 4️⃣ 이번 배치에서 실제 저장된 기사 수 반환
      */
     @Transactional
-    public void saveArticlesBatch(RssFeedEntity feed, List<RssArticleDTO> dtos) {
+    public int saveArticlesBatch(RssFeedEntity feed, List<RssArticleDTO> dtos) {
         Set<String> savedLinksSet = new HashSet<>(); // 배치 내 중복 방지용 링크 저장
+        int savedCount = 0; // 이번 배치에서 실제 저장된 기사 수
 
         for (RssArticleDTO dto : dtos) {
             String link = dto.getLink();
@@ -68,7 +70,13 @@ public class RssArticleManagementService {
 
             // 배치 내 중복 방지용 Set에 링크 저장
             savedLinksSet.add(link);
+
+            // 저장된 기사 수 증가
+            savedCount++;
         }
+
+        // 이번 배치에서 실제 저장된 기사 수 반환
+        return savedCount;
     }
 
     /**
