@@ -1,10 +1,18 @@
-import { createContext, useState, useEffect, ReactNode } from "react";
+import { 
+  createContext, 
+  useState, 
+  useEffect, 
+  ReactNode, 
+  Dispatch,
+  SetStateAction
+} from "react";
 import { logoutApi, getMyInfoApi } from "../api/authApi";
 
 export interface UserType {
+  id: number;
   nickname: string;
-  level:number;
-  points:number;
+  level: number;
+  points: number;
   profileImage?: string;
   profileBackground?: string;
   role: string;
@@ -13,6 +21,11 @@ export interface UserType {
 export interface AuthContextType {
   user: UserType | null;
   token: string | null;
+
+  // ⭐ React의 SetStateAction으로 변경!
+  setUser: Dispatch<SetStateAction<UserType | null>>;
+  setToken: Dispatch<SetStateAction<string | null>>;
+
   login: (user: UserType, access: string) => void;
   logout: () => void;
 }
@@ -25,44 +38,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedAccess = localStorage.getItem("accessToken");
+
     if (savedAccess) {
       setToken(savedAccess);
 
       getMyInfoApi()
-        .then((res: any) => {
-        setUser(res.data);
-      })
+        .then((res: any) => setUser(res.data))
+        .catch(() => {
+          setUser(null);
+          setToken(null);
+        });
     }
   }, []);
 
-  const login = (
-    userData: UserType,
-    accessToken: string,
-  ) => {
+  const login = (userData: UserType, accessToken: string) => {
     setUser(userData);
     setToken(accessToken);
-
     localStorage.setItem("accessToken", accessToken);
   };
 
   const logout = async () => {
-  try {
-    await logoutApi(); 
-  } catch (e) {
-    console.error("Logout error:", e);
-  }
+    try {
+      await logoutApi();
+    } catch (_) {}
 
-  // 반드시 clear 전에 실행하면 X
-  localStorage.removeItem("accessToken");
-
-  setUser(null);
-  setToken(null);
-};
-
-
+    localStorage.removeItem("accessToken");
+    setToken(null);
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        setUser,   // 🔥 콜백 지원됨
+        setToken,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

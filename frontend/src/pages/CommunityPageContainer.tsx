@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { CommunityPage } from "../components/CommunityPage";
+import { CommunityPage } from "./CommunityPage";
 import { useAuth } from "../hooks/useAuth";
 import { Header } from "../components/layout/Header";
 
@@ -18,9 +18,9 @@ export function CommunityPageContainer() {
           // 유저 정보 전달
           user={user
             ? {
-              id: user.loginId?.toString() || "",
+              id: user.id?.toString() || "",
               name: user.nickname || "",
-              email: user.email || "",
+              email: "", // UserType에 email 필드가 없으므로 빈 문자열
               points: user.points ?? 0,
             }
             : null}
@@ -39,9 +39,11 @@ export function CommunityPageContainer() {
           onLogout={() => {
             logout();
             navigate("/");
-          } } onBack={function (): void {
-            throw new Error("Function not implemented.");
-          } }        />
+          }}
+
+          // 뒤로가기
+          onBack={() => navigate(-1)}
+        />
       </div>
     </>
   );

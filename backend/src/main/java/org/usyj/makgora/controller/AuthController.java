@@ -48,13 +48,14 @@ public class AuthController {
 
             // 안전하게 UserInfoResponse로 변환
             UserInfoResponse safeUser = new UserInfoResponse(
-                    loginResponse.getUser().getNickname(),
-                    loginResponse.getUser().getLevel(),
-                    loginResponse.getUser().getPoints(),
-                    loginResponse.getUser().getProfileImage(),
-                    loginResponse.getUser().getProfileBackground(),
-                    loginResponse.getUser().getRole()
-            );
+                loginResponse.getUser().getNickname(),
+                loginResponse.getUser().getLevel(),
+                loginResponse.getUser().getPoints(),
+                loginResponse.getUser().getAvatarIcon(),   // 변경됨
+                loginResponse.getUser().getProfileFrame(), // 변경됨
+                loginResponse.getUser().getProfileBadge(), // 변경됨
+                loginResponse.getUser().getRole()
+        );
 
             // 클라이언트에 보낼 응답 → Access Token + 안전한 사용자 정보
             LoginResponse responseBody = new LoginResponse(

@@ -1,17 +1,19 @@
 package org.usyj.makgora.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder  // ← 이것 추가!
 public class UserInfoResponse {
+
     private String nickname;
-    private int level;
-    private int points;
-    private String profileImage;      // null 가능
-    private String profileBackground; // null 가능
+    private Integer level;
+    private Integer points;
+    private String avatarIcon;
+    private String profileFrame;
+    private String profileBadge;
     private String role;
 }

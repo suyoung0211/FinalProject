@@ -5,11 +5,17 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Getter;
 
-
 @Getter
 @Builder
 // 통합 댓글 DTO
 public class UnifiedCommentResponse {
+
+    public enum CommentSource {
+    ISSUE,      // 이슈 댓글
+    COMMUNITY,  // 커뮤니티 댓글
+    ARTICLE     // 기사 댓글
+}
+
     private Long commentId;           // 공통: 댓글 ID
     private String content;           // 공통: 댓글 내용
     private String authorName;        // 공통: 작성자 이름
@@ -23,13 +29,6 @@ public class UnifiedCommentResponse {
     // 선택적 필드 (각 댓글 타입별로 다를 수 있음)
     private String position;          // 이슈 댓글만: 찬성/반대/중립
     private Integer likeCount;        // 커뮤니티/기사 댓글만
-
-    /**
-     * 댓글 출처 구분 enum
-     */
-    public enum CommentSource {
-        ISSUE,      // 이슈 댓글
-        COMMUNITY,  // 커뮤니티 댓글
-        ARTICLE     // 기사 댓글
-    }
 }
+
+
