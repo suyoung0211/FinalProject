@@ -31,6 +31,37 @@ body {
   min-height: 100vh;
 }
 
+/* ===========================================================
+   Makgora Custom Scrollbar (RankingNews 전용)
+   =========================================================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #a855f7, #6b21a8);
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+
+  transition-property: background, border-color;
+  transition-duration: 0.25s;
+  transition-timing-function: ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #c084fc, #9333ea);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #e9d5ff, #a855f7);
+}
+
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

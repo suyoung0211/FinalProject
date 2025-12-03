@@ -1,13 +1,13 @@
 package org.usyj.makgora.rssfeed.repository;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.RssFeedEntity;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface RssFeedRepository extends JpaRepository<RssFeedEntity, Integer> {
@@ -25,5 +25,12 @@ public interface RssFeedRepository extends JpaRepository<RssFeedEntity, Integer>
 
     // feed와 연결된 categories까지 한 번에 가져오기
     @Query("SELECT f FROM RssFeedEntity f JOIN FETCH f.categories WHERE f.id = :id")
-    RssFeedEntity findByIdWithCategories(@Param("id") Integer id);
+    Optional<RssFeedEntity> findByIdWithCategories(@Param("id") Integer id);
+
+    // 모든 Feed + 기사 수 조회 (엔티티 + COUNT)
+    @Query("SELECT f, COUNT(a) " +
+           "FROM RssFeedEntity f " +
+           "LEFT JOIN RssArticleEntity a ON a.feed = f AND a.isDeleted = false " +
+           "GROUP BY f")
+    List<Object[]> findAllFeedsWithArticleCount();
 }

@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.springframework.stereotype.Component;
-import org.usyj.makgora.rssfeed.dto.RssArticleDTO;
+import org.usyj.makgora.rssfeed.dto.RssArticleCreateDTO;
 
 import com.rometools.rome.feed.module.Module;
 import com.rometools.rome.feed.synd.SyndEntry;
@@ -35,8 +35,8 @@ public class GuardianSource implements RssFeedSource {
     }
 
     @Override
-    public List<RssArticleDTO> fetch(String categoryName, String feedUrl) {
-        List<RssArticleDTO> items = new ArrayList<>();
+    public List<RssArticleCreateDTO> fetch(String categoryName, String feedUrl) {
+        List<RssArticleCreateDTO> items = new ArrayList<>();
         try {
             URL url = new URL(feedUrl);
             SyndFeed feed = new SyndFeedInput().build(new XmlReader(url));
@@ -69,7 +69,7 @@ public class GuardianSource implements RssFeedSource {
                 List<String> categories = Collections.singletonList(categoryName);
 
                 // RssArticleDTO 빌더 사용
-                items.add(RssArticleDTO.builder()
+                items.add(RssArticleCreateDTO.builder()
                         .title(title)
                         .link(link)
                         .content(content)

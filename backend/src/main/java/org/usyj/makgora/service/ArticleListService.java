@@ -11,8 +11,6 @@ import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.repository.ArticleListRepository;
 import org.usyj.makgora.response.article.ArticleResponse;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
-import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
-import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +20,6 @@ public class ArticleListService {
 
     private final ArticleListRepository articleQueryRepo;
     private final ArticleAiTitleRepository aiRepo;
-    private final RssArticleRepository articleRepo;
     private final ArticleListRepository listRepo;
 
     public List<ArticleResponse> getLatestArticles() {
