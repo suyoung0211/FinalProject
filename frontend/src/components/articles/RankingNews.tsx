@@ -1,7 +1,4 @@
-// ------------------------------------------------------------
-// src/components/articles/RankingNews.tsx
-// ------------------------------------------------------------
-import { Clock, ChevronRight } from "lucide-react";
+import { Clock, ChevronRight, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Article } from "../../pages/ArticleListPage";
 
@@ -16,45 +13,80 @@ export default function RankingNews({ articles }: Props) {
 
   return (
     <div className="lg:col-span-1">
-  <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sticky top-24 h-[900px] flex flex-col">
-
-    <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
-      <h3 className="text-white font-bold text-lg">많이 본 뉴스</h3>
-      <ChevronRight className="w-5 h-5 text-gray-400" />
-    </div>
-
-    {/* ⭐ 내부 스크롤 + 커스텀 스크롤바 */}
-    <div className="space-y-4 overflow-y-auto pr-2
-        scrollbar-thin scrollbar-thumb-purple-500/60 scrollbar-track-transparent
-        hover:scrollbar-thumb-purple-400
-    ">
-      {articles.map((news, index) => (
-        <div
-          key={`rank-${news.id}`}
-          className="cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-all"
-          onClick={() => navigate(`/article/${news.id}`)}
-        >
-          <div className="flex gap-3">
-            <span className="text-xl font-bold text-purple-400">{index + 1}</span>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-white text-sm font-medium line-clamp-2">{news.title}</h4>
-              <div className="flex items-center gap-1 text-[11px] text-gray-400">
-                <Clock className="w-3 h-3" />
-                <span>{news.timeAgo}</span>
-              </div>
-            </div>
-          </div>
-
-          {news.image && (
-            <div className="ml-8 rounded-lg overflow-hidden">
-              <img src={news.image} className="w-full aspect-video object-cover" />
-            </div>
-          )}
+      <div
+        className="
+          bg-white/5 border border-white/20 backdrop-blur-xl 
+          rounded-2xl p-4 sticky top-24 
+          max-h-[900px] flex flex-col shadow-lg
+        "
+      >
+        {/* 헤더 */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+          <h3 className="text-white font-bold text-lg flex items-center gap-2">
+            <TrendingUp className="text-purple-400" />
+            많이 본 뉴스
+          </h3>
+          <ChevronRight className="w-5 h-5 text-gray-400" />
         </div>
-      ))}
-    </div>
 
-  </div>
-</div>
+        {/* 랭킹 리스트 */}
+        <div
+          className="
+            overflow-y-auto pr-2 space-y-4
+            custom-scrollbar        
+          "
+        >
+          {articles.map((news, index) => (
+            <div
+              key={`rank-${news.id}`}
+              onClick={() => navigate(`/article/${news.id}`)}
+              className="
+                group cursor-pointer rounded-xl p-3 transition-all
+                bg-white/5 hover:bg-purple-600/20
+                border border-transparent hover:border-purple-500/40
+              "
+            >
+              <div className="flex gap-3">
+                {/* 랭킹 번호 */}
+                <span
+                  className="
+                    text-2xl font-extrabold 
+                    bg-gradient-to-br from-purple-300 to-purple-600 bg-clip-text text-transparent
+                    group-hover:scale-110 transition-transform
+                  "
+                >
+                  {index + 1}
+                </span>
+
+                {/* 제목 영역 */}
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-white text-sm font-semibold line-clamp-2 group-hover:text-purple-200">
+                    {news.title}
+                  </h4>
+
+                  <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-1">
+                    <Clock className="w-3 h-3" />
+                    <span>{news.timeAgo}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 썸네일 */}
+              {news.image && (
+                <div className="ml-8 mt-2 rounded-lg overflow-hidden">
+                  <img
+                    src={news.image}
+                    className="
+                      w-full aspect-video object-cover rounded-xl
+                      group-hover:scale-105 transition-transform
+                    "
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

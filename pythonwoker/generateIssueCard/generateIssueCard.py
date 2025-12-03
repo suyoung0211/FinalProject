@@ -10,6 +10,7 @@ from sqlalchemy import (
     create_engine,
     Column,
     Integer,
+    BigInteger,
     String,
     Text,
     DateTime,
@@ -35,41 +36,54 @@ Base = declarative_base()
 class RssArticleEntity(Base):
     __tablename__ = "rss_articles"
 
-    article_id = Column(Integer, primary_key=True)
+    id = Column("article_id", Integer, primary_key=True, autoincrement=True)
+
+    feed_id = Column(Integer, nullable=False)  # FK, but Python은 ID만 있으면 됨
+
     title = Column(String(500), nullable=False)
+    link = Column(String(500), nullable=False)
+
     content = Column(Text)
     thumbnail_url = Column(String(500))
-    created_at = Column(DateTime)
+
     published_at = Column(DateTime)
 
-    # NOT NULL 필드 → default 추가
+    is_deleted = Column(Boolean, nullable=False, default=False)
+
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
     view_count = Column(Integer, nullable=False, default=0)
     like_count = Column(Integer, nullable=False, default=0)
+    dislike_count = Column(Integer, nullable=False, default=0)
     comment_count = Column(Integer, nullable=False, default=0)
-    ai_system_score = Column(Integer, nullable=False, default=0)
 
-    # bit(1) → Boolean으로 처리
     issue_created = Column(Boolean, nullable=False, default=False)
+
+    ai_system_score = Column(Integer, nullable=False, default=0)
 
 
 class CommunityPostEntity(Base):
     __tablename__ = "community_posts"
 
-    post_id = Column(Integer, primary_key=True)
+    post_id = Column(BigInteger, primary_key=True)  # 🔥 Long 매핑
+
+    user_id = Column(BigInteger, nullable=False)    # 🔥 외래키 값과 동일하게
+
     title = Column(String(255))
     content = Column(Text)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
 
-    # NOT NULL 필드 → default 추가
-    ai_system_score = Column(Integer, nullable=False, default=0)
-    comment_count = Column(Integer, nullable=False, default=0)
-    dislike_count = Column(Integer, nullable=False, default=0)
-    recommendation_count = Column(Integer, nullable=False, default=0)
-    user_id = Column(Integer, nullable=False, default=1)
-
-    view_count = Column(Integer, default=0)
     post_type = Column(String(20))
+
+    recommendation_count = Column(Integer, nullable=False, default=0)
+    dislike_count = Column(Integer, nullable=False, default=0)
+    comment_count = Column(Integer, nullable=False, default=0)
+    ai_system_score = Column(Integer, nullable=False, default=0)
+
+    view_count = Column(Integer, nullable=False, default=0)
+
+    created_at = Column(DateTime, nullable=False)   # 🔥 NOT NULL 정확히 매핑
+    updated_at = Column(DateTime, nullable=False)
 
 
 class IssueEntity(Base):
@@ -78,21 +92,20 @@ class IssueEntity(Base):
     id = Column("issue_id", Integer, primary_key=True, autoincrement=True)
 
     article_id = Column(Integer, ForeignKey("rss_articles.article_id"), nullable=True)
-    community_post_id = Column(Integer, ForeignKey("community_posts.post_id"), nullable=True)
+    community_post_id = Column(BigInteger, ForeignKey("community_posts.post_id"), nullable=True)
 
     title = Column(String(255), nullable=False)
-    thumbnail = Column(String(255))
+    thumbnail = Column(String(500))
     content = Column(Text)
+
     source = Column(String(255))
 
     ai_summary = Column(Text)
 
-    # JSON 타입이지만 Python에서는 문자열로 넣어도 MySQL이 JSON으로 처리함
-    ai_points = Column(Text)
+    ai_points = Column(Text)   # Spring JSON → Python에서는 문자열로 저장하면 OK
 
-    # ENUM 값 (Java와 DB ENUM과 100% 일치해야 함)
-    status = Column(String(20), default="PENDING")  # APPROVED / PENDING / REJECTED
-    created_by = Column(String(20), default="AI")   # ADMIN / AI / SYSTEM / USER
+    status = Column(String(20), default="PENDING")
+    created_by = Column(String(20), default="AI")
 
     approved_at = Column(DateTime)
     rejected_at = Column(DateTime)
