@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.request.StoreItemPurchaseRequest;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.store.service.StoreService;
+import org.usyj.makgora.request.ApplyItemRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -56,5 +57,18 @@ public class StoreController {
         Integer userId = jwtTokenProvider.getUserId(token);
 
         return storeService.getMyItems(userId);
+    }
+
+
+
+    @PostMapping("/apply")
+    public Object applyItem(
+            HttpServletRequest request,
+            @RequestBody ApplyItemRequest req
+    ) {
+        String token = request.getHeader("Authorization").substring(7);
+        Integer userId = jwtTokenProvider.getUserId(token);
+    
+        return storeService.applyItem(userId, req.getUserStoreId());
     }
 }

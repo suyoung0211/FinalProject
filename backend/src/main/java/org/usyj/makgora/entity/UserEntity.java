@@ -37,11 +37,17 @@ public class UserEntity {
     @Builder.Default
     private Integer level = 1;
 
+    // ✅ 아바타 이미지는 상점과 별도로 유지 (원하면 그대로 사용)
     @Column(length = 255)
-    private String profileImage;
+    private String avatarIcon;
 
+    // ✅ 프로필 테두리 이미지 (상점 FRAME 아이템으로 적용)
     @Column(length = 255)
-    private String profileBackground;
+    private String profileFrame;
+
+    // ✅ 프로필 뱃지 이미지 (상점 BADGE 아이템으로 적용)
+    @Column(length = 255)
+    private String profileBadge;
 
     @Column(length = 150, unique = true)
     private String verificationEmail;
@@ -59,7 +65,6 @@ public class UserEntity {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // 🔹 로그인/재발급에 사용하는 refreshToken
     @Column(length = 500)
     private String refreshToken;
 

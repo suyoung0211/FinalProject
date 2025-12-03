@@ -49,11 +49,11 @@ export function Header({ activeMenu }: HeaderProps) {
         {/* MENU */}
         <nav className="flex items-center gap-8 text-gray-300">
           {[
-            { key: "vote", label: "투표", path: "/vote" },
-            { key: "community", label: "커뮤니티", path: "/community" },
-            { key: "news", label: "뉴스", path: "/article" },
-            { key: "leaderboard", label: "리더보드", path: "/leaderboard" },
-            { key: "store", label: "포인트 상점", path: "/store" },
+            { name: "투표", path: "/vote" },
+            { name: "커뮤니티", path: "/community" },
+            { name: "뉴스", path: "/news" },
+            { name: "리더보드", path: "/leaderboard" },
+            { name: "포인트 상점", path: "/store" },
           ].map((item) => (
             <button
               key={item.name}
