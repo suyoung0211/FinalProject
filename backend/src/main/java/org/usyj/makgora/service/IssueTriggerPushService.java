@@ -45,7 +45,7 @@ public class IssueTriggerPushService {
         if (score < THRESHOLD) return;
 
         // 🔥 DB에서 Issue가 이미 존재하면 push 금지
-        boolean exists = issueRepo.findByCommunityPost_PostId(postId).isPresent();
+        boolean exists = issueRepo.findByCommunityPostId(postId).isPresent();
 
         if (exists) {
             System.out.println("[Trigger] 이미 이 Post로 Issue 존재 → push 생략: " + postId);
