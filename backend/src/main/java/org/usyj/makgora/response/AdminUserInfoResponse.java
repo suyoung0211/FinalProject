@@ -8,15 +8,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AdminUserInfoResponse {
-    private int id;
+    private Integer id;
     private String loginId;
     private String nickname;
-    private int level;
-    private int points;
-    private String profileImage;       // null 가능
-    private String profileBackground;  // null 가능
+    private Integer level;
+    private Integer points;
+
+    private String avatarIcon;     // 변경
+    private String profileFrame;   // 변경
+    private String profileBadge;   // 변경
+
     private String verificationEmail;
     private String role;
     private String status;
-    private String createdAt;          // 문자열로 반환
+    private String createdAt;
 }

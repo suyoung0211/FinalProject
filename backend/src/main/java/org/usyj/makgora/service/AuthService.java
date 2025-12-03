@@ -41,6 +41,7 @@ public class AuthService {
                 emailVerificationRepo.findTopByEmailOrderByCreatedAtDesc(req.getVerificationEmail())
                         .orElseThrow(() -> new RuntimeException("이메일 인증 기록이 없습니다."));
 
+
         if (!verification.getVerified()) {
             throw new RuntimeException("이메일 인증을 완료해주세요.");
         }
@@ -73,8 +74,9 @@ public class AuthService {
         String accessToken = jwt.createAccessToken(user.getId(), user.getLoginId(), user.getRole().name());
         String refreshToken = jwt.createRefreshToken(user.getId(), user.getLoginId(), user.getRole().name());
 
-        // 4. 기존 리프레시 토큰 제거 후 재발급
+        // 4. 기존 Refresh Token 제거 후 재발급
         tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
+
         tokenRepo.save(
                 RefreshTokenEntity.builder()
                         .userId(user.getId())
@@ -82,17 +84,20 @@ public class AuthService {
                         .build()
         );
 
-        // 5. 안전하게 DTO 변환
+        // 5. 유저 정보 → 안전한 DTO로 변환
         UserInfoResponse safeUser = new UserInfoResponse(
                 user.getNickname(),
                 user.getLevel(),
                 user.getPoints(),
-                user.getProfileImage(),
-                user.getProfileBackground(),
-                user.getRole().name() // Enum이면 name() 사용, 이미 String이면 user.getRole()
+
+                user.getAvatarIcon(),     // 수정됨
+                user.getProfileFrame(),   // 수정됨
+                user.getProfileBadge(),   // 수정됨
+
+                user.getRole().name()
         );
 
-        // 6. 클라이언트에 AccessToken + 안전한 User 정보 반환
+        // 6. 로그인 성공 응답
         return new LoginResponse(accessToken, null, safeUser);
     }
 
@@ -101,13 +106,13 @@ public class AuthService {
      */
     public boolean validateRefreshToken(String refreshToken) {
 
-        // JWT 유효성 체크(만료/서명검증)
+        // JWT 유효성 체크
         if (!jwt.validateToken(refreshToken)) {
             tokenRepo.findByToken(refreshToken).ifPresent(tokenRepo::delete);
             return false;
         }
 
-        // DB에 존재하는지 확인
+        // DB에Refresh Token 존재하는지 확인
         return tokenRepo.findByToken(refreshToken).isPresent();
     }
 

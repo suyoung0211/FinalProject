@@ -1,0 +1,94 @@
+/*! CropperJS v1.5.13 | MIT License | https://fengyuanchen.github.io/cropperjs */
+
+.cropper-container {
+  direction: ltr;
+  font-size: 0;
+  line-height: 0;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: pinch-zoom;
+  user-select: none;
+}
+
+.cropper-container img {
+  display: block;
+  height: 100%;
+  image-orientation: 0deg;
+  max-height: none !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  width: 100%;
+}
+
+.cropper-wrap-box,
+.cropper-canvas,
+.cropper-drag-box,
+.cropper-crop-box,
+.cropper-modal {
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.cropper-crop-box {
+  box-sizing: border-box;
+  outline: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.cropper-view-box {
+  display: block;
+  height: 100%;
+  outline: 1px solid rgba(255, 255, 255, 0.75);
+  outline-color: rgba(255, 255, 255, 0.75);
+  overflow: hidden;
+  width: 100%;
+}
+
+.cropper-face,
+.cropper-line,
+.cropper-point {
+  display: block;
+  height: 100%;
+  opacity: 0.1;
+  position: absolute;
+  width: 100%;
+}
+
+.cropper-face:hover,
+.cropper-line:hover,
+.cropper-point:hover {
+  opacity: 1;
+}
+
+.cropper-point {
+  height: 10px;
+  width: 10px;
+  background-color: #fff;
+}
+
+.cropper-point.point-ne {
+  right: -5px;
+  top: -5px;
+  cursor: ne-resize;
+}
+
+.cropper-point.point-nw {
+  left: -5px;
+  top: -5px;
+  cursor: nw-resize;
+}
+
+.cropper-point.point-se {
+  bottom: -5px;
+  right: -5px;
+  cursor: se-resize;
+}
+
+.cropper-point.point-sw {
+  bottom: -5px;
+  left: -5px;
+  cursor: sw-resize;
+}

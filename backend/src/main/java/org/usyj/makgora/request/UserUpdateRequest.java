@@ -10,8 +10,10 @@ public class UserUpdateRequest {
     private String nickname;
     private Integer level;
     private Integer points;
-    private String profileBackground;
-    private String profileImage;
+    private String avatarIcon;
+    private String profileFrame;
+    private String profileBadge;
+    private String title;
     private UserEntity.Role role;
     private UserEntity.Status status;
 }

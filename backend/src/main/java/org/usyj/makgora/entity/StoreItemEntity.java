@@ -23,11 +23,11 @@ public class StoreItemEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    private ItemType type;
+    private ItemType type;   // POINT, CASH
 
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
-    private Category category;
+    private Category category;   // FRAME, BADGE
 
     @Column(name = "price", nullable = false)
     private Integer price;
@@ -50,10 +50,9 @@ public class StoreItemEntity {
         CASH
     }
 
+    // ✅ 이제 상점 카테고리는 딱 2개만 사용
     public enum Category {
-        AVATAR,
-        BACKGROUND,
-        SKIN,
-        BADGE
+        FRAME,   // 프로필 테두리
+        BADGE    // 프로필 뱃지
     }
 }
