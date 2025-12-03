@@ -41,15 +41,16 @@ export default function LatestNewsList({ items }: LatestNewsListProps) {
           </div>
 
           <div className="flex gap-2 mt-3 flex-wrap">
-            {news.categories?.map((c: string) => (
-              <span
-                key={c}
-                className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
+  {news.categories?.map((c: string) => (
+    <span
+      key={c}
+      onClick={() => window.location.href = `/article?category=${c}`}
+      className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full cursor-pointer hover:bg-purple-500/40"
+    >
+      {c}
+    </span>
+  ))}
+</div>
         </div>
       ))}
     </div>

@@ -29,17 +29,23 @@ public class RssArticleEntity {
 
     @ManyToMany
     @JoinTable(
-        name = "article_categories_mapping",
-        joinColumns = @JoinColumn(name = "article_id"),
-        inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
+    name = "article_categories_mapping",
+    joinColumns = @JoinColumn(name = "article_id"),
+    inverseJoinColumns = @JoinColumn(name = "category_id"),
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_article_category_mapping",
+            columnNames = { "article_id", "category_id" }
+        )
+    }
+)
     @Builder.Default
     private Set<ArticleCategoryEntity> categories = new HashSet<>();
 
     @Column(nullable = false, length = 500)
     private String title;
 
-    @Column(nullable = false, length = 2000, unique = true)
+    @Column(nullable = false, length = 500)
     private String link;
 
     @Lob
@@ -69,6 +75,10 @@ public class RssArticleEntity {
     @Column(nullable = false)
     @Builder.Default
     private int likeCount = 0;
+    
+    @Column(nullable = false)
+    @Builder.Default
+    private int dislikeCount = 0;
 
     @Column(nullable = false)
     @Builder.Default

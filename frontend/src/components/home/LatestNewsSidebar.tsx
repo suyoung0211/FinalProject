@@ -20,7 +20,7 @@ export default function LatestNewsSidebar({ items }: { items: HotIssue[] }) {
   const paginated = items.slice(page * pageSize, page * pageSize + pageSize);
 
   return (
-    <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
+    <div className="relative z-10 bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold text-white">최신 뉴스</h3>
 

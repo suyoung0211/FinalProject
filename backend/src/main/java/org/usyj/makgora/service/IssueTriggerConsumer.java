@@ -1,69 +1,106 @@
 // // src/main/java/org/usyj/makgora/service/IssueTriggerConsumer.java
-// package org.usyj.makgora.service;
+package org.usyj.makgora.service;
 
-// import org.springframework.data.redis.core.StringRedisTemplate;
-// import org.springframework.scheduling.annotation.Scheduled;
-// import org.springframework.stereotype.Service;
-// import org.springframework.transaction.annotation.Transactional;
-// import org.usyj.makgora.entity.RssArticleEntity;
-// import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
+import java.time.Duration;
 
-// import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.entity.RssArticleEntity;
+import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
-// @Service
-// @RequiredArgsConstructor
-// public class IssueTriggerConsumer {
+import lombok.RequiredArgsConstructor;
 
-//     private final StringRedisTemplate redis;
-//     private final RssArticleRepository articleRepo;
-//     private final AiIssueService aiIssueService;
+@Service
+@RequiredArgsConstructor
+public class IssueTriggerConsumer {
 
-//     private static final String QUEUE = "ISSUE_TRIGGER_QUEUE";
+    private final StringRedisTemplate redis;
+    private final RssArticleRepository articleRepo;
+    private final AiIssueService aiIssueService;
+    private final RssArticleScoreService scoreService;
 
-//     @Scheduled(fixedDelay = 5000)
-//     @Transactional
-//     public void consume() {
+    private static final String QUEUE = "ISSUE_TRIGGER_QUEUE";
 
-//         String raw = redis.opsForList().rightPop(QUEUE);
-//         if (raw == null) return;
+    private boolean acquireLock(String key) {
+        Boolean ok = redis.opsForValue()
+                .setIfAbsent(key, "LOCK", Duration.ofMinutes(5));
+        return Boolean.TRUE.equals(ok);
+    }
 
-//         // 🔹 RSS 기사 처리 (예: "article:12")
-//         if (raw.startsWith("article:")) {
-//             int articleId = Integer.parseInt(raw.split(":")[1]);
+    // @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
+    @Transactional
+    public void consume() {
 
-//             // 중복 체크
-//             if ("1".equals(redis.opsForValue().get("article:" + articleId + ":triggered"))) return;
+        String raw = redis.opsForList().rightPop(QUEUE);
+        if (raw == null) return;
 
-//             // Python AI 호출 → 단일 기사 Issue 생성
-//             aiIssueService.triggerArticleIssue(articleId);
+        /* ============================
+           📌 RSS Article Issue
+        ============================ */
+        if (raw.startsWith("article:")) {
 
-//             // DB에 Issue 생성 플래그 저장
-//             RssArticleEntity article = articleRepo.findById(articleId).orElse(null);
-//             if (article != null) {
-//                 article.setIssueCreated(true);
-//                 articleRepo.save(article);
-//             }
+            int articleId = Integer.parseInt(raw.split(":")[1]);
 
-//             // Redis에도 중복 방지 플래그 기록
-//             redis.opsForValue().set("article:" + articleId + ":triggered", "1");
+            String lockKey = "article:" + articleId + ":issue:lock";
 
-//             System.out.println("[IssueTrigger] Article Issue Created: " + articleId);
-//         }
+            // 🔥 중복 소비 방지 (SETNX)
+            if (!acquireLock(lockKey)) {
+                System.out.println("[Consumer] LOCKED → Skip articleId: " + articleId);
+                return;
+            }
 
-//         // 🔹 Community Post 처리 (예: "cp:33")
-//         else if (raw.startsWith("cp:")) {
-//             long postId = Long.parseLong(raw.split(":")[1]);
+            try {
+                // 이미 완료된 article이면 skip
+                if ("1".equals(redis.opsForValue().get("article:" + articleId + ":triggered"))) return;
 
-//             // 중복 체크
-//             if ("1".equals(redis.opsForValue().get("cp:" + postId + ":triggered"))) return;
+                aiIssueService.triggerArticleIssue(articleId);
 
-//             // Python AI 호출 → 단일 커뮤니티 게시글 Issue 생성
-//             aiIssueService.triggerCommunityIssue(postId);
+                RssArticleEntity article = articleRepo.findById(articleId).orElse(null);
+                if (article != null) {
+                    int score = scoreService.updateScoreAndReturn(article);
+                    article.setAiSystemScore(score);
+                    article.setIssueCreated(true);
+                    articleRepo.save(article);
+                }
 
-//             // Redis 중복 방지 플래그 기록
-//             redis.opsForValue().set("cp:" + postId + ":triggered", "1");
+                redis.opsForValue().set("article:" + articleId + ":triggered", "1");
 
-//             System.out.println("[IssueTrigger] Community Issue Created: " + postId);
-//         }
-//     }
-// }
+                System.out.println("[IssueTrigger] Article Issue Created: " + articleId);
+            }
+            finally {
+                // 🔥 lock 해제
+                redis.delete(lockKey);
+            }
+        }
+
+        /* ============================
+           📌 Community Issue
+        ============================ */
+        else if (raw.startsWith("cp:")) {
+
+            long postId = Long.parseLong(raw.split(":")[1]);
+
+            String lockKey = "cp:" + postId + ":issue:lock";
+
+            if (!acquireLock(lockKey)) {
+                System.out.println("[Consumer] LOCKED → Skip postId: " + postId);
+                return;
+            }
+
+            try {
+                if ("1".equals(redis.opsForValue().get("cp:" + postId + ":triggered"))) return;
+
+                aiIssueService.triggerCommunityIssue(postId);
+
+                redis.opsForValue().set("cp:" + postId + ":triggered", "1");
+
+                System.out.println("[IssueTrigger] Community Issue Created: " + postId);
+            }
+            finally {
+                redis.delete(lockKey);
+            }
+        }
+    }
+}

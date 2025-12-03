@@ -19,19 +19,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws IOException, ServletException {
+    protected void doFilterInternal(
+            HttpServletRequest req,
+            HttpServletResponse res,
+            FilterChain chain
+    ) throws IOException, ServletException {
 
         String path = req.getRequestURI();
         String method = req.getMethod();
 
-        // Vote GET은 공개 BUT my 조회는 제외
-        boolean isPublicVoteGet =
-                method.equals("GET")
-                && path.startsWith("/api/votes/")
-                && !path.startsWith("/api/votes/my");
+        System.out.println("=== [JWT FILTER DEBUG] ========================");
+        System.out.println("Request URI : " + path);
+        System.out.println("HTTP Method : " + method);
+        System.out.println("Header Authorization : " + req.getHeader("Authorization"));
+        System.out.println("Cookies : " + (req.getCookies() != null ? req.getCookies().length : 0));
+        System.out.println("=================================================");
 
-        // JWT 검사를 생략할 경로들
+        // 🔥 인증을 건너뛸 API 정의
         boolean skip =
                 path.equals("/api/auth/login") ||
                 path.equals("/api/auth/register") ||
@@ -40,42 +44,80 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 path.startsWith("/api/home") ||
                 (method.equals("GET") && path.startsWith("/api/issues/")) ||
                 (method.equals("GET") && path.startsWith("/api/rankings/")) ||
-                isPublicVoteGet;
 
+
+                // 기사 GET
+                (method.equals("GET") && path.startsWith("/api/articles")) ||
+                // 🔥 기사 카테고리 GET 추가
+                (method.equals("GET") && path.startsWith("/api/categories")) ||
+
+                // 이슈 GET
+                (method.equals("GET") && path.startsWith("/api/issues")) ||
+
+                // 🔥 투표 GET (my만 제외)
+                (method.equals("GET") &&
+                        (path.equals("/api/votes")
+                                || path.equals("/api/votes/")
+                                || (path.startsWith("/api/votes/") && !path.startsWith("/api/votes/my"))
+                        )
+                ) ||
+
+                // 커뮤니티 GET
+                (method.equals("GET") && path.startsWith("/api/community/posts"));
+
+        System.out.println("Skip JWT Authentication? → " + skip);
+
+        // 🔥 스킵이면 그냥 다음 필터
         if (skip) {
+            System.out.println("→ SKIPPED: JWT AUTH FILTER\n");
             chain.doFilter(req, res);
             return;
         }
 
-        // Access Token 추출
+        System.out.println("→ JWT AUTH CHECK START");
+
+        // --------------------------
+        // 🔥 JWT 토큰 추출
+        // --------------------------
         String token = null;
 
         String header = req.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             token = header.substring(7);
+            System.out.println("Token found in Header");
         }
 
         if (token == null && req.getCookies() != null) {
             for (Cookie c : req.getCookies()) {
                 if ("accessToken".equals(c.getName())) {
                     token = c.getValue();
+                    System.out.println("Token found in Cookie");
                     break;
                 }
             }
         }
 
-        // JWT 유효성 검사
+        System.out.println("Token Detected? → " + (token != null));
+
+        // --------------------------
+        // 🔥 JWT 토큰 검증
+        // --------------------------
         if (token != null && jwtTokenProvider.validateToken(token)) {
+            System.out.println("JWT VALID → Authentication SUCCESS");
+
             String email = jwtTokenProvider.getEmail(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            UsernamePasswordAuthenticationToken auth =
+            SecurityContextHolder.getContext().setAuthentication(
                     new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
-                    );
-
-            SecurityContextHolder.getContext().setAuthentication(auth);
+                    )
+            );
+        } else {
+            System.out.println("JWT INVALID OR NOT PROVIDED → Authentication SKIPPED");
         }
+
+        System.out.println("→ JWT FILTER END\n");
 
         chain.doFilter(req, res);
     }

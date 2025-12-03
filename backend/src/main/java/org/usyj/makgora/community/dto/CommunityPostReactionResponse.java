@@ -13,7 +13,7 @@ import lombok.Getter;
 public class CommunityPostReactionResponse {
 
     private Long postId;
-    private Integer recommendationCount; // 추천(좋아요) 수
-    private Integer dislikeCount;        // 비추천(싫어요) 수
+    private Long recommendationCount; // 추천(좋아요) 수
+    private Long dislikeCount;        // 비추천(싫어요) 수
     private Integer myReaction;          // 현재 유저의 반응 값 (1, -1, 0)
 }

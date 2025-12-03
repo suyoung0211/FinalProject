@@ -4,23 +4,26 @@ import sys
 from fastapi import FastAPI
 from pydantic import BaseModel
 import logging
+import uvicorn
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(BASE_DIR)
+
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
 
 from generateIssueCard import (
     run_issue_for_article,
     run_issue_for_community,
 )
 from generateAiTitle import run_generate_ai_titles
-import uvicorn
 
 
 class ArticleIdRequest(BaseModel):
     articleId: int
+
 
 class CommunityPostIdRequest(BaseModel):
     communityPostId: int
@@ -50,12 +53,29 @@ def generate_for_community(req: CommunityPostIdRequest):
 # 3) AI 제목 전체 생성
 @app.post("/generate-ai-titles")
 def generate_ai_titles():
-    # run_generate_ai_titles가 기사별 상태 리스트를 반환하도록 이미 수정
     results = run_generate_ai_titles()
+
+    success_count = sum(1 for r in results if r["status"] == "SUCCESS")
+    failed_articles = [r for r in results if r["status"] in ["FAILED", "DB_COMMIT_FAILED", "PROCESS_ERROR"]]
+    failed_count = len(failed_articles)
+    skipped_count = sum(1 for r in results if r["status"] in ["ALREADY_EXISTS", "SKIPPED_MAX_TRY"])
+
+    logger.info(f"AI 제목 생성 완료: SUCCESS={success_count}, FAILED={failed_count}, SKIPPED={skipped_count}")
+    for r in failed_articles:
+        logger.error(f"[FAILED] article_id={r['article_id']} error={r['error']}")
+
     return {
         "status": "completed",
         "message": "AI 제목 생성 완료",
-        "results": results  # 각 기사별 상태와 오류 정보를 포함
+        "summary": {
+            "success_count": success_count,
+            "failed_count": failed_count,
+            "skipped_count": skipped_count,
+        },
+        "failed_articles": [
+            {"article_id": r["article_id"], "error": r["error"]}
+            for r in failed_articles
+        ],
     }
 
 

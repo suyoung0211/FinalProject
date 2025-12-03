@@ -1,23 +1,19 @@
 package org.usyj.makgora.rssfeed.service;
 
-import lombok.RequiredArgsConstructor;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.usyj.makgora.repository.IssueRepository;
-import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class RssFeedCollector {
 
     private final RssFeedService rssFeedService; // RSS 기사 수집 서비스
-    private final ArticleAiTitleRepository aiTitleRepository; // AI 제목 DB 저장용 리포지토리
-    private final IssueRepository issueRepository;
     private final RestTemplate restTemplate = new RestTemplate(); // 외부 API 호출용 객체
 
     // Python AI 제목 생성 API URL
@@ -35,8 +31,8 @@ public class RssFeedCollector {
     private boolean runRssOnStartup;
 
     // 서버 시작 시 자동 실행
-    @EventListener(ApplicationReadyEvent.class)
     @Async
+    @EventListener(ApplicationReadyEvent.class)
     public void runAtStartup() {
         // runRssOnStartup이 false면 바로 종료 → 개발 단계에서 불필요한 작업 방지
         System.out.println("runRssOnStartup 값: " + runRssOnStartup);
@@ -51,11 +47,7 @@ public class RssFeedCollector {
             // -> pythonwoker>python generate_ai_titles_api.py
             
             var response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
-            long titleCount = aiTitleRepository.countByStatus("SUCCESS");
-            long issueCount = issueRepository.count();
             System.out.println("AI 제목 생성 API 응답: " + response);
-            System.out.println("생성된 AI 제목 개수: " + titleCount);
-            System.out.println("이슈 생성 개수: " + issueCount);
 
         } catch (Exception e) {
             System.err.println("RSS 수집 또는 AI 제목 생성 중 오류 발생: " + e.getMessage());

@@ -28,45 +28,59 @@ Base = declarative_base()
 class RssArticleEntity(Base):
     __tablename__ = "rss_articles"
 
-    article_id = Column(Integer, primary_key=True)
+    article_id = Column(Integer, primary_key=True, autoincrement=True)
+
+    ai_system_score = Column(Integer, nullable=False, default=0)
+    comment_count = Column(Integer, nullable=False, default=0)
+    dislike_count = Column(Integer, nullable=False, default=0)
     feed_id = Column(Integer, nullable=False)
-    title = Column(String(500), nullable=False)
-    link = Column(Text, unique=True, nullable=False)
-    content = Column(Text)
-    thumbnail_url = Column(String(500))
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    issue_created = Column(Boolean, nullable=False, default=False)
+    like_count = Column(Integer, nullable=False, default=0)
+    view_count = Column(Integer, nullable=False, default=0)
+
+    created_at = Column(DateTime, nullable=False, default=datetime.now)
+    updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
     published_at = Column(DateTime)
-    is_deleted = Column(Boolean, default=False)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+
+    link = Column(String(500), nullable=False)
+    thumbnail_url = Column(String(500))
+    title = Column(String(500), nullable=False)
+    content = Column(Text)
 
 
 class ArticleAiTitleEntity(Base):
     __tablename__ = "article_ai_titles"
 
-    ai_title_id = Column(Integer, primary_key=True)
-    article_id = Column(Integer, ForeignKey("rss_articles.article_id"), unique=True)
-    article = relationship("RssArticleEntity")
-    ai_title = Column(Text)
-    model_name = Column(String(100))
-    status = Column(String(20), nullable=False)
+    ai_title_id = Column(Integer, primary_key=True, autoincrement=True)
+    article_id = Column(Integer, ForeignKey("rss_articles.article_id"), nullable=False, unique=True)
+
     try_count = Column(Integer, nullable=False, default=0)
-    last_error = Column(Text)
     created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
     last_success_at = Column(DateTime)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    status = Column(String(20), nullable=False)
+    model_name = Column(String(100))
+    last_error = Column(Text)
+    ai_title = Column(Text)
+
+    article = relationship("RssArticleEntity")
+
 
 # ===============================
 # OpenAI 클라이언트
 # ===============================
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
 def generate_ai_title(title, content):
     """
     주어진 제목과 내용으로 AI 제목 생성
     """
     prompt = f"""
-        다음 뉴스 제목과 내용을 보고, 클릭하고 싶은 매력적인 제목을 만들어 주세요.
-        - 제목 길이: 최대 50자
+        다음 뉴스 제목과 내용을 보고 클릭하고 싶은 매력적인 제목을 만들어 주세요.
+        - 제목 길이: 반드시 50자 이내로 작성
         - 궁금증을 유발하는 제목
         - 핵심 키워드 포함
         - 응답은 제목 텍스트만 반환
@@ -74,18 +88,23 @@ def generate_ai_title(title, content):
         기사 제목: {title}
         기사 내용: {content}
     """
+
     response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[{"role":"user","content":prompt}],
+        model="gpt-4.1",
+        messages=[{"role": "user", "content": prompt}],
         temperature=1.5,
-        max_tokens=60
+        max_tokens=60,
     )
+
     return response.choices[0].message.content.strip()
+
 
 # ===============================
 # AI 제목 생성 실행 함수
 # ===============================
-MAX_TRY = 3  # 최대 시도 횟수
+MAX_TRY = 3
+MAX_TITLE_LENGTH = 50
+
 
 def run_generate_ai_titles():
     articles = session.query(RssArticleEntity).filter(RssArticleEntity.is_deleted == False).all()
@@ -95,36 +114,49 @@ def run_generate_ai_titles():
         article_result = {"article_id": article.article_id, "status": None, "error": None}
 
         try:
-            # 기존 AI 제목 조회
             existing = session.query(ArticleAiTitleEntity).filter_by(article_id=article.article_id).first()
 
-            # 최대 시도 횟수 초과 시 스킵
-            if existing and existing.try_count >= MAX_TRY:
-                article_result["status"] = "SKIPPED_MAX_TRY"
-                result_summary.append(article_result)
-                continue
+            # 🔥 existing None 체크 필수
+            if existing is not None:
+                # 최대 시도 초과
+                if existing.try_count >= MAX_TRY:
+                    article_result["status"] = "SKIPPED_MAX_TRY"
+                    result_summary.append(article_result)
+                    continue
+
+                # 이미 AI 제목 존재 (SUCCESS)
+                if existing.ai_title and existing.status == "SUCCESS":
+                    article_result["status"] = "ALREADY_EXISTS"
+                    result_summary.append(article_result)
+                    continue
 
             # AI 제목 생성 시도
             try:
                 content_for_prompt = article.content if article.content else article.title
                 ai_title_text = generate_ai_title(article.title, content_for_prompt)
+
+                if len(ai_title_text) > MAX_TITLE_LENGTH:
+                    raise ValueError(f"AI 제목 길이 초과: {len(ai_title_text)}자")
+
                 status = "SUCCESS"
                 last_success_at = datetime.now()
                 last_error = None
+
             except Exception as e:
                 ai_title_text = None
                 status = "FAILED"
                 last_error = str(e)
                 last_success_at = None
 
-            # 기존 엔티티가 있으면 업데이트, 없으면 새로 추가
+            # DB 저장 또는 업데이트
             if existing:
                 existing.ai_title = ai_title_text
                 existing.status = status
                 existing.last_error = last_error
                 existing.last_success_at = last_success_at
-                existing.updated_at = datetime.now()
                 existing.try_count += 1
+                existing.updated_at = datetime.now()
+                session.add(existing)
             else:
                 new_ai_title = ArticleAiTitleEntity(
                     article_id=article.article_id,
@@ -133,35 +165,41 @@ def run_generate_ai_titles():
                     status=status,
                     try_count=1,
                     last_error=last_error,
-                    last_success_at=last_success_at
+                    last_success_at=last_success_at,
                 )
                 session.add(new_ai_title)
 
-            # 개별 기사별 커밋
+            # 커밋 처리
             try:
                 session.commit()
             except Exception as db_e:
-                # DB 커밋 실패 시 rollback 후 실패 기록은 남김
                 session.rollback()
-                status = "DB_COMMIT_FAILED"
-                last_error = f"{last_error or ''} | DB ERROR: {db_e}"
-                # 기존/새 엔티티 업데이트
+
+                error_msg = f"{last_error or ''} | DB ERROR: {db_e}"
+
                 if existing:
-                    existing.status = status
-                    existing.last_error = last_error
+                    existing.status = "DB_COMMIT_FAILED"
+                    existing.last_error = error_msg
                     existing.updated_at = datetime.now()
+                    session.add(existing)
                 else:
-                    new_ai_title.status = status
-                    new_ai_title.last_error = last_error
-                session.add(existing or new_ai_title)
-                session.commit()  # 재커밋 시도
-            finally:
-                article_result["status"] = status
-                article_result["error"] = last_error
+                    new_ai_title.status = "DB_COMMIT_FAILED"
+                    new_ai_title.last_error = error_msg
+                    session.add(new_ai_title)
+
+                session.commit()
+                article_result["status"] = "DB_COMMIT_FAILED"
+                article_result["error"] = error_msg
                 result_summary.append(article_result)
+                continue
+
+            # 성공
+            article_result["status"] = status
+            article_result["error"] = last_error
+            result_summary.append(article_result)
 
         except Exception as outer_e:
-            # AI 생성이나 DB 처리 중 발생한 예외, 다음 기사 계속
+            session.rollback()
             article_result["status"] = "PROCESS_ERROR"
             article_result["error"] = str(outer_e)
             result_summary.append(article_result)

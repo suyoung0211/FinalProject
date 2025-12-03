@@ -270,3 +270,9 @@ VoteStatusHistoryEntity 추가 (상태 변경 기록 저장용)
 취소 관리자 API 추가 /api/votes/{voteId}/admin/cancel
 
 -----------------------------
+ArticleReactionEntity추가 => 기사 좋아요/싫어요
+RssArticleEntity 좋아요 싫어요 => ArticleReactionEntity에 이관
+ArticleAiTitleRepogitory 겹치는거 삭제(rssfeed쪽 살림)
+category관련 백엔드 아예 빼버려서 따로 ArticleCategory로 살림
+=> 기사 카테고리별로 부를 수 있도록 api설정
+카테고리 전체 / 카테고리 별 기사 수 / list형식 반환 / page형식 반환

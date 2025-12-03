@@ -23,7 +23,7 @@ public class RssFeedEntity {
     @Column(name = "feed_id")
     private Integer id;
 
-    @Column(nullable = false, length = 255, unique = true)
+    @Column(nullable = false, length = 500)
     private String url;
 
     @Column(nullable = false, length = 100)

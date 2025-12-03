@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  * - 각 카테고리별 RSS feed 수집
  * - 기사 저장 (중복 체크 포함)
  * - feed 마지막 수집 시간 업데이트
- * - 전체 수집 완료 후 DB 기준으로 저장된 기사/스킵/전체 파싱 집계
+ * - 전체 수집 완료 후 배치 기준 저장/스킵/파싱 집계
  */
 @Service
 @RequiredArgsConstructor
@@ -37,7 +37,8 @@ public class RssFeedService {
     @Transactional
     public void collectAndSaveAllFeeds() {
         int totalFetched = 0;   // 전체 파싱 수 누적
-        int totalSaved = 0;     // DB 기준 저장된 기사 수
+        int totalSaved = 0;     // 배치 기준 저장된 기사 수 누적
+        int totalSkipped = 0;   // 배치 기준 스킵 기사 수 누적
 
         for (RssFeedSource source : sources) {
 
@@ -68,21 +69,17 @@ public class RssFeedService {
                 // 4. 전체 파싱 수 누적
                 totalFetched += dtos.size();
 
-                // 5. batch 저장 (중복 처리 포함)
-                articleService.saveArticlesBatch(feed, dtos);
+                // 5. 배치 저장 및 실제 저장/스킵 계산
+                int savedThisBatch = articleService.saveArticlesBatch(feed, dtos); // 저장된 기사 수
+                totalSaved += savedThisBatch;
+                totalSkipped += dtos.size() - savedThisBatch;
 
                 // 6. 피드 마지막 수집 시간 업데이트
                 feedService.updateLastFetched(feed);
             }
         }
 
-        // 7. DB 기준 전체 저장된 기사 수 조회
-        totalSaved = articleService.countAllSavedArticles();
-
-        // 8. 스킵 수 = 전체 파싱 - DB에 저장된 기사
-        int totalSkipped = totalFetched - totalSaved;
-
-        // 9. 전체 피드 갯수 조회 (DB 기준)
+        // 7. 전체 피드 갯수 조회 (DB 기준)
         int feedCount = (int) feedRepo.count();
 
         log.info("전체 피드 갯수: {}", feedCount);
