@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

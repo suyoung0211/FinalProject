@@ -1,4 +1,5 @@
 // src/api/adminApi.js
+
 import api from "./api";
 
 // 관리자 전체 유저 조회
@@ -18,3 +19,6 @@ export const updateAdminUserApi = (userId, body) => api.put(`/admin/users/${user
 
 // 관리자 페이지 rss 정보 가져오기
 export const getAllAdminRssFeeds = () => api.get("/admin/rss-feeds");
+
+// 관리자 페이지 rss 정보 수정
+export const updateAdminRssFeedApi = (feedId, body) => api.put(`/admin/rss-feeds/${feedId}`, body);

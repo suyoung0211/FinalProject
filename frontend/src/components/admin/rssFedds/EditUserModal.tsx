@@ -1,34 +1,26 @@
-// EditUserModal.tsx
-
 import { useState } from "react";
-import { updateAdminUserApi } from "../../../api/adminAPI";
 import ReactDOM from "react-dom";
+import { updateAdminRssFeedApi } from "../../../api/adminAPI"; // 실제 API로 교체
 
 interface Props {
-  userId: number;
-  userData: {
+  feedId: number;
+  feedData: {
     id: number;
-    loginId: string;
-    nickname: string;
-    level: number;
-    points: number;
-    role: string;
-    status: string;
-    verificationEmail: string;
-    createdAt: string;
+    sourceName: string;
+    url: string;
+    category: string; // 문자열
+    status: 'active' | 'inactive';
   };
   onClose: () => void;
   onUpdate: () => void;
 }
 
-export default function EditUserModal({ userId, userData, onClose, onUpdate }: Props) {
+export default function EditRssFeedModal({ feedId, feedData, onClose, onUpdate }: Props) {
   const [form, setForm] = useState({
-    userid: userId,
-    nickname: userData.nickname,
-    level: userData.level,
-    points: userData.points,
-    role: userData.role,
-    status: userData.status,
+    sourceName: feedData.sourceName,
+    url: feedData.url,
+    category: feedData.category,
+    status: feedData.status,
   });
 
   const [loading, setLoading] = useState(false);
@@ -41,78 +33,57 @@ export default function EditUserModal({ userId, userData, onClose, onUpdate }: P
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await updateAdminUserApi(userId, form);
-      onUpdate();
-      onClose();
+      await updateAdminRssFeedApi(feedId, form); // API 호출
+      onUpdate(); // 부모에서 리스트 갱신
+      onClose();  // 모달 닫기
     } catch (err) {
       console.error(err);
-      alert("수정 실패");
+      alert("RSS 피드 수정 실패");
     } finally {
       setLoading(false);
     }
   };
 
   return ReactDOM.createPortal(
-    <div
-      className="fixed inset-0 z-[40]" // 화면 전체 덮는 투명 레이어
-      onClick={onClose} // 배경 클릭 시 닫기
-    >
+    <div className="fixed inset-0 z-[40] bg-black/40" onClick={onClose}>
       <div
-        className="fixed top-1/2 left-[calc(50%+128px)] transform -translate-x-1/2 -translate-y-1/2 z-[50]"
-        onClick={onClose} // 배경 클릭 시 모달 닫기
+        className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[50]"
+        onClick={(e) => e.stopPropagation()} // 모달 내부 클릭 시 이벤트 전파 막기
       >
-        <div
-          className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 w-[420px] shadow-2xl animate-scaleIn"
-          onClick={(e) => e.stopPropagation()} // 모달 내부 클릭 시 이벤트 전파 방지
-        >
+        <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-6 w-[420px] shadow-2xl animate-scaleIn">
           <h2 className="text-white text-lg font-semibold mb-5 border-b border-white/10 pb-3">
-            사용자 정보 수정
+            RSS 피드 수정
           </h2>
 
           <div className="space-y-3">
             <div>
-              <label className="text-gray-200 text-sm font-medium">닉네임</label>
+              <label className="text-gray-200 text-sm font-medium">출처 이름</label>
               <input
-                name="nickname"
-                value={form.nickname}
+                name="name"
+                value={form.sourceName}
                 onChange={handleChange}
                 className="w-full mt-1 p-2 rounded-lg bg-gray-800/60 text-white border border-white/10 focus:border-purple-400 transition"
               />
             </div>
 
             <div>
-              <label className="text-gray-200 text-sm font-medium">레벨</label>
+              <label className="text-gray-200 text-sm font-medium">URL</label>
               <input
-                name="level"
-                type="number"
-                value={form.level}
+                name="url"
+                value={form.url}
                 onChange={handleChange}
                 className="w-full mt-1 p-2 rounded-lg bg-gray-800/60 text-white border border-white/10 focus:border-purple-400 transition"
               />
             </div>
 
             <div>
-              <label className="text-gray-200 text-sm font-medium">포인트</label>
+              <label className="text-gray-200 text-sm font-medium">카테고리</label>
               <input
-                name="points"
-                type="number"
-                value={form.points}
+                name="category"
+                value={form.category}
                 onChange={handleChange}
                 className="w-full mt-1 p-2 rounded-lg bg-gray-800/60 text-white border border-white/10 focus:border-purple-400 transition"
               />
-            </div>
-
-            <div>
-              <label className="text-gray-200 text-sm font-medium">역할</label>
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className="w-full mt-1 p-2 rounded-lg bg-gray-800/60 text-white border border-white/10 focus:border-purple-400 transition"
-              >
-                <option value="USER">사용자</option>
-                <option value="ADMIN">관리자</option>
-              </select>
             </div>
 
             <div>
@@ -123,9 +94,8 @@ export default function EditUserModal({ userId, userData, onClose, onUpdate }: P
                 onChange={handleChange}
                 className="w-full mt-1 p-2 rounded-lg bg-gray-800/60 text-white border border-white/10 focus:border-purple-400 transition"
               >
-                <option value="ACTIVE">활성화</option>
-                <option value="INACTIVE">비활정화</option>
-                <option value="DELETED">정지</option>
+                <option value="active">활성화</option>
+                <option value="inactive">비활성화</option>
               </select>
             </div>
           </div>

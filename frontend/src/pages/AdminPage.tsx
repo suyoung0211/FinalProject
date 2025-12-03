@@ -120,7 +120,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
       <main className="flex-1 overflow-auto p-6">
         <Routes>
           {/* 기본 접근 시 dashboard로 이동 */}
-          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route index element={<Dashboard />} />
 
           {/* 각 메뉴 라우트 */}
           <Route path="dashboard" element={<Dashboard />} />
