@@ -146,6 +146,59 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
     fetchVoteActivities();
   }, []);
 
+  // ✅ 투표 통계 불러오기 (백엔드 API 연동)
+  useEffect(() => {
+    const fetchVoteStatistics = async () => {
+      try {
+        setStatsLoading(true);
+        setStatsError(null);
+
+        // 백엔드: GET /api/votes/my/statistics
+        const res = await api.get<{
+          totalBets: number;
+          wins: number;
+          losses: number;
+          pending: number;
+          winRate: number;
+          currentWinStreak: number;
+          maxWinStreak: number;
+        }>('/votes/my/statistics');
+
+        // 총 수익 계산: 최근 투표 활동에서 rewardAmount 합산
+        // voteActivities가 아직 로드되지 않았을 수 있으므로 별도로 계산
+        let totalEarned = 0;
+        try {
+          const voteRes = await api.get<RecentVoteActivity[]>('/profile/activities/votes', {
+            params: { limit: 100 }, // 충분히 많은 데이터 가져오기
+          });
+          totalEarned = voteRes.data
+            .filter((v) => v.rewardAmount !== null && v.result !== 'CANCELLED')
+            .reduce((sum, v) => sum + (v.rewardAmount || 0), 0);
+        } catch (e) {
+          console.warn('총 수익 계산 실패 (무시)', e);
+        }
+
+        setStats({
+          totalBets: res.data.totalBets || 0,
+          wonBets: res.data.wins || 0,
+          lostBets: res.data.losses || 0,
+          winRate: res.data.winRate ? Math.round(res.data.winRate * 100) : 0, // 백분율로 변환
+          totalEarned: totalEarned,
+          currentStreak: res.data.currentWinStreak || 0,
+          bestStreak: res.data.maxWinStreak || 0,
+          rank: 0, // TODO: 랭킹 API 연동 필요
+        });
+      } catch (error) {
+        console.error('투표 통계 불러오기 실패', error);
+        setStatsError('투표 통계를 불러오지 못했습니다.');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchVoteStatistics();
+  }, []); // 컴포넌트 마운트 시 한 번만 실행
+
   const handleSave = () => {
     if (onUpdateUser) {
       onUpdateUser({
@@ -232,17 +285,19 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
     setAdminCodeError('');
   };
 
-  // 임시 통계 데이터 (투표 쪽 - 나중에 백엔드 연동 예정)
-  const stats = {
-    totalBets: 24,
-    wonBets: 18,
-    lostBets: 6,
-    winRate: 75,
-    totalEarned: 3200,
-    currentStreak: 5,
-    bestStreak: 8,
-    rank: 142,
-  };
+  // ✅ 투표 통계 상태 (백엔드 API 연동)
+  const [stats, setStats] = useState({
+    totalBets: 0,
+    wonBets: 0,
+    lostBets: 0,
+    winRate: 0,
+    totalEarned: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    rank: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // 업적은 지금처럼 더미 유지 (추후 백엔드 연동 가능)
   const achievements = [
@@ -404,7 +459,9 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full">
                     <Trophy className="w-5 h-5 text-yellow-400" />
-                    <span className="text-white font-medium">#{stats.rank} 랭킹</span>
+                    <span className="text-white font-medium">
+                      {stats.rank > 0 ? `#${stats.rank} 랭킹` : '랭킹 없음'}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur border border-white/20 rounded-full">
                     <Calendar className="w-5 h-5 text-blue-400" />
@@ -444,7 +501,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
           </div>
         )}
 
-        {/* Stats Grid */}
+        {/* Stats Grid - 백엔드 API 연동 */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
             <BarChart3 className="w-8 h-8 text-purple-400 mx-auto mb-3" />
@@ -458,7 +515,9 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
           </div>
           <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
             <Coins className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
-            <div className="text-3xl font-bold text-white mb-1">+{stats.totalEarned}</div>
+            <div className="text-3xl font-bold text-white mb-1">
+              {stats.totalEarned > 0 ? '+' : ''}{stats.totalEarned}
+            </div>
             <div className="text-sm text-gray-400">총 수익</div>
           </div>
           <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
@@ -669,7 +728,7 @@ export function ProfilePage({ onBack, user, onUpdateUser, onAdminPage }: Profile
               })}
             </div>
 
-            {/* Additional Stats */}
+            {/* Additional Stats - 백엔드 API 연동 */}
             <div className="mt-6 pt-6 border-t border-white/10">
               <h3 className="text-white font-semibold mb-4">상세 통계</h3>
               <div className="space-y-3">
