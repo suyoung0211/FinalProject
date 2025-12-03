@@ -29,7 +29,7 @@ public class IssueTriggerConsumer {
         return Boolean.TRUE.equals(ok);
     }
 
-    // @Scheduled(fixedDelay = 60 * 1000) // 1시간마다
+    @Scheduled(fixedDelay = 60 * 1000) // 1시간마다
     @Transactional
     public void consume() {
 
