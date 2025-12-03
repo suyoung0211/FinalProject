@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssFeedEntity;
-import org.usyj.makgora.rssfeed.dto.RssArticleDTO;
+import org.usyj.makgora.rssfeed.dto.RssArticleCreateDTO;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 import org.usyj.makgora.rssfeed.source.RssFeedSource;
 
@@ -58,7 +58,7 @@ public class RssFeedService {
                 RssFeedEntity feed = feedService.getOrCreateFeed(feedUrl, sourceName, defaultCategories);
 
                 // 3. 기사 fetch
-                List<RssArticleDTO> dtos;
+                List<RssArticleCreateDTO> dtos;
                 try {
                     dtos = source.fetch(categoryName, feedUrl);
                 } catch (Exception e) {

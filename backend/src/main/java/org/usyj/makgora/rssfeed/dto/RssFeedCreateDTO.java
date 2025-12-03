@@ -13,14 +13,14 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RssFeedDTO {
+public class RssFeedCreateDTO {
     private Integer id;
     private String url;
     private String sourceName;
     private Set<String> categoryNames;
 
-    public static RssFeedDTO fromEntity(RssFeedEntity feed) {
-        return RssFeedDTO.builder()
+    public static RssFeedCreateDTO fromEntity(RssFeedEntity feed) {
+        return RssFeedCreateDTO.builder()
                 .id(feed.getId())
                 .url(feed.getUrl())
                 .sourceName(feed.getSourceName())

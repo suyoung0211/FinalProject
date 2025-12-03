@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.entity.RssFeedEntity;
-import org.usyj.makgora.rssfeed.dto.RssArticleDTO;
+import org.usyj.makgora.rssfeed.dto.RssArticleCreateDTO;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -32,11 +32,11 @@ public class RssArticleManagementService {
      * 4️⃣ 이번 배치에서 실제 저장된 기사 수 반환
      */
     @Transactional
-    public int saveArticlesBatch(RssFeedEntity feed, List<RssArticleDTO> dtos) {
+    public int saveArticlesBatch(RssFeedEntity feed, List<RssArticleCreateDTO> dtos) {
         Set<String> savedLinksSet = new HashSet<>(); // 배치 내 중복 방지용 링크 저장
         int savedCount = 0; // 이번 배치에서 실제 저장된 기사 수
 
-        for (RssArticleDTO dto : dtos) {
+        for (RssArticleCreateDTO dto : dtos) {
             String link = dto.getLink();
 
             // DB에 이미 존재하거나 배치 내 중복이면 건너뜀

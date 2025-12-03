@@ -13,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RssArticleDTO {
+public class RssArticleCreateDTO {
     private String title;
     private String link;
     private String content;
@@ -21,7 +21,7 @@ public class RssArticleDTO {
     private String thumbnailUrl;
     private List<String> categories;
 
-    public static RssArticleDTO from(SyndEntry entry) {
+    public static RssArticleCreateDTO from(SyndEntry entry) {
         LocalDateTime publishedAt = null;
         if (entry.getPublishedDate() != null) {
             publishedAt = LocalDateTime.ofInstant(entry.getPublishedDate().toInstant(), ZoneId.systemDefault());
@@ -41,7 +41,7 @@ public class RssArticleDTO {
 
         // 섬네일 처리: Media RSS 확장이나 HTML img 파싱 필요시 별도 로직 필요
 
-        return RssArticleDTO.builder()
+        return RssArticleCreateDTO.builder()
                 .title(entry.getTitle())
                 .link(entry.getLink())
                 .content(content)

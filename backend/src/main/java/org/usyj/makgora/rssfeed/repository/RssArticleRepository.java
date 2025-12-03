@@ -9,10 +9,6 @@ import org.usyj.makgora.entity.RssFeedEntity;
 
 import jakarta.transaction.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
 @Repository
 public interface RssArticleRepository extends JpaRepository<RssArticleEntity, Integer> {
 
