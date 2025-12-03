@@ -3,9 +3,12 @@ package org.usyj.makgora.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.usyj.makgora.entity.IssueEntity;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IssueRepository extends JpaRepository<IssueEntity, Integer> {
 
@@ -20,4 +23,9 @@ public interface IssueRepository extends JpaRepository<IssueEntity, Integer> {
             IssueEntity.Status status,
             Pageable pageable
     );
+
+    @Query("SELECT i FROM IssueEntity i WHERE i.communityPost.postId = :postId")
+    Optional<IssueEntity> findByCommunityPostId(@Param("postId") Long postId);
+
+    Optional<IssueEntity> findByArticleId(Integer articleId);
 }

@@ -8,6 +8,7 @@ import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.entity.VoteOptionChoiceEntity;
 import org.usyj.makgora.entity.VoteOptionEntity;
+import org.usyj.makgora.entity.VoteRuleEntity;
 import org.usyj.makgora.entity.VoteUserEntity;
 import org.usyj.makgora.entity.VoteStatusHistoryEntity;
 import org.usyj.makgora.repository.*;
@@ -15,6 +16,7 @@ import org.usyj.makgora.request.vote.VoteCreateRequest;
 import org.usyj.makgora.request.vote.VoteParticipateRequest;
 import org.usyj.makgora.response.vote.VoteResponse;
 import org.usyj.makgora.response.vote.MyVoteResponse;
+import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 import org.usyj.makgora.request.vote.VoteCancelRequest;
 import org.usyj.makgora.response.vote.OddsResponse;
 import org.usyj.makgora.response.vote.MyVoteListResponse;
@@ -35,14 +37,14 @@ public class VoteService {
     private final VoteUserRepository voteUserRepository;
     private final UserRepository userRepository;
     private final VotesStatusHistoryRepository historyRepository;
+    private final VoteRuleRepository ruleRepository;
 
-    private void logHistory(VoteEntity vote, String status) {
+    private void logHistory(VoteEntity vote, VoteStatusHistoryEntity.Status status) {
     VoteStatusHistoryEntity history = VoteStatusHistoryEntity.builder()
             .vote(vote)
             .status(status)
             .statusDate(LocalDateTime.now())
             .build();
-
     historyRepository.save(history);
 }
 /** 🔥 모든 투표 리스트 조회 */
@@ -273,7 +275,7 @@ public String finishVote(Integer voteId) {
     vote.setStatus(VoteEntity.Status.FINISHED);
         voteRepository.save(vote);
 
-        logHistory(vote, "FINISHED");
+        logHistory(vote, VoteStatusHistoryEntity.Status.FINISHED);
 
     return "투표 종료 완료";
 }
@@ -303,7 +305,7 @@ public String resolveVote(Integer voteId, Long choiceId) {
 
     voteRepository.save(vote);
     
-logHistory(vote, "RESOLVED");
+logHistory(vote, VoteStatusHistoryEntity.Status.RESOLVED);
 
     return "정답 확정 완료";
 }
@@ -386,7 +388,7 @@ public String rewardVote(Integer voteId) {
     vote.setRewarded(true);
     vote.setStatus(VoteEntity.Status.REWARDED);
     voteRepository.save(vote);
-    logHistory(vote, "REWARDED");
+    logHistory(vote, VoteStatusHistoryEntity.Status.REWARDED);
     
 
     return "보상 분배 완료 (배당률 저장됨)";
@@ -461,18 +463,18 @@ public VoteResponse cancelVoteAdmin(Integer voteId, VoteCancelRequest req) {
     vote.setCancellationReason(req.getReason());
     voteRepository.save(vote);
 
-    logHistory(vote, "CANCELLED");
+    logHistory(vote, VoteStatusHistoryEntity.Status.CANCELLED);
 
     // 만약 VoteStatusHistoryEntity 사용한다면 로그 남기기
     // (선택 사항. 필요 없으면 삭제 가능)
-    /*
+    
     VoteStatusHistoryEntity history = VoteStatusHistoryEntity.builder()
             .vote(vote)
-            .status("CANCELLED")
+            .status(VoteStatusHistoryEntity.Status.CANCELLED)
             .statusDate(LocalDateTime.now())
             .build();
-    voteStatusHistoryRepository.save(history);
-    */
+    historyRepository.save(history);
+    
 
     // 취소된 후의 상세 조회 반환
     return getVoteDetail(voteId);
@@ -717,6 +719,81 @@ public VoteStatisticsResponse getMyStatistics(Integer userId) {
             .build();
 }
 
+ /** 🔥 AI 전용 투표 생성 로직 (Python Worker가 호출) */
+    @Transactional
+    public VoteResponse createVoteByAI(VoteAiCreateRequest req) {
+
+        // 1) 이슈 조회
+        IssueEntity issue = issueRepository.findById(req.getIssueId())
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
+
+        // 2) VoteEntity 생성
+        VoteEntity vote = VoteEntity.builder()
+                .issue(issue)
+                .title(req.getQuestion())               // 🤖 AI 질문
+                .endAt(req.getEndAt())                  // 기본 7일 뒤로 Python에서 계산해서 넘김
+                .status(VoteEntity.Status.ONGOING)
+                .feeRate(0.10)                          // 🔥 기본 수수료 10%
+                .build();
+
+        voteRepository.save(vote);
+
+        List<VoteResponse.OptionResponse> optionResponses = new ArrayList<>();
+
+        // 3) 옵션 + 선택지(Choice) 생성
+        for (String optionText : req.getOptions()) {
+
+            // 3-1) VoteOptionEntity
+            VoteOptionEntity option = VoteOptionEntity.builder()
+                    .vote(vote)
+                    .optionTitle(optionText)
+                    .build();
+            optionRepository.save(option);
+
+            // 3-2) 옵션당 Choice 하나 생성 (포인트 풀)
+            VoteOptionChoiceEntity choice = VoteOptionChoiceEntity.builder()
+                    .option(option)
+                    .choiceText(optionText)
+                    .pointsTotal(0)
+                    .participantsCount(0)
+                    .build();
+            choiceRepository.save(choice);
+
+            optionResponses.add(
+                    VoteResponse.OptionResponse.builder()
+                            .optionId(option.getId())
+                            .optionTitle(option.getOptionTitle())
+                            .choices(List.of(
+                                    VoteResponse.ChoiceResponse.builder()
+                                            .choiceId(choice.getId())
+                                            .choiceText(choice.getChoiceText())
+                                            .pointsTotal(choice.getPointsTotal())
+                                            .participantsCount(choice.getParticipantsCount())
+                                            .odds(null)
+                                            .build()
+                            ))
+                            .build()
+            );
+        }
+
+        // 4) VoteRuleEntity 생성 (AI 룰 내용 저장)
+        VoteRuleEntity rule = VoteRuleEntity.builder()
+                .vote(vote)
+                .ruleType(req.getRuleType())
+                .ruleDescription(req.getRuleDescription())
+                .build();
+        ruleRepository.save(rule);
+
+        // 5) 응답 DTO 생성
+        return VoteResponse.builder()
+                .voteId(vote.getId())
+                .title(vote.getTitle())
+                .endAt(vote.getEndAt())
+                .status(vote.getStatus().name())
+                .rewarded(vote.getRewarded())
+                .options(optionResponses)
+                .build();
+    }
 
 
 }

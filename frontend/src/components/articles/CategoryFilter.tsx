@@ -1,16 +1,23 @@
-// ------------------------------------------------------------
-// src/components/articles/CategoryFilter.tsx
-// ------------------------------------------------------------
 interface Props {
   categories: string[];
   selected: string;
   onSelect: (c: string) => void;
+  searchQuery: string;
+  setSearchQuery: (s: string) => void;
 }
 
-export default function CategoryFilter({ categories, selected, onSelect }: Props) {
+export default function CategoryFilter({
+  categories,
+  selected,
+  onSelect,
+  searchQuery,
+  setSearchQuery,
+}: Props) {
   return (
-    <div className="mb-6 border-b border-white/10">
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+    <div className="mb-8 mt-6 flex justify-between items-center">
+
+      {/* 카테고리 버튼 */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 max-w-[70%]">
         {categories.map((cat) => (
           <button
             key={cat}
@@ -25,6 +32,15 @@ export default function CategoryFilter({ categories, selected, onSelect }: Props
           </button>
         ))}
       </div>
+
+      {/* 검색창 */}
+      <input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="검색어 입력"
+        className="px-4 py-2 w-48 rounded-full bg-white/10 text-white border border-white/20
+                   focus:outline-none focus:border-purple-400 transition"
+      />
     </div>
   );
 }

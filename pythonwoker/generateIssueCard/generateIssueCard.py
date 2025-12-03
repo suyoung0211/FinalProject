@@ -1,277 +1,578 @@
 # pythonwoker/generateIssueCard/generateIssueCard.py
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import traceback
+import requests
+
 from dotenv import load_dotenv
 from openai import OpenAI
 from sqlalchemy import (
     create_engine,
     Column,
     Integer,
+    BigInteger,
     String,
     Text,
+    Date,
     DateTime,
     ForeignKey,
     Boolean,
+    Float,
 )
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-logger = logging.getLogger(__name__)
+# ============================================================
+# 초기 설정
+# ============================================================
+
+logger = logging.getLogger("IssueAI")
+logger.setLevel(logging.INFO)
+print("[INIT] generateIssueCard.py loaded")
+
 load_dotenv()
 DB_URL = os.getenv("DB_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+BACKEND_VOTE_URL = os.getenv(
+    "BACKEND_VOTE_URL",
+    "http://localhost:8080/api/votes/ai-create"
+)
+
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 engine = create_engine(DB_URL, echo=False, future=True)
 Session = sessionmaker(bind=engine)
 session = Session()
 Base = declarative_base()
 
-# ======================================
-# DB 매핑
-# ======================================
+print(f"[INIT] DB_URL={DB_URL}")
+print(f"[INIT] BACKEND_VOTE_URL={BACKEND_VOTE_URL}")
+
+# ============================================================
+# DB 매핑 (엔티티들)
+# ============================================================
 
 class RssArticleEntity(Base):
     __tablename__ = "rss_articles"
 
-    article_id = Column(Integer, primary_key=True)
+    id = Column("article_id", Integer, primary_key=True, autoincrement=True)
+    feed_id = Column(Integer, nullable=False)
     title = Column(String(500), nullable=False)
+    link = Column(String(500), nullable=False)
     content = Column(Text)
     thumbnail_url = Column(String(500))
-    created_at = Column(DateTime)
     published_at = Column(DateTime)
-
-    # NOT NULL 필드 → default 추가
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
     view_count = Column(Integer, nullable=False, default=0)
     like_count = Column(Integer, nullable=False, default=0)
+    dislike_count = Column(Integer, nullable=False, default=0)
     comment_count = Column(Integer, nullable=False, default=0)
-    ai_system_score = Column(Integer, nullable=False, default=0)
-
-    # bit(1) → Boolean으로 처리
     issue_created = Column(Boolean, nullable=False, default=False)
+    ai_system_score = Column(Integer, nullable=False, default=0)
 
 
 class CommunityPostEntity(Base):
     __tablename__ = "community_posts"
 
-    post_id = Column(Integer, primary_key=True)
+    post_id = Column(BigInteger, primary_key=True)
+    user_id = Column(BigInteger, nullable=False)
     title = Column(String(255))
     content = Column(Text)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-
-    # NOT NULL 필드 → default 추가
-    ai_system_score = Column(Integer, nullable=False, default=0)
-    comment_count = Column(Integer, nullable=False, default=0)
-    dislike_count = Column(Integer, nullable=False, default=0)
-    recommendation_count = Column(Integer, nullable=False, default=0)
-    user_id = Column(Integer, nullable=False, default=1)
-
-    view_count = Column(Integer, default=0)
     post_type = Column(String(20))
+    recommendation_count = Column(Integer, nullable=False, default=0)
+    dislike_count = Column(Integer, nullable=False, default=0)
+    comment_count = Column(Integer, nullable=False, default=0)
+    ai_system_score = Column(Integer, nullable=False, default=0)
+    view_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
 
 
 class IssueEntity(Base):
     __tablename__ = "issues"
 
     id = Column("issue_id", Integer, primary_key=True, autoincrement=True)
-
-    article_id = Column(Integer, ForeignKey("rss_articles.article_id"), nullable=True)
-    community_post_id = Column(Integer, ForeignKey("community_posts.post_id"), nullable=True)
-
+    article_id = Column(Integer, ForeignKey("rss_articles.article_id"))
+    community_post_id = Column(BigInteger, ForeignKey("community_posts.post_id"))
     title = Column(String(255), nullable=False)
-    thumbnail = Column(String(255))
+    thumbnail = Column(String(500))
     content = Column(Text)
     source = Column(String(255))
-
     ai_summary = Column(Text)
-
-    # JSON 타입이지만 Python에서는 문자열로 넣어도 MySQL이 JSON으로 처리함
-    ai_points = Column(Text)
-
-    # ENUM 값 (Java와 DB ENUM과 100% 일치해야 함)
-    status = Column(String(20), default="PENDING")  # APPROVED / PENDING / REJECTED
-    created_by = Column(String(20), default="AI")   # ADMIN / AI / SYSTEM / USER
-
+    ai_points = Column(Text)   # JSON 문자열로 저장
+    status = Column(String(20), default="PENDING")
+    created_by = Column(String(20), default="AI")
     approved_at = Column(DateTime)
     rejected_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+# --- Vote 관련 엔티티 매핑 ------------------------------
+
+class VoteEntity(Base):
+    __tablename__ = "Votes"
+
+    id = Column("vote_id", Integer, primary_key=True, autoincrement=True)
+    issue_id = Column(Integer, ForeignKey("issues.issue_id"), nullable=False)
+
+    title = Column(String(255), nullable=False)
+    status = Column(String(20), nullable=False, default="ONGOING")
+    cancellation_reason = Column(String(500))
+
+    total_points = Column(Integer, nullable=False, default=0)
+    total_participants = Column(Integer, nullable=False, default=0)
+
+    ai_progress_summary = Column(Text)
+    fee_rate = Column(Float, nullable=False, default=0.10)
+
+    end_at = Column(DateTime, nullable=False)
+
+    correct_choice_id = Column(
+        BigInteger,
+        ForeignKey("Vote_Option_Choices.choice_id"),
+        nullable=True
+    )
+    is_rewarded = Column("is_rewarded", Boolean, default=False)
 
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
-# ======================================
-# OpenAI Client
-# ======================================
+class VoteOptionEntity(Base):
+    __tablename__ = "Vote_Options"
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+    id = Column("option_id", BigInteger, primary_key=True, autoincrement=True)
+    vote_id = Column(Integer, ForeignKey("Votes.vote_id"), nullable=False)
 
-# ======================================
-# Issue 생성 AI
-# ======================================
+    option_title = Column(String(255), nullable=False)
+    start_date = Column(Date)
+    end_date = Column(Date)
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    is_deleted = Column(Boolean, default=False)
+
+
+class VoteOptionChoiceEntity(Base):
+    __tablename__ = "Vote_Option_Choices"
+
+    id = Column("choice_id", BigInteger, primary_key=True, autoincrement=True)
+    option_id = Column(BigInteger, ForeignKey("Vote_Options.option_id"), nullable=False)
+
+    choice_text = Column(String(255), nullable=False)
+    points_total = Column(Integer, default=0)
+    participants_count = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    odds = Column(Float)
+
+
+class VoteRuleEntity(Base):
+    __tablename__ = "Vote_Rules"
+
+    id = Column("rule_id", BigInteger, primary_key=True, autoincrement=True)
+    vote_id = Column(Integer, ForeignKey("Votes.vote_id"), nullable=False)
+
+    rule_type = Column(String(50), nullable=False)
+    rule_description = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+# ============================================================
+# 1) Issue 생성 AI
+# ============================================================
 
 def generate_issue_card(title, content):
-    content_text = content or title
+    """기사 제목/내용을 기반으로 Issue + ai_points 생성"""
 
     prompt = f"""
-    아래 기사를 기반으로 Mak'gora Issue 카드를 JSON 형식으로 생성하라.
-    출력은 반드시 'JSON만' 생성하고, 설명 문장·기타 텍스트는 절대 작성하지 마라.
-    모든 문장은 반드시 한국어로 출력하라.
+    아래 기사를 기반으로 Mak'gora 플랫폼의 이슈 카드를 생성하라.
+
+    ⚠️ 출력 규칙:
+    - 출력은 반드시 '한 개의' JSON 객체만 포함해야 한다.
+    - JSON 바깥에 어떠한 문장도 출력하지 않는다. (설명, 주석, 영어, 불필요한 텍스트 금지)
+    - 모든 텍스트는 반드시 한국어로 작성한다.
+    - key_points는 기사 내용을 이해하는 데 중요한 핵심 논점을 2~5개 정도로 정리한다.
 
     기사 제목: {title}
-    기사 내용: {content_text[:2000]}
+    기사 내용: {content[:2000] if content else title}
 
-    출력(JSON 구조):
+    출력(JSON 형식):
 
     {{
-        "issue_title": "문자열",
-        "issue_summary": "문자열",
+        "issue_title": "이슈 제목(한국어)",
+        "issue_summary": "기사 내용을 한 문단으로 핵심 요약한 문장",
         "ai_points": {{
-            "key_points": ["핵심 포인트1", "핵심 포인트2"],
-            "importance": "낮음 | 중간 | 높음 중 하나",
-            "vote_type": "YESNO | MULTICHOICE 중 하나"
+            "key_points": ["핵심1", "핵심2"],
+            "importance": "낮음" 또는 "중간" 또는 "높음" 중 하나,
+            "vote_type": "YESNO" 또는 "MULTICHOICE" 중 하나
         }}
     }}
-
-    주의:
-    - 반드시 JSON 객체 하나만 출력하라.
-    - ai_points는 절대로 배열이 아닌 JSON 오브젝트여야 한다.
-    - key_points는 반드시 문자열 배열로 생성하라.
     """
 
-    response = client.chat.completions.create(
+    print("[AI] Issue prompt 보내는 중…")
+
+    resp = client.chat.completions.create(
         model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=400,
         temperature=0.7,
     )
 
-    raw = response.choices[0].message.content.strip()
+    raw = resp.choices[0].message.content.strip()
+    print("[AI] Issue RAW:", raw)
 
     try:
         data = json.loads(raw)
-    except:
-        # JSON 파싱 실패시 기본 값
+    except Exception:
+        print("[ERROR] Issue JSON 파싱 실패 → 기본 fallback 사용")
         data = {
             "issue_title": title,
-            "issue_summary": "",
+            "issue_summary": title,
             "ai_points": {
                 "key_points": [],
                 "importance": "중간",
-                "vote_type": "YESNO"
-            }
+                "vote_type": "YESNO",
+            },
         }
 
-    # 방어 코드: ai_points가 문자열로 오면 JSON 파싱 시도
-    ai_points = data.get("ai_points", {})
+    # ai_points 보정
+    ai_points = data.get("ai_points") or {}
     if isinstance(ai_points, str):
         try:
             ai_points = json.loads(ai_points)
-        except:
+        except Exception:
             ai_points = {}
 
-    # key_points 보정
-    if not isinstance(ai_points.get("key_points", []), list):
+    if not isinstance(ai_points.get("key_points"), list):
         ai_points["key_points"] = []
 
+    if ai_points.get("importance") not in ["낮음", "중간", "높음"]:
+        ai_points["importance"] = "중간"
+
+    if ai_points.get("vote_type") not in ["YESNO", "MULTICHOICE"]:
+        ai_points["vote_type"] = "YESNO"
+
     data["ai_points"] = ai_points
+    return data
+
+
+# ============================================================
+# 2) Vote 질문 생성 AI (논쟁형 VS 스타일, 옵션 2~5개)
+# ============================================================
+
+def generate_vote_question(issue_title, summary):
+    """
+    논쟁을 유발하는 예측형 투표 질문과 선택지 생성.
+    선택지는 2~5개 사이의 한국어 문자열 배열.
+    """
+
+    prompt = f"""
+    아래 이슈 요약을 기반으로 Mak'gora 플랫폼에서 사용할
+    '논쟁형 예측 투표 질문'을 생성하라.
+
+    ⚠️ 출력 규칙:
+    - 출력은 반드시 하나의 JSON 객체만 포함해야 한다.
+    - JSON 바깥에 다른 텍스트(설명, 영어, 주석 등)는 절대 출력하지 않는다.
+    - 모든 문장은 반드시 한국어로 작성한다.
+    - 질문은 사람들 사이에서 의견이 갈릴 수 있는 '논쟁형/VS형' 질문이어야 한다.
+    - 선택지는 2개 이상 5개 이하의 한국어 문장으로 구성한다.
+
+    이슈 요약:
+    {summary or issue_title}
+
+    출력(JSON 형식 예시):
+
+    {{
+        "vote_question": "이 정책이 향후 1년 내에 철회될 가능성이 있다고 보십니까?",
+        "options": [
+            "매우 가능성이 높다",
+            "어느 정도 가능성이 있다",
+            "거의 가능성이 없다"
+        ]
+    }}
+    """
+
+    print("[AI] Vote Question 생성 요청…")
+
+    resp = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+
+    raw = resp.choices[0].message.content.strip()
+    print("[AI] Vote RAW:", raw)
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        print("[ERROR] VoteQuestion 파싱 실패 → 기본 값 사용")
+        data = {
+            "vote_question": issue_title,
+            "options": ["찬성한다", "반대한다"],
+        }
+
+    # options 보정: 2~5개, 문자열 배열
+    options = data.get("options")
+    if not isinstance(options, list):
+        options = ["찬성한다", "반대한다"]
+
+    # 문자열만 남기고, 공백 제거
+    options = [str(o).strip() for o in options if str(o).strip()]
+
+    # 최소 2개 보장
+    if len(options) < 2:
+        options = ["찬성한다", "반대한다"]
+
+    # 최대 5개로 제한
+    if len(options) > 5:
+        options = options[:5]
+
+    data["options"] = options
+    return data
+
+
+# ============================================================
+# 3) Vote Rule 생성 AI
+# ============================================================
+
+def generate_vote_rule(issue_title, summary):
+    """
+    기본 룰: 7일 뒤 종료 + 보상 시 10% 수수료 공제
+    """
+
+    prompt = f"""
+    Mak'gora 투표 규칙을 JSON 형태로 생성하라.
+
+    ⚠️ 출력 규칙:
+    - 반드시 한국어만 사용한다.
+    - JSON 외의 문장은 절대 출력하지 않는다.
+
+    포함 조건:
+    - 투표 종료 시점은 현재 시점 기준 정확히 7일 뒤이다.
+    - 승리 보상 지급 시 10% 수수료를 공제한다.
+
+    이슈 요약:
+    {summary or issue_title}
+
+    출력(JSON 형식):
+
+    {{
+        "rule_type": "BASIC",
+        "rule_description": "투표는 7일 뒤 종료되며, 승리 보상 지급 시 10% 수수료가 차감됩니다."
+    }}
+    """
+
+    print("[AI] Vote Rule 생성 요청…")
+
+    resp = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+
+    raw = resp.choices[0].message.content.strip()
+    print("[AI] Rule RAW:", raw)
+
+    try:
+        data = json.loads(raw)
+    except Exception:
+        print("[ERROR] Rule 파싱 실패 → 기본 값 사용")
+        data = {
+            "rule_type": "BASIC",
+            "rule_description": "투표는 7일 뒤 종료되며 보상 시 10% 수수료가 공제됩니다.",
+        }
 
     return data
 
-# ======================================
-# 공통 Issue 저장 함수
-# ======================================
+
+# ============================================================
+# Issue 저장
+# ============================================================
 
 def save_issue(source, ref, ai):
-    logger.info(f"[Issue] save_issue called: source={source}")
-
-    ai_points_obj = ai.get("ai_points", {
-        "key_points": [],
-        "importance": "중간",
-        "vote_type": "YESNO"
-    })
+    """
+    RSS / COMMUNITY 공통 Issue 저장
+    """
 
     issue = IssueEntity(
-        article_id=ref.article_id if source == "RSS" else None,
-        community_post_id=ref.post_id if source == "COMMUNITY" else None,
+        article_id=getattr(ref, "id", None) if source == "RSS" else None,
+        community_post_id=getattr(ref, "post_id", None) if source == "COMMUNITY" else None,
         title=ai["issue_title"],
         content=ref.content,
         thumbnail=getattr(ref, "thumbnail_url", None),
         source=source,
         ai_summary=ai["issue_summary"],
-        ai_points=json.dumps(ai_points_obj, ensure_ascii=False),
-        status="APPROVED",
+        ai_points=json.dumps(ai["ai_points"], ensure_ascii=False),
+        status="PENDING",
         created_by="AI",
         created_at=datetime.now(),
         updated_at=datetime.now(),
     )
 
     session.add(issue)
+    print(f"[DB] Issue 저장 완료: issue_title={issue.title}")
     return issue
 
-# ======================================
-# 1) 단일 Article Issue 생성
-# ======================================
+
+# ============================================================
+# Spring Boot로 투표 생성 요청
+# ============================================================
+
+def send_vote_to_backend(issue, vote_ai, rule_ai):
+    """
+    Spring Boot /api/votes/ai-create 로 투표 생성 요청
+    VoteEntity.title = Issue.ai_summary (요약문)
+    vote_question은 참고용으로만 사용 (DB 저장 X)
+    """
+
+    # VoteEntity.title 은 이슈 요약 사용
+    vote_title = issue.ai_summary or issue.title
+
+    print("[INFO] 논쟁형 vote_question (참고용):", vote_ai.get("vote_question"))
+
+    payload = {
+        "issueId": issue.id,
+        "question": vote_title,  # Spring Boot에서 Vote.title 로 사용
+        "options": vote_ai["options"],
+        "endAt": (datetime.now() + timedelta(days=7)).isoformat(),
+        "ruleType": rule_ai["rule_type"],
+        "ruleDescription": rule_ai["rule_description"],
+        "initialStatus": "REVIEW"
+    }
+
+    print("[POST] 투표 생성요청 payload:", payload)
+
+    try:
+        res = requests.post(BACKEND_VOTE_URL, json=payload)
+        print("[POST] 상태코드:", res.status_code)
+        print("[POST] 응답:", res.text)
+    except Exception as e:
+        print("[ERROR] 투표 POST 실패:", e)
+
+
+# ============================================================
+# ARTICLE → ISSUE + (AI Vote 1개) 생성
+# ============================================================
 
 def run_issue_for_article(article_id):
-    logger.info(f"[Issue] run_issue_for_article called: article_id={article_id}")
+    """
+    1) article_id로 기사 조회
+    2) 해당 article_id에 매핑된 Issue가 이미 있으면 재사용
+       - 없으면 새 Issue 생성
+    3) 해당 Issue에 Vote가 이미 1개 이상 존재하면
+       - AI Vote 생성 스킵
+    4) 없으면 AI로 Vote 1개 생성 요청
+    """
+
+    print(f"\n====== [RUN] ARTICLE ISSUE 생성: article_id={article_id} ======")
+
     try:
-        article = session.query(RssArticleEntity).filter_by(article_id=article_id).first()
+        # 1) 기사 조회
+        article = session.query(RssArticleEntity).filter_by(id=article_id).first()
         if not article:
-            logger.warning(f"[Issue] Article not found: article_id={article_id}")
+            print("[ERROR] Article 없음")
             return {"status": "error", "message": "article not found"}
 
-        exists = session.query(IssueEntity).filter_by(article_id=article_id).first()
-        if exists:
-            logger.info(f"[Issue] Issue already exists for article_id={article_id}")
-            return {"status": "ignored", "message": "issue already exists"}
+        # 2) 기존 Issue 존재 여부 확인
+        issue = session.query(IssueEntity).filter_by(article_id=article_id).first()
 
-        ai = generate_issue_card(article.title, article.content)
-        logger.info(f"[Issue] AI generated issue_title={ai.get('issue_title')}")
+        if issue:
+            print(f"[INFO] article_id={article_id} 에 매핑된 기존 Issue 발견: issue_id={issue.id}")
+        else:
+            print("[INFO] 기존 Issue 없음 → 새 Issue 생성")
+            ai_issue = generate_issue_card(article.title, article.content)
+            issue = save_issue("RSS", article, ai_issue)
+            session.commit()
+            print(f"[SUCCESS] Issue 저장 완료: issue_id={issue.id}")
 
-        save_issue("RSS", article, ai)
-        session.commit()
+        # 3) 해당 Issue에 이미 Vote가 있는지 검사 (AI는 Issue당 1개만 생성)
+        existing_vote = session.query(VoteEntity).filter_by(issue_id=issue.id).first()
+        if existing_vote:
+            print(f"[INFO] Issue {issue.id} 에 이미 Vote(vote_id={existing_vote.id}) 존재 → AI Vote 생성 스킵")
+            return {"status": "ignored_vote_exists", "issueId": issue.id}
 
-        logger.info(f"[Issue] Article issue saved: articleId={article_id}")
-        return {"status": "success", "articleId": article_id}
+        # 4) AI를 이용하여 투표 질문 + 룰 생성
+        ai_points = json.loads(issue.ai_points) if issue.ai_points else {}
+        issue_title_for_vote = issue.title
+        issue_summary_for_vote = issue.ai_summary
+
+        vote_ai = generate_vote_question(issue_title_for_vote, issue_summary_for_vote)
+        rule_ai = generate_vote_rule(issue_title_for_vote, issue_summary_for_vote)
+
+        # 5) Spring Boot에 투표 생성 요청
+        send_vote_to_backend(issue, vote_ai, rule_ai)
+
+        return {"status": "success", "issueId": issue.id}
 
     except Exception as e:
-        logger.error(f"[Issue] Error in run_issue_for_article(article_id={article_id}): {e}")
         traceback.print_exc()
         session.rollback()
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "msg": str(e)}
 
-# ======================================
-# 2) 단일 Community Issue 생성
-# ======================================
+
+# ============================================================
+# COMMUNITY → ISSUE + (AI Vote 1개) 생성
+# ============================================================
 
 def run_issue_for_community(post_id):
-    logger.info(f"[Issue] run_issue_for_community called: post_id={post_id}")
+    """
+    1) post_id로 커뮤니티 글 조회
+    2) 해당 post_id에 매핑된 Issue 있으면 재사용, 없으면 생성
+    3) 해당 Issue에 이미 Vote 있으면 AI Vote 생성 스킵
+    4) 없으면 AI로 Vote 1개 생성
+    """
+
+    print(f"\n====== [RUN] COMMUNITY ISSUE 생성: post_id={post_id} ======")
+
     try:
+        # 1) 커뮤니티 게시글 조회
         post = session.query(CommunityPostEntity).filter_by(post_id=post_id).first()
         if not post:
-            logger.warning(f"[Issue] CommunityPost not found: post_id={post_id}")
+            print("[ERROR] Community Post 없음")
             return {"status": "error", "message": "post not found"}
 
-        logger.info(f"[Issue] Found CommunityPost: title={post.title}")
+        # 2) 기존 Issue 여부 확인
+        issue = session.query(IssueEntity).filter_by(community_post_id=post_id).first()
 
-        exists = session.query(IssueEntity).filter_by(community_post_id=post_id).first()
-        if exists:
-            logger.info(f"[Issue] Issue already exists for post_id={post_id}")
-            return {"status": "ignored", "message": "issue already exists"}
+        if issue:
+            print(f"[INFO] post_id={post_id} 에 매핑된 기존 Issue 발견: issue_id={issue.id}")
+        else:
+            print("[INFO] 기존 Issue 없음 → 새 Issue 생성")
+            ai_issue = generate_issue_card(post.title, post.content)
+            issue = save_issue("COMMUNITY", post, ai_issue)
+            session.commit()
+            print(f"[SUCCESS] Issue 생성 완료: issue_id={issue.id}")
 
-        ai = generate_issue_card(post.title, post.content)
-        logger.info(f"[Issue] AI generated issue_title={ai.get('issue_title')}")
+        # 3) 해당 Issue에 이미 Vote가 있는지 검사
+        existing_vote = session.query(VoteEntity).filter_by(issue_id=issue.id).first()
+        if existing_vote:
+            print(f"[INFO] Issue {issue.id} 에 이미 Vote(vote_id={existing_vote.id}) 존재 → AI Vote 생성 스킵")
+            return {"status": "ignored_vote_exists", "issueId": issue.id}
 
-        save_issue("COMMUNITY", post, ai)
-        session.commit()
+        # 4) 투표 생성용 AI 호출
+        ai_points = json.loads(issue.ai_points) if issue.ai_points else {}
+        issue_title_for_vote = issue.title
+        issue_summary_for_vote = issue.ai_summary
 
-        logger.info(f"[Issue] Community issue saved: postId={post_id}")
-        return {"status": "success", "postId": post_id}
+        vote_ai = generate_vote_question(issue_title_for_vote, issue_summary_for_vote)
+        rule_ai = generate_vote_rule(issue_title_for_vote, issue_summary_for_vote)
+
+        # 5) Spring Boot에 투표 생성 요청
+        send_vote_to_backend(issue, vote_ai, rule_ai)
+
+        return {"status": "success", "issueId": issue.id}
 
     except Exception as e:
-        logger.error(f"[Issue] Error in run_issue_for_community(post_id={post_id}): {e}")
         traceback.print_exc()
         session.rollback()
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "msg": str(e)}

@@ -8,7 +8,7 @@ import lombok.Data;
 public class ArticleReactionResponse {
 
     private Integer articleId;
-    private Integer likeCount;
-    private Integer dislikeCount;
+    private Long likeCount;
+    private Long dislikeCount;
     private Integer myReaction;  // 1 = 좋아요, -1 = 싫어요, 0 = 없음
 }

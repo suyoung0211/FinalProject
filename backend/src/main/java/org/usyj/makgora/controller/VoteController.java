@@ -8,6 +8,7 @@ import org.usyj.makgora.request.vote.VoteParticipateRequest;
 import org.usyj.makgora.response.vote.VoteResponse;
 import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.VoteService;
+import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 import org.usyj.makgora.request.vote.VoteCancelRequest;
 
 @RestController
@@ -103,4 +104,14 @@ public ResponseEntity<?> getMyVoteStatistics(@AuthenticationPrincipal CustomUser
 public ResponseEntity<?> getVoteList() {
     return ResponseEntity.ok(voteService.getAllVotes());
 }
+
+/**
+     * 🔥 Python AI가 호출하는 자동 투표 생성 엔드포인트
+     * POST /api/votes/ai-create
+     */
+    @PostMapping("/ai-create")
+    public ResponseEntity<VoteResponse> createByAi(@RequestBody VoteAiCreateRequest req) {
+        VoteResponse res = voteService.createVoteByAI(req);
+        return ResponseEntity.ok(res);
+    }
 }

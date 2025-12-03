@@ -20,5 +20,6 @@ public class VoteCreateRequest {
         private LocalDate startDate;
         private LocalDate endDate;
         private List<String> choices;  // ["YES", "NO"]
+        
     }
 }

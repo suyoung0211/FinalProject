@@ -94,6 +94,7 @@ public class VoteEntity {
 
     /** 📌 상태 ENUM 확장 */
     public enum Status {
+        REVIEWING,    // 🆕 이슈화 심사중 (새로 추가)
         ONGOING,      // 진행중 (투표 가능한 상태)
         FINISHED,     // 종료 (투표 마감됨, 정답은 아직)
         RESOLVED,     // 정답 확정됨 (= correctChoice 저장됨)
