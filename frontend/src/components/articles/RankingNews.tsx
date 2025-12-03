@@ -18,7 +18,7 @@ export default function RankingNews({ articles }: Props) {
     <div
       className="
         fixed 
-        right-[190px] 
+        right-[55px] 
         top-[200px] 
         w-[300px]
         max-h-[85vh]
