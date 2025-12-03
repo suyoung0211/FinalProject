@@ -18,88 +18,76 @@ public class ArticleReactionService {
     private final RssArticleRepository articleRepo;
     private final ArticleReactionRepository reactionRepo;
     private final StringRedisTemplate redis;
-    private final RssArticleScoreService scoreService;
     private final IssueTriggerPushService triggerPushService;
 
     private static final String PREFIX = "article:";
 
-    /** 조회수 증가 */
-    @Transactional
-    public void addView(Integer articleId) {
+    /* ======================= Redis key builder ======================== */
 
-        redis.opsForValue().increment(PREFIX + articleId + ":view");
-
-        RssArticleEntity article = articleRepo.findById(articleId).orElse(null);
-        if (article != null) {
-            article.setViewCount(article.getViewCount() + 1);
-            articleRepo.save(article);
-
-            // 점수 계산 + 트리거 체크
-            int score = scoreService.updateScoreAndReturn(article);
-            triggerPushService.checkAndPush(articleId, score);
-        }
+    private String key(int id, String type) {
+        return PREFIX + id + ":" + type; // article:22:like
     }
 
-    /** 댓글수 증가 */
-    @Transactional
-    public void addComment(Integer articleId) {
-
-        redis.opsForValue().increment(PREFIX + articleId + ":comment");
-
-        RssArticleEntity article = articleRepo.findById(articleId).orElse(null);
-        if (article != null) {
-            article.setCommentCount(article.getCommentCount() + 1);
-            articleRepo.save(article);
-
-            int score = scoreService.updateScoreAndReturn(article);
-            triggerPushService.checkAndPush(articleId, score);
-        }
+    private long getCount(int id, String type) {
+        String v = redis.opsForValue().get(key(id, type));
+        return (v == null) ? 0 : Long.parseLong(v);
     }
 
-     /** 좋아요/싫어요 */
+    /* ======================= 조회수 ======================== */
+
+    public void addView(int articleId) {
+        redis.opsForValue().increment(key(articleId, "view"));
+
+        // 점수 계산 → 트리거
+        int score = calcScore(articleId);
+        triggerPushService.checkAndPush(articleId, score);
+    }
+
+    /* ======================= 댓글수 ======================== */
+
+    public void addComment(int articleId) {
+        redis.opsForValue().increment(key(articleId, "comment"));
+
+        int score = calcScore(articleId);
+        triggerPushService.checkAndPush(articleId, score);
+    }
+
+    /* ======================= 좋아요/싫어요 ======================== */
+
     @Transactional
-    public ArticleReactionResponse react(Integer articleId, Integer userId, Integer newValue) {
+    public ArticleReactionResponse react(int articleId, int userId, int newValue) {
 
         RssArticleEntity article = articleRepo.findById(articleId)
-                .orElseThrow(() -> new IllegalArgumentException("기사 없음 id=" + articleId));
+                .orElseThrow(() -> new IllegalArgumentException("기사 없음: id=" + articleId));
 
         ArticleReactionEntity existing =
-                reactionRepo.findByArticleIdAndUserId(articleId, userId).orElse(null);
+                reactionRepo.findByArticleIdAndUserId(articleId, userId)
+                        .orElse(null);
 
-        int oldValue = existing != null ? existing.getReactionValue() : 0;
+        int oldValue = (existing != null) ? existing.getReactionValue() : 0;
 
-        // 변경 없는 경우
+        String likeKey = key(articleId, "like");
+        String dislikeKey = key(articleId, "dislike");
+
+        // 0) 동일 클릭 → 변화 없음
         if (oldValue == newValue) {
             return new ArticleReactionResponse(
                     articleId,
-                    article.getLikeCount(),
-                    article.getDislikeCount(),
+                    getCount(articleId, "like"),
+                    getCount(articleId, "dislike"),
                     newValue
             );
         }
 
-        // 🔥 음수 방지 포함한 count 조정
-        if (oldValue == 1) {
-            article.setLikeCount(Math.max(0, article.getLikeCount() - 1));
-        }
-        if (oldValue == -1) {
-            article.setDislikeCount(Math.max(0, article.getDislikeCount() - 1));
-        }
+        // 1) old 반응 제거
+        if (oldValue == 1) safeDecrement(likeKey);
+        if (oldValue == -1) safeDecrement(dislikeKey);
 
-        if (newValue == 1) {
-            article.setLikeCount(article.getLikeCount() + 1);
-        }
-        if (newValue == -1) {
-            article.setDislikeCount(article.getDislikeCount() + 1);
-        }
+        // 2) new 반응 적용
+        if (newValue == 1) redis.opsForValue().increment(likeKey);
+        if (newValue == -1) redis.opsForValue().increment(dislikeKey);
 
-        articleRepo.save(article);
-
-        // Redis sync
-        redis.opsForValue().set(PREFIX + articleId + ":like", String.valueOf(article.getLikeCount()));
-        redis.opsForValue().set(PREFIX + articleId + ":dislike", String.valueOf(article.getDislikeCount()));
-
-        // Reaction CRUD
+        // 3) DB ReactionEntity 기록
         if (newValue == 0) {
             if (existing != null) reactionRepo.delete(existing);
         } else {
@@ -116,15 +104,35 @@ public class ArticleReactionService {
             }
         }
 
-        // 점수 계산 + 트리거
-        int score = scoreService.updateScoreAndReturn(article);
+        long like = getCount(articleId, "like");
+        long dislike = getCount(articleId, "dislike");
+
+        // 4) 점수 → 트리거
+        int score = calcScore(articleId);
         triggerPushService.checkAndPush(articleId, score);
 
-        return new ArticleReactionResponse(
-                articleId,
-                article.getLikeCount(),
-                article.getDislikeCount(),
-                newValue
-        );
+        return new ArticleReactionResponse(articleId, like, dislike, newValue);
+    }
+
+    /* ======================= Score 계산 로직 ======================== */
+
+    private int calcScore(int id) {
+        long view = getCount(id, "view");
+        long like = getCount(id, "like");
+        long dislike = getCount(id, "dislike");
+        long comment = getCount(id, "comment");
+
+        // 너네가 쓰는 공식 그대로 유지
+        return (int) (view * 0.1 + like * 2 + comment * 3);
+    }
+
+    /* ======================= 음수 방지 ======================== */
+
+    private void safeDecrement(String key) {
+        String v = redis.opsForValue().get(key);
+        long current = (v == null) ? 0 : Long.parseLong(v);
+
+        if (current > 0) redis.opsForValue().increment(key, -1);
+        else redis.opsForValue().set(key, "0");
     }
 }

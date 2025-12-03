@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 
+import java.util.Optional;
+
 @Repository
 public interface ArticleAiTitleRepository extends JpaRepository<ArticleAiTitleEntity, Integer> {
 
