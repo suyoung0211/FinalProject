@@ -1,10 +1,10 @@
 import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Clock, TrendingUp, Flame, Users, Globe, Briefcase, DollarSign, Zap, Star, Award, Search, Plus, Pin, ChevronLeft, ChevronRight, User, Coins, ChevronDown, LogOut, ShoppingBag, X, ThumbsDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Avatar } from './Avatar';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
+import { Avatar } from '../components/Avatar';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
 import api from '../api/api';
 
 
