@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CommunityWritePage } from "../components/CommunityWritePage";
+import { CommunityWritePage } from "./CommunityWritePage";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/api";
 
@@ -35,7 +35,7 @@ export function CommunityEditPageContainer() {
         const post = res.data;
 
         // 작성자 확인
-        if (user && String(user.name) !== String(post.authorId)) {
+        if (user?.id && post.authorId && Number(user.id) !== Number(post.authorId)) {
           setError("수정 권한이 없습니다.");
           setLoading(false);
           return;
