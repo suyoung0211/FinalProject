@@ -1,8 +1,8 @@
 import { ArrowLeft, Globe, TrendingUp, Award, Users, Briefcase, DollarSign, Zap, Flame, MessageSquare, Plus, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, List, ListOrdered, Quote, Code, Type, Palette, AlignLeft, AlignCenter, AlignRight, Upload } from 'lucide-react';
 import { useState, useRef } from 'react';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
+import { Input } from '../components/ui/input';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
 import api from '../api/api';
 
 interface CommunityWritePageProps {

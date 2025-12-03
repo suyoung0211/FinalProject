@@ -1,7 +1,8 @@
-import { createContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useState, useEffect, ReactNode } from "react";
 import { logoutApi, getMyInfoApi } from "../api/authApi";
 
 export interface UserType {
+  id: number;
   nickname: string;
   level:number;
   points:number;
