@@ -50,7 +50,7 @@ export default function App() {
             <Route path="/profile" element={<ProfilePageContainer />} />
             {/* 관리자 페이지 */}
             <Route path="/admin/*" element={<AdminPage />} />
-            {/* <Route path="/admin22" element={<AdminPage22 />} /> */}
+            <Route path="/admin22" element={<AdminPage22 />} />
           </Routes>
         </div>
       </BrowserRouter>

@@ -15,3 +15,6 @@ export const createAdminApi = (body) => api.post("/admin/create", body);
 
 // 특정 유저 수정
 export const updateAdminUserApi = (userId, body) => api.put(`/admin/users/${userId}`, body);
+
+// 관리자 페이지 rss 정보 가져오기
+export const getAllAdminRssFeeds = () => api.get("/admin/rss-feeds");

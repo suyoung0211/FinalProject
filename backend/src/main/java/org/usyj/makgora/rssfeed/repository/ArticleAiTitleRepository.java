@@ -1,12 +1,11 @@
 package org.usyj.makgora.rssfeed.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ArticleAiTitleRepository extends JpaRepository<ArticleAiTitleEntity, Integer> {
