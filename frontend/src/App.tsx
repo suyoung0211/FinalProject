@@ -3,7 +3,7 @@ import { MainPage } from './pages/MainPage';
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider } from './context/AuthContext';
 import { CommunityPageContainer } from './pages/CommunityPageContainer';
-import { CommunityWritePage } from './components/CommunityWritePage';
+import { CommunityWritePage } from './pages/CommunityWritePage';
 import { CommunityPostDetailPage } from './pages/CommunityPostDetailPage';
 import { CommunityEditPageContainer } from "./pages/CommunityEditPageContainer";
 import { AdminPage } from "./pages/AdminPage";
