@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.usyj.makgora.entity.IssueEntity;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface IssueRepository extends JpaRepository<IssueEntity, Integer> {
 
@@ -20,4 +21,8 @@ public interface IssueRepository extends JpaRepository<IssueEntity, Integer> {
             IssueEntity.Status status,
             Pageable pageable
     );
+
+    Optional<IssueEntity> findByCommunityPost_PostId(Long postId);
+
+    Optional<IssueEntity> findByArticleId(Integer articleId);
 }

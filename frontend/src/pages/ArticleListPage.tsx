@@ -1,3 +1,6 @@
+// ------------------------------------------------------------
+// src/pages/ArticleListPage.tsx (사이드바 화면 우측 고정 버전)
+// ------------------------------------------------------------
 import { useState, useEffect } from "react";
 import { Header } from "../components/layout/Header";
 import { fetchArticleListAll } from "../api/articleApi";
@@ -25,9 +28,7 @@ export function ArticleListPage() {
   const [allArticles, setAllArticles] = useState<Article[]>([]);
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
 
-  // ⭐ 검색어
   const [searchQuery, setSearchQuery] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [visibleCount, setVisibleCount] = useState(10);
 
@@ -66,7 +67,6 @@ export function ArticleListPage() {
     }
   };
 
-  // ⭐ 카테고리 필터
   useEffect(() => {
     if (selectedCategory === "all") {
       setFilteredArticles(allArticles);
@@ -77,14 +77,12 @@ export function ArticleListPage() {
     );
   }, [selectedCategory, allArticles]);
 
-  // ⭐ 검색 적용 (NewsList 전용)
   const searchedArticles = filteredArticles.filter(
     (a) =>
       a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.summary.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ⭐ 슬라이드 / 랭킹은 검색 비적용!
   const sliderArticles = filteredArticles.filter((a) => !!a.image);
   const rankingArticles = filteredArticles.slice(0, 20);
 
@@ -94,7 +92,6 @@ export function ArticleListPage() {
 
       <div className="container mx-auto px-4 pt-24 pb-10">
 
-        {/* 카테고리 + 검색 */}
         <CategoryFilter
           categories={categories}
           selected={selectedCategory}
@@ -107,30 +104,32 @@ export function ArticleListPage() {
           <p className="text-center text-gray-300 py-10">기사 불러오는 중...</p>
         )}
 
-        {!loading && searchedArticles.length === 0 && (
-          <p className="text-center text-gray-400 py-10">
-            검색 결과가 없습니다.
-          </p>
-        )}
-
         {!loading && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mb-14 items-start">
-  {/* 왼쪽 뉴스리스트 — 최소 높이 보장 */}
-  <div className="min-h-[600px]">
-    <NewsList
-      articles={searchedArticles.slice(0, visibleCount)}
-      visibleCount={visibleCount}
-      setVisibleCount={setVisibleCount}
-      totalCount={searchedArticles.length}
-    />
-  </div>
+          <div className="flex gap-8 mt-6 items-start">
 
-  {/* 오른쪽 랭킹뉴스 — 고정 유지 */}
-  <RankingNews articles={rankingArticles} />
-</div>
-            <LiveSlider articles={sliderArticles} />
-          </>
+            {/* 왼쪽 뉴스리스트 */}
+            <div className="flex-1 min-w-0">
+              {searchedArticles.length === 0 ? (
+                <p className="text-center text-gray-400 py-10">
+                  검색 결과가 없습니다.
+                </p>
+              ) : (
+                <NewsList
+                  articles={searchedArticles.slice(0, visibleCount)}
+                  visibleCount={visibleCount}
+                  setVisibleCount={setVisibleCount}
+                  totalCount={searchedArticles.length}
+                />
+              )}
+
+              <LiveSlider articles={sliderArticles} />
+            </div>
+
+            {/* 오른쪽 사이드바 */}
+            <div className="hidden lg:block w-[320px] shrink-0">
+              <RankingNews articles={rankingArticles} />
+            </div>
+          </div>
         )}
       </div>
     </div>

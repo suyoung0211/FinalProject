@@ -3,6 +3,7 @@ package org.usyj.makgora.service;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.usyj.makgora.repository.IssueRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 public class IssueTriggerPushService {
 
     private final StringRedisTemplate redis;
+    private final IssueRepository issueRepo;
 
     // 임계치
     private static final int THRESHOLD = 20;
@@ -37,16 +39,24 @@ public class IssueTriggerPushService {
      * 커뮤니티 게시글의 점수가 임계치를 넘었을 때,
      * Redis Queue에 "cp:{postId}" 형태로 넣어둔다.
      */
+    /** 📌 COMMUNITY Post 트리거 */
     public void checkAndPushCommunity(long postId, int score) {
 
         if (score < THRESHOLD) return;
 
+        // 🔥 DB에서 Issue가 이미 존재하면 push 금지
+        boolean exists = issueRepo.findByCommunityPost_PostId(postId).isPresent();
+
+        if (exists) {
+            System.out.println("[Trigger] 이미 이 Post로 Issue 존재 → push 생략: " + postId);
+            return;
+        }
+
+        // Redis triggered flag 체크
         String flag = redis.opsForValue().get("cp:" + postId + ":triggered");
         if ("1".equals(flag)) return;
 
-        // cp:123 이런 형태로 Queue에 넣어 구분 가능
         redis.opsForList().leftPush(QUEUE, "cp:" + postId);
-
         System.out.println("[Trigger] CommunityPost queued: " + postId);
     }
 }
