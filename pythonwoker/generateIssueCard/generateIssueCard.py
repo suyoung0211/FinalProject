@@ -1,11 +1,13 @@
 # pythonwoker/generateIssueCard/generateIssueCard.py
 import os
 import json
-from datetime import datetime, timedelta
+import time
 import logging
 import traceback
-import requests
+from datetime import datetime, timedelta
 
+import redis
+import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 from sqlalchemy import (
@@ -266,38 +268,49 @@ def generate_issue_card(title, content):
 
 
 # ============================================================
-# 2) Vote 질문 생성 AI (논쟁형 VS 스타일, 옵션 2~5개)
+# 2) Vote 질문 + 옵션 생성 AI (옵션 + result_type)
 # ============================================================
 
 def generate_vote_question(issue_title, summary):
     """
     논쟁을 유발하는 예측형 투표 질문과 선택지 생성.
-    선택지는 2~5개 사이의 한국어 문자열 배열.
+    - options: VoteOption에 들어갈 옵션 제목들
+    - result_type:
+        - "YES_NO"       → 각 옵션에 YES/NO만 사용
+        - "YES_NO_DRAW"  → 각 옵션에 YES/NO/DRAW 사용
     """
 
     prompt = f"""
     아래 이슈 요약을 기반으로 Mak'gora 플랫폼에서 사용할
-    '논쟁형 예측 투표 질문'을 생성하라.
+    '논쟁형 예측 투표' 구성을 생성하라.
+
+    이 플랫폼에서는 각 옵션에 대해
+    - 결과 선택지가 YES/NO 또는 YES/NO/DRAW 두 종류만 존재한다.
 
     ⚠️ 출력 규칙:
     - 출력은 반드시 하나의 JSON 객체만 포함해야 한다.
     - JSON 바깥에 다른 텍스트(설명, 영어, 주석 등)는 절대 출력하지 않는다.
     - 모든 문장은 반드시 한국어로 작성한다.
-    - 질문은 사람들 사이에서 의견이 갈릴 수 있는 '논쟁형/VS형' 질문이어야 한다.
-    - 선택지는 2개 이상 5개 이하의 한국어 문장으로 구성한다.
+
+    필수 조건:
+    - vote_question: 전체 투표를 설명하는 질문 문장 (한국어)
+    - options: 유저가 베팅할 대상(옵션) 목록, 2~5개의 한국어 문자열
+    - result_type:
+        - 무승부 가능성이 거의 없는 경우: "YES_NO"
+        - 스포츠 경기, 환율 등 무승부/동률/변동 없음 같은 개념이 의미 있을 경우: "YES_NO_DRAW"
 
     이슈 요약:
     {summary or issue_title}
 
-    출력(JSON 형식 예시):
+    출력(JSON 예시):
 
     {{
-        "vote_question": "이 정책이 향후 1년 내에 철회될 가능성이 있다고 보십니까?",
+        "vote_question": "향후 1년 내에 이 법안이 폐기될 가능성이 있다고 보십니까?",
         "options": [
-            "매우 가능성이 높다",
-            "어느 정도 가능성이 있다",
-            "거의 가능성이 없다"
-        ]
+            "정부의 개편안이 원안대로 통과된다",
+            "국회 논의 과정에서 수정·보완된다"
+        ],
+        "result_type": "YES_NO"
     }}
     """
 
@@ -318,26 +331,29 @@ def generate_vote_question(issue_title, summary):
         print("[ERROR] VoteQuestion 파싱 실패 → 기본 값 사용")
         data = {
             "vote_question": issue_title,
-            "options": ["찬성한다", "반대한다"],
+            "options": ["시나리오 A가 발생한다", "시나리오 B가 발생한다"],
+            "result_type": "YES_NO"
         }
 
     # options 보정: 2~5개, 문자열 배열
     options = data.get("options")
     if not isinstance(options, list):
-        options = ["찬성한다", "반대한다"]
+        options = ["시나리오 A가 발생한다", "시나리오 B가 발생한다"]
 
-    # 문자열만 남기고, 공백 제거
     options = [str(o).strip() for o in options if str(o).strip()]
-
-    # 최소 2개 보장
     if len(options) < 2:
-        options = ["찬성한다", "반대한다"]
-
-    # 최대 5개로 제한
+        options = ["시나리오 A가 발생한다", "시나리오 B가 발생한다"]
     if len(options) > 5:
         options = options[:5]
 
     data["options"] = options
+
+    # result_type 보정
+    result_type = data.get("result_type")
+    if result_type not in ["YES_NO", "YES_NO_DRAW"]:
+        result_type = "YES_NO"
+    data["result_type"] = result_type
+
     return data
 
 
@@ -435,19 +451,20 @@ def send_vote_to_backend(issue, vote_ai, rule_ai):
     vote_question은 참고용으로만 사용 (DB 저장 X)
     """
 
-    # VoteEntity.title 은 이슈 요약 사용
     vote_title = issue.ai_summary or issue.title
 
     print("[INFO] 논쟁형 vote_question (참고용):", vote_ai.get("vote_question"))
+    print("[INFO] result_type:", vote_ai.get("result_type"))
 
     payload = {
         "issueId": issue.id,
         "question": vote_title,  # Spring Boot에서 Vote.title 로 사용
-        "options": vote_ai["options"],
+        "options": vote_ai["options"],  # VoteOption.optionTitle 에 매핑
+        "resultType": vote_ai.get("result_type", "YES_NO"),  # YES_NO or YES_NO_DRAW
         "endAt": (datetime.now() + timedelta(days=7)).isoformat(),
         "ruleType": rule_ai["rule_type"],
         "ruleDescription": rule_ai["rule_description"],
-        "initialStatus": "REVIEW"
+        "initialStatus": "REVIEWING"  # ← JPA Enum에 맞춤
     }
 
     print("[POST] 투표 생성요청 payload:", payload)
@@ -495,14 +512,13 @@ def run_issue_for_article(article_id):
             session.commit()
             print(f"[SUCCESS] Issue 저장 완료: issue_id={issue.id}")
 
-        # 3) 해당 Issue에 이미 Vote가 있는지 검사 (AI는 Issue당 1개만 생성)
+        # 3) 해당 Issue에 이미 Vote가 있는지 검사 (Issue당 1개만 생성)
         existing_vote = session.query(VoteEntity).filter_by(issue_id=issue.id).first()
         if existing_vote:
             print(f"[INFO] Issue {issue.id} 에 이미 Vote(vote_id={existing_vote.id}) 존재 → AI Vote 생성 스킵")
             return {"status": "ignored_vote_exists", "issueId": issue.id}
 
         # 4) AI를 이용하여 투표 질문 + 룰 생성
-        ai_points = json.loads(issue.ai_points) if issue.ai_points else {}
         issue_title_for_vote = issue.title
         issue_summary_for_vote = issue.ai_summary
 
@@ -510,7 +526,8 @@ def run_issue_for_article(article_id):
         rule_ai = generate_vote_rule(issue_title_for_vote, issue_summary_for_vote)
 
         # 5) Spring Boot에 투표 생성 요청
-        send_vote_to_backend(issue, vote_ai, rule_ai)
+        # send_vote_to_backend(issue, vote_ai, rule_ai)
+        print("[SKIP] Vote auto-creation disabled (admin approval required)")
 
         return {"status": "success", "issueId": issue.id}
 
@@ -560,7 +577,6 @@ def run_issue_for_community(post_id):
             return {"status": "ignored_vote_exists", "issueId": issue.id}
 
         # 4) 투표 생성용 AI 호출
-        ai_points = json.loads(issue.ai_points) if issue.ai_points else {}
         issue_title_for_vote = issue.title
         issue_summary_for_vote = issue.ai_summary
 
@@ -568,7 +584,8 @@ def run_issue_for_community(post_id):
         rule_ai = generate_vote_rule(issue_title_for_vote, issue_summary_for_vote)
 
         # 5) Spring Boot에 투표 생성 요청
-        send_vote_to_backend(issue, vote_ai, rule_ai)
+        # send_vote_to_backend(issue, vote_ai, rule_ai)
+        print("[SKIP] Vote auto-creation disabled (admin approval required)")
 
         return {"status": "success", "issueId": issue.id}
 
@@ -576,3 +593,54 @@ def run_issue_for_community(post_id):
         traceback.print_exc()
         session.rollback()
         return {"status": "error", "msg": str(e)}
+
+
+# ============================================================
+# Redis Queue Worker (ISSUE_TRIGGER_QUEUE)
+# ============================================================
+
+r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+QUEUE = "ISSUE_TRIGGER_QUEUE"
+
+def worker():
+    print("🔄 Issue Queue Worker started. Listening for jobs...")
+
+    while True:
+        try:
+            raw = r.rpop(QUEUE)
+
+            if raw is None:
+                time.sleep(0.3)
+                continue
+
+            print(f"📌 Queue Received: {raw}")
+
+            # ARTICLE
+            if raw.startswith("article:"):
+                article_id = int(raw.split(":")[1])
+                print(f"➡ Processing Article Issue: {article_id}")
+
+                result = run_issue_for_article(article_id)
+                print("📝 Result:", result)
+
+                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+                    r.set(f"article:{article_id}:triggered", "1")
+
+            # COMMUNITY
+            elif raw.startswith("cp:"):
+                post_id = int(raw.split(":")[1])
+                print(f"➡ Processing Community Issue: {post_id}")
+
+                result = run_issue_for_community(post_id)
+                print("📝 Result:", result)
+
+                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+                    r.set(f"cp:{post_id}:triggered", "1")
+
+        except Exception as e:
+            print("❌ Worker Exception:", e)
+            traceback.print_exc()
+            time.sleep(1)
+
+if __name__ == "__main__":
+    worker()

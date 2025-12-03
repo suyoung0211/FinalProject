@@ -1,3 +1,4 @@
+// src/main/java/org/usyj/makgora/request/vote/VoteAiCreateRequest.java
 package org.usyj.makgora.request.vote;
 
 import lombok.Getter;
@@ -19,18 +20,25 @@ public class VoteAiCreateRequest {
     /** 🤖 AI가 만든 투표 질문 */
     private String question;
 
-    /** 🤖 AI가 만든 선택지 목록 (예: ["예", "아니오"]) */
+    /** 🤖 AI가 만든 선택지 목록 (예: ["비트코인", "나스닥"]) */
     private List<String> options;
 
     /** 📅 투표 종료 시간 (AI 쪽에서 기본 7일 뒤로 계산해서 넘겨줌) */
     private LocalDateTime endAt;
 
-    /** 🧾 투표 룰 타입 (예: BASIC, SPECIAL 등) */
+    /** 🧾 투표 룰 타입 (예: BASIC, OVER_UNDER, MULTI 등) */
     private String ruleType;
 
     /** 🧾 투표 룰 설명 (사람이 읽을 수 있는 문장) */
     private String ruleDescription;
 
-    /** 초기 상태 이력용 코드 (예: REVIEW = 심사중) */
+    /** 초기 상태 (예: "ONGOING", "REVIEW" 등) */
     private String initialStatus;
+
+    /**
+     * 결과 타입
+     *  - "YES_NO"       → YES / NO 두 개 선택지
+     *  - "YES_NO_DRAW"  → YES / NO / DRAW 세 개 선택지
+     */
+    private String resultType;
 }

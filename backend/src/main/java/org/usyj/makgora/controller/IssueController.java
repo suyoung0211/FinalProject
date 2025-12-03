@@ -8,9 +8,13 @@
     import org.usyj.makgora.response.issue.IssueWithVotesResponse;
     import org.usyj.makgora.response.vote.VoteResponse;
     import org.usyj.makgora.service.IssueService;
-    import org.usyj.makgora.request.vote.VoteCreateRequest;
+import org.usyj.makgora.service.VoteService;
+import org.usyj.makgora.entity.IssueEntity;
+import org.usyj.makgora.request.vote.VoteAiCreateRequest;
+import org.usyj.makgora.request.vote.VoteCreateRequest;
 
-    import java.util.List;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/issues")
@@ -18,6 +22,7 @@
 public class IssueController {
 
     private final IssueService issueService;
+    private final VoteService voteService; 
 
     /** 🔹 AI 추천 이슈 목록 */
     @GetMapping("/recommended")
@@ -56,6 +61,30 @@ public class IssueController {
             @RequestBody VoteCreateRequest req
     ) {
         return ResponseEntity.ok(issueService.createVote(issueId, req));
+    }
+
+    /** AI 자동 생성 투표 (파이썬이 호출하는 엔드포인트) */
+    @PostMapping("/ai-create")
+    public ResponseEntity<VoteResponse> createByAi(@RequestBody VoteAiCreateRequest req) {
+        return ResponseEntity.ok(voteService.createVoteByAI(req));
+    }
+
+    /** 🔥 관리자: Issue 승인 + Vote 생성 */
+    @PostMapping("/{issueId}/approve")
+    public ResponseEntity<?> approveIssue(@PathVariable Integer issueId) {
+
+        IssueEntity issue = issueService.approveIssue(issueId);
+
+        VoteAiCreateRequest req = new VoteAiCreateRequest();
+        req.setIssueId(issueId);
+        req.setQuestion(issue.getAiSummary());   // 요약문이 투표 질문
+        req.setResultType("YES_NO");             // 기본값
+        req.setEndAt(LocalDateTime.now().plusDays(7));
+        req.setInitialStatus("ONGOING");
+
+        VoteResponse vote = voteService.createVoteByAI(req);
+
+        return ResponseEntity.ok(vote);
     }
 }
 

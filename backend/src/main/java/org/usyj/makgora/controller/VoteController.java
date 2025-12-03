@@ -45,12 +45,12 @@ public class VoteController {
 
     /** ④ 내 베팅 취소 */
     @PatchMapping("/my/{voteUserId}/cancel")
-    public ResponseEntity<?> cancelMyVote(
-            @PathVariable Long voteUserId,
-            @AuthenticationPrincipal CustomUserDetails user
-    ) {
-        return ResponseEntity.ok(voteService.cancelMyVote(voteUserId, user.getId()));
-    }
+public ResponseEntity<?> cancelMyVote(
+        @PathVariable Long voteUserId,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    return ResponseEntity.ok(voteService.cancelMyVote(voteUserId, user.getId()));
+}
 
     /** ⑤ 관리자: 투표 취소 */
     @PatchMapping("/{voteId}/admin/cancel")

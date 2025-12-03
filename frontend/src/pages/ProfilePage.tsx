@@ -470,7 +470,6 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
                   <span className="text-orange-400 font-medium">{stats.bestStreak}</span>
                 </div>
               </div>
-            ))}
           </div>
         </div>
       </div>
