@@ -67,7 +67,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
 
               // user state 업데이트
               setUser({
-                id: newDecoded.userId,
                 loginId: newDecoded.loginId,
                 nickname: newDecoded.nickname,
                 role: newDecoded.role,
@@ -81,7 +80,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
               // 만료되지 않았으면 그대로 user 세팅
               currentRole = decoded.role;
               setUser({
-                id: decoded.userId,
                 loginId: decoded.loginId,
                 nickname: decoded.nickname,
                 role: decoded.role,

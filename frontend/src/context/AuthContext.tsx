@@ -14,7 +14,6 @@ import { jwtDecode } from "jwt-decode"; // 액세스 토큰 디코딩용
 // 🔹 유저 정보 타입
 // --------------------------------------------------
 export interface UserType {
-  id: number;
   loginId?: string;           // 토큰에 있을 경우
   nickname: string;
   level: number;
@@ -67,17 +66,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // 1) 토큰 디코딩해서 유저 정보 세팅
         const decoded: any = jwtDecode(savedAccess); // JWT payload 디코딩
-        setUser({
-          id: decoded.userId,
-          loginId: decoded.loginId,
-          nickname: decoded.nickname,
-          level: decoded.level || 1,
-          points: decoded.points || 0,
-          avatarIcon: decoded.avatarIcon,
-          profileFrame: decoded.profileFrame,
-          profileBadge: decoded.profileBadge,
-          role: decoded.role,
-        });
+        
+        const newUser = {
+        loginId: decoded.loginId,
+        nickname: decoded.nickname,
+        level: decoded.level || 1,
+        points: decoded.points || 0,
+        avatarIcon: decoded.avatarIcon,
+        profileFrame: decoded.profileFrame,
+        profileBadge: decoded.profileBadge,
+        role: decoded.role,
+      };
+
+      console.log("Initial user from token:", newUser); // 🔹 여기에서 확인
+
+      setUser(newUser);
+
       } catch (err) {
         console.error("AccessToken decode 실패, 서버에서 유저 정보 호출 시도", err);
         // 2) 토큰이 깨졌으면 서버에서 유저 정보 조회
@@ -129,7 +133,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 2) 토큰 디코딩해서 user state 갱신
       const decoded: any = jwtDecode(newAccessToken);
       setUser({
-        id: decoded.userId,
         loginId: decoded.loginId,
         nickname: decoded.nickname,
         level: decoded.level || 1,
