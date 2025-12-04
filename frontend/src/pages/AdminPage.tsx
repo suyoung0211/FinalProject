@@ -1,6 +1,9 @@
-import { ArrowLeft, BarChart3, Rss, FileCheck, Vote, MessageSquare, ShoppingBag, FileText, Shield } from 'lucide-react';
+import { 
+  ArrowLeft, BarChart3, Rss, FileCheck, Vote, MessageSquare, 
+  ShoppingBag, FileText, Shield 
+} from 'lucide-react';
 import { AdminPageProps } from '../types';
-import { NavLink, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { NavLink, Routes, Route, useNavigate } from 'react-router-dom';
 import { Dashboard } from '../components/admin/dashboard/Dashboard';
 import { RssFeeds } from '../components/admin/rssFedds/RssFeeds';
 import { Issues } from '../components/admin/Issues';
@@ -8,25 +11,117 @@ import { Votes } from '../components/admin/Votes';
 import { Community } from '../components/admin/Community';
 import { Store } from '../components/admin/Store';
 import { Logs } from '../components/admin/Logs';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-
+import { refreshTokenApi } from '../api/authApi';
 
 export function AdminPage({ onBack }: AdminPageProps) {
-  const { user: currentUser } = useAuth(); // <- 여기서 유저 가져오기
+  const { user, setUser, token, login, logout } = useAuth();
   const navigate = useNavigate();
+  const [roleChecked, setRoleChecked] = useState(false); // role 검사 완료 여부
 
-  // role 체크: ADMIN이 아니면 홈으로 이동
+  // -------------------------------------------------
+  // ⭐ 액세스 토큰 기반 role 검사 + 페이지 방어 + 자동 갱신
+  // -------------------------------------------------
   useEffect(() => {
-    if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'SUPER_ADMIN') {
-      navigate('/', { replace: true });
-    }
-  }, [currentUser, navigate]);
+    const checkRole = async () => {
+      let currentRole = user?.role;
 
-  // 렌더링 부분에서는 그냥 null 처리
-  if (currentUser?.role !== 'ADMIN' && currentUser?.role !== 'SUPER_ADMIN') return null;
+      const refreshAccessToken = async () => {
+        try {
+          // 서버에 refresh token 요청해서 access token 재발급
+          const res = await refreshTokenApi();
+          const newAccessToken = res.data.accessToken;
 
+          localStorage.setItem("accessToken", newAccessToken);
+          return newAccessToken;
+        } catch (err) {
+          console.error("액세스 토큰 갱신 실패", err);
+          logout(); // refresh 실패 시 로그아웃
+          navigate("/", { replace: true });
+          return null;
+        }
+      };
+
+      // 1️⃣ user state가 없거나 role이 없는 경우
+      if (!currentRole) {
+        let accessToken = token || localStorage.getItem("accessToken");
+
+        if (accessToken) {
+          try {
+            // 토큰 디코딩
+            const payloadBase64 = accessToken.split(".")[1];
+            const decoded = JSON.parse(atob(payloadBase64));
+
+            // 만료 확인 (exp: UNIX timestamp)
+            const now = Math.floor(Date.now() / 1000);
+            if (decoded.exp && decoded.exp < now) {
+              // 토큰 만료 → refresh token으로 재발급
+              const newToken = await refreshAccessToken();
+              if (!newToken) return; // 실패 시 return
+              accessToken = newToken;
+
+              // 재발급 토큰 디코딩
+              const newDecoded = JSON.parse(atob(newToken.split(".")[1]));
+              currentRole = newDecoded.role;
+
+              // user state 업데이트
+              setUser({
+                id: newDecoded.userId,
+                loginId: newDecoded.loginId,
+                nickname: newDecoded.nickname,
+                role: newDecoded.role,
+                level: newDecoded.level || 1,      // 기본값 1
+                points: newDecoded.points || 0,    // 기본값 0
+                avatarIcon: newDecoded.avatarIcon,
+                profileFrame: newDecoded.profileFrame,
+                profileBadge: newDecoded.profileBadge,
+              });
+            } else {
+              // 만료되지 않았으면 그대로 user 세팅
+              currentRole = decoded.role;
+              setUser({
+                id: decoded.userId,
+                loginId: decoded.loginId,
+                nickname: decoded.nickname,
+                role: decoded.role,
+                level: decoded.level || 1,      // 기본값 1
+                points: decoded.points || 0,    // 기본값 0
+                avatarIcon: decoded.avatarIcon,
+                profileFrame: decoded.profileFrame,
+                profileBadge: decoded.profileBadge,
+              });
+            }
+          } catch (err) {
+            console.error("AccessToken decode 실패", err);
+            logout();
+            navigate("/", { replace: true });
+            return;
+          }
+        } else {
+          // 토큰 자체가 없으면 홈으로
+          navigate("/", { replace: true });
+          return;
+        }
+      }
+
+      // 2️⃣ role 검사
+      if (currentRole !== "ADMIN" && currentRole !== "SUPER_ADMIN") {
+        navigate("/", { replace: true });
+      } else {
+        setRoleChecked(true); // role 검사 완료
+      }
+    };
+
+    checkRole();
+  }, [user, token, setUser, navigate, logout]);
+
+  // role 검사 전까지 렌더링하지 않음
+  if (!roleChecked) return null;
+
+  // -------------------------------------------------
   // 메뉴 아이템 정의
+  // -------------------------------------------------
   const menuItems = [
     { path: 'dashboard', label: '대시보드', icon: BarChart3, subtitle: '회원 관리' },
     { path: 'rss-feeds', label: 'RSS 피드', icon: Rss, subtitle: '피드 목록' },
@@ -37,6 +132,9 @@ export function AdminPage({ onBack }: AdminPageProps) {
     { path: 'logs', label: '활동 로그', icon: FileText, subtitle: '관리자 활동' },
   ] as const;
 
+  // -------------------------------------------------
+  // 렌더링
+  // -------------------------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
       {/* Sidebar */}
@@ -106,10 +204,10 @@ export function AdminPage({ onBack }: AdminPageProps) {
             </div>
             <div>
               <div className="text-sm font-medium text-white">
-                {currentUser.nickname}
+                {user?.nickname}
               </div>
               <div className="text-xs text-gray-400">
-                @{currentUser.role}
+                @{user?.role}
               </div>
             </div>
           </div>
@@ -119,10 +217,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
       {/* Main Content */}
       <main className="flex-1 overflow-auto p-6">
         <Routes>
-          {/* 기본 접근 시 dashboard로 이동 */}
           <Route index element={<Dashboard />} />
-
-          {/* 각 메뉴 라우트 */}
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="rss-feeds" element={<RssFeeds />} />
           <Route path="issues" element={<Issues />} />
@@ -130,8 +225,6 @@ export function AdminPage({ onBack }: AdminPageProps) {
           <Route path="community" element={<Community />} />
           <Route path="store" element={<Store />} />
           <Route path="logs" element={<Logs />} />
-
-          {/* 없는 페이지 */}
           <Route path="*" element={<div>페이지를 찾을 수 없습니다.</div>} />
         </Routes>
       </main>
