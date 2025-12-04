@@ -148,68 +148,148 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
       <div className="container mx-auto px-4 py-8">
 
         {/*============== 프로필 섹션 ==============*/}
-        <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-3xl p-8 mb-6">
+        {/*======================================
+    프로필 섹션 (보기 모드 / 편집 모드 전환)
+=======================================*/}
+<div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-3xl p-8 mb-6">
 
-          {/* 제목 + 편집 버튼 */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <User className="w-6 h-6 text-purple-400" />
-              프로필 정보
-            </h2>
+  {/* ===================== 제목 + 버튼 ===================== */}
+  <div className="flex items-center justify-between mb-6">
+    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+      <User className="w-6 h-6 text-purple-400" />
+      프로필 정보
+    </h2>
 
-            <Button
-              onClick={() => setIsEditingProfile(true)}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-            >
-              <Edit2 className="w-4 h-4 mr-2" />
-              편집
-            </Button>
+    {!isEditingProfile ? (
+      <Button
+        onClick={() => setIsEditingProfile(true)}
+        className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+      >
+        <Edit2 className="w-4 h-4 mr-2" />
+        편집
+      </Button>
+    ) : (
+      <div className="flex gap-2">
+        <Button
+          onClick={() => handleProfileUpdate({ nickname: user.nickname, email: user.email })}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+        >
+          저장
+        </Button>
+
+        <Button
+          onClick={() => setIsEditingProfile(false)}
+          className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+        >
+          취소
+        </Button>
+      </div>
+    )}
+  </div>
+
+  {/* ===================== 보기 모드 ===================== */}
+  {!isEditingProfile && (
+    <div className="flex items-start gap-6">
+
+      {/* 프로필 이미지 */}
+      <div className="relative w-24 h-24 rounded-full overflow-hidden">
+        <img
+          src={resolveImage(user.avatarIcon)}
+          className="object-cover w-full h-full"
+        />
+        {user.profileFrame && (
+          <img
+            src={resolveImage(user.profileFrame)}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          />
+        )}
+      </div>
+
+      {/* 텍스트 정보 */}
+      <div className="flex-1">
+        <h1 className="text-3xl font-bold text-white mb-2">
+          {user.nickname}
+        </h1>
+
+        {user.email && (
+          <div className="flex items-center gap-2 text-gray-400 mb-4">
+            <Mail className="w-4 h-4" />
+            <span>{user.email}</span>
           </div>
+        )}
 
-          <div className="flex items-start gap-6">
-
-            {/* 프로필 이미지 */}
-            <div className="relative">
-              <div className="relative w-24 h-24 rounded-full overflow-hidden">
-                <img
-                  src={resolveImage(user.avatarIcon)}
-                  className="object-cover w-full h-full"
-                />
-
-                {user.profileFrame && (
-                  <img
-                    src={resolveImage(user.profileFrame)}
-                    className="absolute inset-0 w-full h-full pointer-events-none"
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* 텍스트 정보 */}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-white mb-2">
-                {user.nickname}
-              </h1>
-
-              {user.email && (
-                <div className="flex items-center gap-2 text-gray-400 mb-4">
-                  <Mail className="w-4 h-4" />
-                  <span>{user.email}</span>
-                </div>
-              )}
-
-              {/* 포인트 */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
-                  <Coins className="w-5 h-5 text-white" />
-                  <span className="text-white font-bold">
-                    {user.points.toLocaleString()} P
-                  </span>
-                </div>
-              </div>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
+            <Coins className="w-5 h-5 text-white" />
+            <span className="text-white font-bold">
+              {user.points.toLocaleString()} P
+            </span>
           </div>
         </div>
+      </div>
+    </div>
+  )}
+
+  {/* ===================== 편집 모드 ===================== */}
+  {isEditingProfile && (
+    <div className="flex items-start gap-6">
+
+      {/* 이미지 + 프레임 편집 버튼 */}
+      <div className="relative">
+        <div className="relative w-24 h-24 rounded-full overflow-hidden">
+          <img
+            src={resolveImage(user.avatarIcon)}
+            className="object-cover w-full h-full"
+          />
+          {user.profileFrame && (
+            <img
+              src={resolveImage(user.profileFrame)}
+              className="absolute inset-0 w-full h-full pointer-events-none"
+            />
+          )}
+        </div>
+
+        <button
+          onClick={() => setIsEditingPhoto(true)}
+          className="absolute -bottom-2 -right-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-8 h-8 flex items-center justify-center"
+        >
+          <Edit2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* 편집 입력창 */}
+      <div className="flex-1 space-y-4">
+
+        {/* 닉네임 */}
+        <div>
+          <label className="text-gray-300 text-sm">닉네임</label>
+          <input
+            type="text"
+            className="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md p-2"
+            value={user.nickname}
+            onChange={(e) =>
+              setUser(prev => prev ? { ...prev, nickname: e.target.value } : prev)
+            }
+          />
+        </div>
+
+        {/* 이메일 */}
+        <div>
+          <label className="text-gray-300 text-sm">이메일</label>
+          <input
+            type="email"
+            className="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md p-2"
+            value={user.email ?? ""}
+            onChange={(e) =>
+              setUser(prev => prev ? { ...prev, email: e.target.value } : prev)
+            }
+          />
+        </div>
+
+      </div>
+    </div>
+  )}
+</div>
 
         {/*============== 활동 섹션 ==============*/}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -262,15 +342,6 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
 
       {/*============== 모달 ==============*/}
 
-      {/* 프로필 편집 */}
-      {isEditingProfile && (
-        <ProfileEditorModal
-          user={user}
-          onClose={() => setIsEditingProfile(false)}
-          onSave={handleProfileUpdate}
-          onOpenImageEditor={() => setIsEditingPhoto(true)}
-        />
-      )}
 
       {/* 프로필 이미지 편집 */}
       {isEditingPhoto && (
