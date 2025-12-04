@@ -16,10 +16,12 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
     // 특정 이슈와 연관된 투표 조회
     List<VoteEntity> findByIssue(IssueEntity issue);
 
+    
+
     // 상태별 투표 조회
     List<VoteEntity> findByStatus(VoteEntity.Status status);
 
-    List<VoteEntity> findByStatusAndEndAtBefore(VoteEntity.Status status, LocalDateTime time);
+    List<VoteEntity> findByStatusAndEndAtBefore(VoteEntity.Status status, LocalDateTime endAtBefore);
 
     // 특정 이슈 + 상태로 투표 조회
     List<VoteEntity> findByIssueAndStatus(IssueEntity issue, VoteEntity.Status status);

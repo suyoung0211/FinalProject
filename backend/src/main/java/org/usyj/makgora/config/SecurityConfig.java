@@ -62,8 +62,16 @@ public class SecurityConfig {
 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
         // 투표 GET 허용
-        .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
         .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
+        .requestMatchers(HttpMethod.POST, "/api/votes/**").authenticated()
+        .requestMatchers(HttpMethod.PUT, "/api/votes/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/votes/**").authenticated()
+
+        .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
+        .requestMatchers(HttpMethod.POST, "/api/normal-votes/**").authenticated()
+        .requestMatchers(HttpMethod.PUT, "/api/normal-votes/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/normal-votes/**").authenticated()
 
         // 커뮤니티 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()

@@ -9,10 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.IssueEntity;
 import org.usyj.makgora.repository.IssueRepository;
-import org.usyj.makgora.request.vote.VoteCreateRequest;
 import org.usyj.makgora.response.issue.IssueResponse;
-import org.usyj.makgora.response.issue.IssueWithVotesResponse;
-import org.usyj.makgora.response.vote.VoteResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +19,6 @@ import java.util.List;
 public class IssueService {
 
     private final IssueRepository issueRepository;
-    private final VoteService voteService;
     private final StringRedisTemplate redis;   // 🔥 Redis 주입
 
     // 🆕 Vote 자동 생성을 위한 별도 큐
@@ -58,18 +54,6 @@ public IssueEntity approveIssue(Integer issueId) {
 
 
 
-    /** 🔥 투표 생성 (수동용 - 기존 로직) */
-    @Transactional
-    public VoteResponse createVote(Integer issueId, VoteCreateRequest req) {
-        return voteService.createVote(issueId, req);
-    }
-
-    /** 🔹 특정 Issue의 투표 목록 */
-    @Transactional(readOnly = true)
-    public List<VoteResponse> getVotesForIssue(Integer issueId) {
-        return voteService.getVotesForIssue(issueId);
-    }
-
     /** 🔹 AI 추천 이슈 */
     @Transactional(readOnly = true)
     public List<IssueResponse> getRecommendedIssues() {
@@ -80,26 +64,6 @@ public IssueEntity approveIssue(Integer issueId) {
                 )
                 .stream()
                 .map(IssueResponse::from)
-                .toList();
-    }
-
-    /** 🔹 단일 이슈 + 투표 */
-    @Transactional(readOnly = true)
-    public IssueWithVotesResponse getIssueWithVotes(Integer issueId) {
-        IssueEntity issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
-
-        return new IssueWithVotesResponse(
-                IssueResponse.from(issue),
-                voteService.getVotesByIssue(issue)
-        );
-    }
-
-    /** 🔹 전체 이슈 + 투표 */
-    @Transactional(readOnly = true)
-    public List<IssueWithVotesResponse> getAllIssuesWithVotes() {
-        return issueRepository.findAll().stream()
-                .map(i -> getIssueWithVotes(i.getId()))
                 .toList();
     }
 

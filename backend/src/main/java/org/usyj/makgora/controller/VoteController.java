@@ -5,11 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.request.vote.VoteParticipateRequest;
-import org.usyj.makgora.response.vote.VoteResponse;
 import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.VoteService;
+import org.usyj.makgora.request.vote.UserVoteCreateRequest;
 import org.usyj.makgora.request.vote.VoteAiCreateRequest;
-import org.usyj.makgora.request.vote.VoteCancelRequest;
+
 
 @RestController
 @RequestMapping("/api/votes")
@@ -18,13 +18,25 @@ public class VoteController {
 
     private final VoteService voteService;
 
-    /** ① 투표 상세 조회 */
+    /** 상세 조회 */
     @GetMapping("/{voteId}")
-    public ResponseEntity<VoteResponse> getVote(@PathVariable Integer voteId) {
+    public ResponseEntity<?> getVote(@PathVariable Integer voteId) {
         return ResponseEntity.ok(voteService.getVoteDetail(voteId));
     }
 
-    /** ② 투표 참여 */
+    /** 배당 조회 */
+    @GetMapping("/{voteId}/odds")
+    public ResponseEntity<?> getOdds(@PathVariable Integer voteId) {
+        return ResponseEntity.ok(voteService.getOdds(voteId));
+    }
+
+    /** 목록 조회 */
+    @GetMapping("/list")
+    public ResponseEntity<?> getVoteList() {
+        return ResponseEntity.ok(voteService.getVoteList());
+    }
+
+    /** 참여 */
     @PostMapping("/{voteId}/participate")
     public ResponseEntity<?> participate(
             @PathVariable Integer voteId,
@@ -34,81 +46,75 @@ public class VoteController {
         return ResponseEntity.ok(voteService.participateVote(voteId, req, user.getId()));
     }
 
-    /** ③ 내 투표 조회 */
-    @GetMapping("/{voteId}/my")
-    public ResponseEntity<?> getMyVote(
+    /** 🔥 내 참여만 취소 (vote_user_id 기반) */
+    @PatchMapping("/my/{voteUserId}/cancel")
+    public ResponseEntity<?> cancelMyVote(
+            @PathVariable Long voteUserId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        return ResponseEntity.ok(
+                voteService.cancelMyVote(voteUserId, user.getId())
+        );
+    }
+
+    // 내 참여 투표 상세정보
+    @GetMapping("/my/statistics")
+    public ResponseEntity<?> getMyStatistics(@AuthenticationPrincipal CustomUserDetails user) {
+    return ResponseEntity.ok(voteService.getMyStatistics(user.getId()));
+}
+
+    /** 🔥 투표 취소 (사용자) */
+    @PatchMapping("/{voteId}/cancel")
+    public ResponseEntity<?> cancelVote(
             @PathVariable Integer voteId,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        return ResponseEntity.ok(voteService.getMyVote(voteId, user.getId()));
+        return ResponseEntity.ok(
+                voteService.cancelVote(voteId, user.getId())
+        );
     }
 
-    /** ④ 내 베팅 취소 */
-    @PatchMapping("/my/{voteUserId}/cancel")
-public ResponseEntity<?> cancelMyVote(
-        @PathVariable Long voteUserId,
+    /** AI 자동 생성 */
+    @PostMapping("/ai-create")
+    public ResponseEntity<?> createByAi(@RequestBody VoteAiCreateRequest req) {
+        return ResponseEntity.ok(voteService.createVoteByAI(req));
+    }
+
+    // 투표 종료
+    @PatchMapping("/{voteId}/finish")
+public ResponseEntity<?> finishVote(@PathVariable Integer voteId) {
+    return ResponseEntity.ok(voteService.finishVote(voteId));
+}
+
+// 정답 결정
+@PatchMapping("/{voteId}/resolve/{choiceId}")
+public ResponseEntity<?> resolveVote(
+        @PathVariable Integer voteId,
+        @PathVariable Long choiceId
+) {
+    return ResponseEntity.ok(voteService.resolveVote(voteId, choiceId));
+}
+
+// 보상 분배
+@PatchMapping("/{voteId}/reward")
+public ResponseEntity<?> rewardVote(@PathVariable Integer voteId) {
+    return ResponseEntity.ok(voteService.rewardVote(voteId));
+}
+
+@PostMapping("/create")
+public ResponseEntity<?> createByUser(
+        @RequestBody UserVoteCreateRequest req,
         @AuthenticationPrincipal CustomUserDetails user
 ) {
-    return ResponseEntity.ok(voteService.cancelMyVote(voteUserId, user.getId()));
+    if (user == null) return ResponseEntity.status(401).body("로그인이 필요합니다.");
+
+    return ResponseEntity.ok(voteService.createVoteByUser(req, user.getId()));
 }
 
-    /** ⑤ 관리자: 투표 취소 */
-    @PatchMapping("/{voteId}/admin/cancel")
-    public ResponseEntity<?> adminCancelVote(
-            @PathVariable Integer voteId,
-            @RequestBody VoteCancelRequest req
-    ) {
-        return ResponseEntity.ok(voteService.cancelVoteAdmin(voteId, req));
-    }
-
-    /** ⑥ 관리자: 투표 종료 */
-    @PostMapping("/{voteId}/admin/finish")
-    public ResponseEntity<?> finishVote(@PathVariable Integer voteId) {
-        return ResponseEntity.ok(voteService.finishVote(voteId));
-    }
-
-    /** ⑦ 관리자: 정답 확정 */
-    @PostMapping("/{voteId}/resolve/{choiceId}")
-    public ResponseEntity<?> resolveVote(
-            @PathVariable Integer voteId,
-            @PathVariable Long choiceId
-    ) {
-        return ResponseEntity.ok(voteService.resolveVote(voteId, choiceId));
-    }
-
-    /** ⑧ 관리자: 보상 지급 */
-    @PostMapping("/{voteId}/admin/reward")
-    public ResponseEntity<?> rewardVote(@PathVariable Integer voteId) {
-        return ResponseEntity.ok(voteService.rewardVote(voteId));
-    }
-
-    /** ⑨ odds 확인 (실시간/최종 배당 조회) */
-@GetMapping("/{voteId}/odds")
-public ResponseEntity<?> getOdds(@PathVariable Integer voteId) {
-    return ResponseEntity.ok(voteService.getOdds(voteId));
-}
-
-/** 🔥 내가 참여한 모든 투표 조회 */
+// 내가 참여한 모든 투표 리스트 조회
 @GetMapping("/my")
 public ResponseEntity<?> getMyVotes(@AuthenticationPrincipal CustomUserDetails user) {
     return ResponseEntity.ok(voteService.getMyVotes(user.getId()));
 }
 
-/** 🔥 내 투표 통계 조회 */
-@GetMapping("/my/statistics")
-public ResponseEntity<?> getMyVoteStatistics(@AuthenticationPrincipal CustomUserDetails user) {
-    return ResponseEntity.ok(voteService.getMyStatistics(user.getId()));
-}
-
-@GetMapping("/list")
-public ResponseEntity<?> getVoteList() {
-    return ResponseEntity.ok(voteService.getAllVotes());
-}
-
-
-    /** 🔥 Python Worker → AI 자동 생성 투표 저장 */
-    @PostMapping("/ai-create")
-    public ResponseEntity<VoteResponse> createByAi(@RequestBody VoteAiCreateRequest req) {
-        return ResponseEntity.ok(voteService.createVoteByAI(req));
-    }
 }

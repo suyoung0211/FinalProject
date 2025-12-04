@@ -3,41 +3,17 @@ import { User, Coins } from "lucide-react";
 import { Button } from "../ui/button";
 import { fetchVoteDetail, fetchVoteOdds } from "../../api/voteApi";
 
-interface VoteOptionChoice {
-  id: number;
-  label: string;
-  percentage: number;
-}
-
-interface VoteOption {
-  id: number;
-  label: string;
-  choices: VoteOptionChoice[];
-}
-
-interface VoteDetailResponse {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  options: VoteOption[];
-  totalPoints: number;
-  totalParticipants: number;
-  endAt: string;
-  status: string;
-}
-
 export function VoteItem({
   voteId,
   onMarketClick,
 }: {
   voteId: number;
-  onMarketClick: (id: string) => void;
+  onMarketClick: (id: number) => void;
 }) {
-  const [vote, setVote] = useState<VoteDetailResponse | null>(null);
+  const [vote, setVote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  /** 🔥 API로 데이터 가져오기 */
+  /** 🔥 API 호출 */
   useEffect(() => {
     async function load() {
       try {
@@ -47,23 +23,24 @@ export function VoteItem({
         const detail = detailRes.data;
         const odds = oddsRes.data;
 
-        // 🔥 odds 데이터를 detail.options에 매칭
+        // 선택지에 odds 매핑
         const mergedOptions = detail.options.map((opt: any) => ({
-          ...opt,
-          choices: opt.choices.map((c: any) => ({
-            ...c,
-            percentage: odds[c.id] ?? 0, // 백엔드가 choiceId → percentage 구조로 보내준다고 가정
-          })),
-        }));
+  ...opt,
+  choices: opt.choices.map((c: any) => ({
+    ...c,
+    percentage:
+      odds.choices?.find((o: any) => o.choiceId === c.choiceId)?.odds ?? 0,
+  })),
+}));
+        console.log("🔥 [FRONT] voteId=", voteId);
+console.log("🔥 [FRONT] fetchVoteDetail 응답:", detail);
+console.log("🔥 [FRONT] fetchVoteOdds 응답:", odds);
+console.log("🔥 [FRONT] 선택지 매핑 결과:", mergedOptions);
 
-        setVote({
-          ...detail,
-          options: mergedOptions,
-        });
-      } catch (e) {
-        console.error("VoteItem API 로딩 실패:", e);
+        setVote({ ...detail, options: mergedOptions });
+      } catch (err) {
+        console.error("VoteItem load error:", err);
       }
-
       setLoading(false);
     }
 
@@ -72,96 +49,92 @@ export function VoteItem({
 
   if (loading || !vote) {
     return (
-      <div className="bg-white/5 p-6 rounded-2xl text-gray-400">
-        로딩 중...
-      </div>
+      <div className="bg-white/5 p-6 rounded-2xl text-gray-400">로딩 중...</div>
     );
   }
 
+  /** 🔢 확률 계산 (Yes/No only) */
+  const yesChoice = vote.options[0]?.choices.find((c: any) => c.text === "YES");
+  const noChoice  = vote.options[0]?.choices.find((c: any) => c.text === "NO");
+
+  const yes = yesChoice?.percentage ?? 0;
+  const no  = noChoice?.percentage ?? 0;
+
+  const total = yes + no;
+  const yesPercent = total > 0 ? Math.round((yes / total) * 100) : 50;
+  const noPercent  = total > 0 ? 100 - yesPercent : 50;
+  const circleColor = yesPercent > noPercent ? "border-green-500 text-green-400" : "border-red-500 text-red-400";
+
   return (
-    <div
-      onClick={() => onMarketClick(vote.id.toString())}
-      className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/10 transition-all cursor-pointer"
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <span className="px-3 py-1 bg-purple-600/20 text-purple-400 text-xs rounded-full">
-          {vote.category}
-        </span>
-
-        <span
-          className={`px-3 py-1 text-xs rounded-full ${
-            vote.status === "ONGOING"
-              ? "bg-green-600/20 text-green-400"
-              : "bg-gray-600/20 text-gray-400"
-          }`}
-        >
-          {vote.status === "ONGOING" ? "진행중" : "종료"}
-        </span>
-      </div>
-
-      <h3 className="text-white font-bold text-lg mb-2">{vote.title}</h3>
-      <p className="text-gray-400 text-sm mb-4">{vote.description}</p>
-
-      {/* 옵션 바 그래프 */}
-      <div className="space-y-6 mb-4">
-        {vote.options?.map((opt) => {
-          let yes = opt.choices?.find((c) => c.label === "YES")?.percentage ?? 0;
-          let no = opt.choices?.find((c) => c.label === "NO")?.percentage ?? 0;
-
-          const total = yes + no;
-          if (total > 0) {
-            yes = Math.round((yes / total) * 100);
-            no = 100 - yes;
-          }
-
-          return (
-            <div key={opt.id}>
-              <div className="text-white font-semibold text-sm mb-2">
-                {opt.label}
-              </div>
-
-              <div className="w-full h-4 bg-white/10 rounded-full overflow-hidden flex">
-                <div className="bg-green-500 h-full" style={{ width: `${yes}%` }}></div>
-                <div className="bg-red-500 h-full" style={{ width: `${no}%` }}></div>
-              </div>
-
-              <div className="flex justify-between mt-1 text-xs">
-                <span className="text-green-400">YES {yes}%</span>
-                <span className="text-red-400">NO {no}%</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Stats */}
-      <div className="flex items-center justify-between text-gray-400 text-sm border-t border-white/10 pt-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1">
-            <Coins className="w-4 h-4" />
-            <span>{(vote.totalPoints / 1000).toFixed(0)}K P</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <User className="w-4 h-4" />
-            <span>{vote.totalParticipants.toLocaleString()}</span>
-          </div>
+  <div
+    onClick={() => onMarketClick(vote.id)}
+    className="
+      flex flex-col 
+      rounded-2xl p-5 cursor-pointer transition-all
+      bg-[#261b3a] 
+      border border-purple-700/30
+      hover:bg-[#381f5c] 
+      hover:border-purple-400/50
+    "
+    style={{ height: "340px" }}
+  >
+    {/* ====== 상단 헤더 ====== */}
+    <div className="flex items-start justify-between">
+      <div className="flex items-center gap-3">
+        {vote.thumbnail && (
+          <img
+            src={vote.thumbnail}
+            alt="thumbnail"
+            className="w-12 h-12 object-cover rounded-md"
+          />
+        )}
+        <div>
+          <h3 className="text-white font-bold text-lg leading-tight">{vote.title}</h3>
+          
         </div>
-        <span className="text-xs text-gray-500">
-          마감: {vote.endAt.substring(0, 10)}
-        </span>
       </div>
 
-      {/* 버튼 */}
-      <Button
-        onClick={(e) => {
-          e.stopPropagation();
-          onMarketClick(vote.id.toString());
-        }}
-        className="w-full mt-4 bg-gradient-to-r from-purple-600 to-pink-600"
-      >
-        투표 참여
-      </Button>
+      {/* 확률 원 */}
+      <div className="flex flex-col items-center">
+        <div
+          className={`w-12 h-12 rounded-full border-4 flex items-center justify-center font-bold ${circleColor}`}
+        >
+          {yesPercent}%
+        </div>
+        <span className="text-xs text-gray-400 mt-1">chance</span>
+        <p className="text-gray-300 text-xs mt-1">{vote.category}</p>
+      </div>
     </div>
-  );
+
+    {/* ====== 자동 여백 → YES/NO 바를 아래로 밀어냄 ====== */}
+    <div className="flex-1"></div>
+
+    {/* ====== YES / NO 바 (항상 아래 고정) ====== */}
+    <div className="mt-4">
+      <div className="flex w-full">
+        <div className="bg-green-600/20 text-green-400 px-4 py-2 w-1/2 rounded-l-xl font-semibold text-center">
+          Yes ({yesPercent}%)
+        </div>
+        <div className="bg-red-600/20 text-red-400 px-4 py-2 w-1/2 rounded-r-xl font-semibold text-center">
+          No ({noPercent}%)
+        </div>
+      </div>
+    </div>
+
+    {/* ====== 하단 정보 ====== */}
+    <div className="mt-3 flex justify-between items-center text-gray-300 text-xs border-t border-white/10 pt-3">
+      <div className="flex items-center gap-3">
+        <span className="flex items-center gap-1">
+          <Coins className="w-3 h-3" />
+          {(vote.totalPoints / 1000).toFixed(1)}k Vol.
+        </span>
+        <span className="flex items-center gap-1">
+          <User className="w-3 h-3" />
+          {vote.totalParticipants}
+        </span>
+      </div>
+      <span>마감: {vote.endAt.substring(0, 10)}</span>
+    </div>
+  </div>
+);
 }

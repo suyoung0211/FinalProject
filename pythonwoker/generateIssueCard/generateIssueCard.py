@@ -219,6 +219,7 @@ def generate_issue_card(title, content):
 - JSON 바깥에는 어떤 텍스트도 출력하지 않는다. (설명, 주석, 예시, 영어, 불필요한 텍스트 모두 금지)
 - 모든 텍스트는 반드시 한국어로 작성한다.
 - key_points는 기사 내용을 이해하는 데 중요한 핵심 논점을 2~5개 정도로 정리한다.
+- 문장은 20자 내외로 핵심만 요약한다.
 
 기사 제목: {title}
 기사 내용: {content[:2000] if content else title}
@@ -308,6 +309,7 @@ def generate_vote_question(issue_title, summary):
 
 ⚠ 핵심 규칙:
 - 출력은 반드시 'JSON 한 개'만 포함해야 한다.
+- 문장은 20자 내외로 핵심만 요약한다.
 - JSON 외의 설명글, 해설, 문장, 영어는 절대 포함하지 말 것.
 - 모든 내용은 한국어로 작성하라.
 
@@ -520,8 +522,10 @@ def send_vote_to_backend(issue, vote_ai, rule_ai):
         "options": option_dtos,
         "resultType": vote_ai["result_type"],
         "endAt": (datetime.now() + timedelta(days=7)).isoformat(),
-        "ruleType": rule_ai["rule_type"],
-        "ruleDescription": rule_ai["rule_description"],
+        "rule": {
+            "type": rule_ai["rule_type"],
+            "description": rule_ai["rule_description"]
+        },
         "initialStatus": "REVIEWING"
     }
 

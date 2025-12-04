@@ -5,13 +5,19 @@ export function VoteList({
   onMarketClick,
 }: {
   items: any[];
-  onMarketClick: (id: string) => void;
+  onMarketClick: (id: number) => void;
 }) {
+  console.log("🟣 [FRONT] VoteList items =", items);   // ⭐ 디버그 추가
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {items.map(issue => (
-  <VoteItem voteId={issue.id} onMarketClick={onMarketClick} />
-))}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {items.map((issue) => (
+        <VoteItem
+          key={issue.id}
+          voteId={issue.id}
+          onMarketClick={onMarketClick}
+        />
+      ))}
+      
     </div>
   );
 }
