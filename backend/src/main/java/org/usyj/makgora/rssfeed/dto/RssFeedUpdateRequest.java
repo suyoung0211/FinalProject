@@ -1,5 +1,7 @@
 package org.usyj.makgora.rssfeed.dto;
 
+import java.util.Set;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +19,7 @@ public class RssFeedUpdateRequest {
     private String sourceName;
 
     // 변경할 카테고리 ID 목록
-    private String category;;
+    private Set<String> categoryNames;
 
     // ACTIVE / INACTIVE 상태
     private String status;
