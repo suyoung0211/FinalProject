@@ -1,17 +1,21 @@
 package org.usyj.makgora.controller;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.request.auth.LoginRequest;
 import org.usyj.makgora.request.auth.RegisterRequest;
-import org.usyj.makgora.response.UserInfoResponse;
 import org.usyj.makgora.response.auth.LoginResponse;
 import org.usyj.makgora.service.AuthService;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -46,25 +50,10 @@ public class AuthController {
             refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
             response.addCookie(refreshCookie);
 
-            // 안전하게 UserInfoResponse로 변환
-            UserInfoResponse safeUser = new UserInfoResponse(
-                loginResponse.getUser().getNickname(),
-                loginResponse.getUser().getLevel(),
-                loginResponse.getUser().getPoints(),
-                loginResponse.getUser().getAvatarIcon(),   // 변경됨
-                loginResponse.getUser().getProfileFrame(), // 변경됨
-                loginResponse.getUser().getProfileBadge(), // 변경됨
-                loginResponse.getUser().getRole()
-        );
+            // Access Token + safeUser 그대로 클라이언트 전달
+            // 서비스에서 safeUser 로 전처리 완료 
+            return ResponseEntity.ok(loginResponse);
 
-            // 클라이언트에 보낼 응답 → Access Token + 안전한 사용자 정보
-            LoginResponse responseBody = new LoginResponse(
-                    loginResponse.getAccessToken(),
-                    null, // refreshToken은 HttpOnly 쿠키로만
-                    safeUser
-            );
-
-            return ResponseEntity.ok(responseBody);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }

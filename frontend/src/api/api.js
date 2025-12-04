@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
-  withCredentials: true, // ⭐ 쿠키 인증 반드시 필요
+  baseURL: "/api",
+  withCredentials: true, // 🔹 HttpOnly 쿠키(Refresh Token) 자동 전송
 });
 
 // 요청 인터셉터 → Access Token만 헤더에 붙임
@@ -26,11 +26,11 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // ⭐ Refresh Token은 쿠키에 있으므로 Body 없이 호출
-        const res = await axios.post(
-          "http://localhost:8080/api/auth/refresh",
-          {},
-          { withCredentials: true }
+        // 🔹 Refresh Token은 HttpOnly 쿠키로 전송되므로 body 필요 없음
+        const refreshResponse = await axios.post(
+          "/auth/refresh",
+          {}, // Body 없음
+          { withCredentials: true } // 쿠키 포함
         );
 
         const newAccessToken = res.data.accessToken;

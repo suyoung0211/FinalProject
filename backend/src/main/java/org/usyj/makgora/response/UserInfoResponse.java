@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder  // ← 이것 추가!
 public class UserInfoResponse {
-
+    private String loginId;
     private String nickname;
     private Integer level;
     private Integer points;

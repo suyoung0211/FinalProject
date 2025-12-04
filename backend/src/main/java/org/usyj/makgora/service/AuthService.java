@@ -62,6 +62,8 @@ public class AuthService {
     public LoginResponse login(LoginRequest req) {
 
         // 1. 사용자 조회
+        // 로그인 아이디 기준 조회 → JWT 발급
+        // JWT 발급 이후 API에서 userId를 쓰는 구조
         UserEntity user = userRepo.findByLoginId(req.getLoginId())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
@@ -71,8 +73,8 @@ public class AuthService {
         }
 
         // 3. Access/Refresh Token 생성
-        String accessToken = jwt.createAccessToken(user.getId(), user.getLoginId(), user.getRole().name());
-        String refreshToken = jwt.createRefreshToken(user.getId(), user.getLoginId(), user.getRole().name());
+        String accessToken = jwt.createAccessToken(user.getId(), user.getRole().name(), user.getNickname());
+        String refreshToken = jwt.createRefreshToken(user.getId());
 
         // 4. 기존 Refresh Token 제거 후 재발급
         tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
@@ -94,7 +96,7 @@ public class AuthService {
                 user.getProfileFrame(),   // 수정됨
                 user.getProfileBadge(),   // 수정됨
 
-                user.getRole().name()
+                user.getRole().name()   
         );
 
         // 6. 로그인 성공 응답

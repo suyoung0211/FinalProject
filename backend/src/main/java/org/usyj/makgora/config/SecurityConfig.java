@@ -50,7 +50,8 @@ public class SecurityConfig {
                 "/api/email/**",
                 "/api/home/**",
                 "/api/issues/recommended",
-                "/api/issues/latest"
+                "/api/issues/latest",
+                "/api/store/items"
         ).permitAll()
 
         // ⭐ 이슈 전체 GET 허용 (핵심)
