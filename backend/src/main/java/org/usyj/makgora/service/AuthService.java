@@ -72,7 +72,7 @@ public class AuthService {
 
         // 3. Access/Refresh Token 생성
         String accessToken = jwt.createAccessToken(user.getId(), user.getLoginId(), user.getRole().name());
-        String refreshToken = jwt.createRefreshToken(user.getId(), user.getLoginId(), user.getRole().name());
+        String refreshToken = jwt.createRefreshToken(user.getId());
 
         // 4. 기존 Refresh Token 제거 후 재발급
         tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
