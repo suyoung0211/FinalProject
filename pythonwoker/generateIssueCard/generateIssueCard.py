@@ -79,18 +79,22 @@ class RssArticleEntity(Base):
 class CommunityPostEntity(Base):
     __tablename__ = "community_posts"
 
-    post_id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, nullable=False)
-    title = Column(String(255))
-    content = Column(Text)
-    post_type = Column(String(20))
-    recommendation_count = Column(Integer, nullable=False, default=0)
-    dislike_count = Column(Integer, nullable=False, default=0)
-    comment_count = Column(Integer, nullable=False, default=0)
-    ai_system_score = Column(Integer, nullable=False, default=0)
-    view_count = Column(Integer, nullable=False, default=0)
-    created_at = Column(DateTime, nullable=False)
-    updated_at = Column(DateTime, nullable=False)
+    post_id = Column("post_id", BigInteger, primary_key=True)
+    user_id = Column("user_id", BigInteger, nullable=False)
+
+    title = Column("title", String(255))
+    content = Column("content", Text)
+    post_type = Column("post_type", String(20))
+
+    view_count = Column("view_count", Integer)
+    recommendation_count = Column("recommendation_count", Integer)
+    dislike_count = Column("dislike_count", Integer)
+    comment_count = Column("comment_count", Integer)
+
+    ai_system_score = Column("ai_system_score", Integer, nullable=False)
+
+    created_at = Column("created_at", DateTime, nullable=False)
+    updated_at = Column("updated_at", DateTime, nullable=False)
 
 
 class IssueEntity(Base):
@@ -104,14 +108,17 @@ class IssueEntity(Base):
     content = Column(Text)
     source = Column(String(255))
     ai_summary = Column(Text)
-    ai_points = Column(Text)   # JSON 문자열로 저장 (Java 쪽에서 Map으로 파싱)
-    status = Column(String(20), default="PENDING")   # PENDING / APPROVED / REJECTED
-    created_by = Column(String(20), default="AI")    # AI / ADMIN / USER / SYSTEM
+    ai_points = Column(Text)
+
+    # 🔥 누락된 부분 추가!
+    status = Column(String(20), default="PENDING")
+
+    created_by = Column(String(20), default="AI")
+
     approved_at = Column(DateTime)
     rejected_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
-
 
 # --- Vote 관련 엔티티 -----------------------------
 
@@ -568,7 +575,8 @@ def run_issue_for_article(article_id):
 # COMMUNITY → ISSUE 생성
 # ============================================================
 
-def run_issue_for_community(post_id):
+def run_issue_for_community(session, post_id):
+    
     """
     1) post_id로 커뮤니티 글 조회
     2) 해당 post_id에 매핑된 Issue 있으면 재사용, 없으면 생성
@@ -578,6 +586,7 @@ def run_issue_for_community(post_id):
 
     try:
         post = session.query(CommunityPostEntity).filter_by(post_id=post_id).first()
+        print("[DEBUG] Query Result:", post)
         if not post:
             print("[ERROR] Community Post 없음")
             return {"status": "error", "message": "post not found"}
@@ -665,15 +674,19 @@ def worker():
 
             print(f"📌 Queue Received: {raw}")
 
+            # 🔥 매 처리마다 새로운 세션 생성
+            session = Session()
+            session.expire_all()
+
             # ARTICLE → ISSUE
             if raw.startswith("article:"):
                 article_id = int(raw.split(":")[1])
                 print(f"➡ Processing Article Issue: {article_id}")
 
-                result = run_issue_for_article(article_id)
+                result = run_issue_for_community(post_id)
                 print("📝 Result:", result)
 
-                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+                if result.get("status") in ["success", "ignored", "ignored_vote_exists"]:
                     r.set(f"article:{article_id}:triggered", "1")
 
             # COMMUNITY → ISSUE
@@ -681,10 +694,10 @@ def worker():
                 post_id = int(raw.split(":")[1])
                 print(f"➡ Processing Community Issue: {post_id}")
 
-                result = run_issue_for_community(post_id)
+                result = run_issue_for_community(session, post_id)
                 print("📝 Result:", result)
 
-                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+                if result.get("status") in ["success", "ignored", "ignored_vote_exists"]:
                     r.set(f"cp:{post_id}:triggered", "1")
 
             # ISSUE APPROVE → VOTE
@@ -692,22 +705,19 @@ def worker():
                 issue_id = int(raw.split(":")[1])
                 print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
 
-                result = run_vote_for_issue(issue_id)
+                result = run_vote_for_issue(session, issue_id)
                 print("📝 Result:", result)
 
                 if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
                     r.set(f"issue:{issue_id}:voteCreated", "1")
+
+            session.close()
 
         except Exception as e:
             print("❌ Worker Error:", e)
             traceback.print_exc()
             time.sleep(1)
 
-
-# ============================================================
-# 실행 엔트리포인트
-# ============================================================
-
 if __name__ == "__main__":
-    print("🚀 Makgora AI Worker ON")
     worker()
+

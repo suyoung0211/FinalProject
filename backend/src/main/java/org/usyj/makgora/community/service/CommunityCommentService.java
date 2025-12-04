@@ -42,7 +42,7 @@ public class CommunityCommentService {
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
         List<CommunityCommentEntity> entities =
-                communityCommentRepository.findByPost_PostIdOrderByCreatedAtAsc(postId);
+                communityCommentRepository.findCommentsOrdered(postId);
 
         Map<Long, CommunityCommentResponse> dtoMap = new LinkedHashMap<>();
 
