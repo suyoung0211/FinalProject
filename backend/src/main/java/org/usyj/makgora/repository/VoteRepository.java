@@ -29,4 +29,12 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
 
     @Query("SELECT v FROM VoteEntity v WHERE v.endAt > CURRENT_TIMESTAMP ORDER BY v.totalPoints DESC")
     List<VoteEntity> findTop3ByOrderByTotalPointsDesc();
+
+    @Query("""
+    SELECT DISTINCT v FROM VoteEntity v
+    LEFT JOIN FETCH v.options o
+    LEFT JOIN FETCH o.choices c
+""")
+List<VoteEntity> findAllWithOptionsAndChoices();
+
 }

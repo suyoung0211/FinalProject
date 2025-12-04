@@ -474,6 +474,8 @@ def save_issue(source, ref, ai):
     )
 
     session.add(issue)
+    session.commit()          # DB에 flush → PK 생성
+    session.refresh(issue)    # issue.id 값을 세션으로 다시 가져오기
     print(f"[DB] Issue 저장 완료: issue_title={issue.title}")
     return issue
 
@@ -537,7 +539,7 @@ def send_vote_to_backend(issue, vote_ai, rule_ai):
 # ARTICLE → ISSUE 생성
 # ============================================================
 
-def run_issue_for_article(article_id):
+def run_issue_for_article(session, article_id):
     """
     1) article_id로 기사 조회
     2) 해당 article_id에 매핑된 Issue가 이미 있으면 재사용
@@ -616,7 +618,7 @@ def run_issue_for_community(session, post_id):
 #    Redis 큐에 "issueApprove:{id}" 형태로 푸시한다고 가정.
 # ============================================================
 
-def run_vote_for_issue(issue_id):
+def run_vote_for_issue(session, issue_id):
     print(f"\n====== [RUN] ISSUE → VOTE 생성: issue_id={issue_id} ======")
 
     try:
@@ -683,7 +685,7 @@ def worker():
                 article_id = int(raw.split(":")[1])
                 print(f"➡ Processing Article Issue: {article_id}")
 
-                result = run_issue_for_community(post_id)
+                result = run_issue_for_article(session, article_id)
                 print("📝 Result:", result)
 
                 if result.get("status") in ["success", "ignored", "ignored_vote_exists"]:
