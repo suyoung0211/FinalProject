@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,27 +52,31 @@ public class ProfileService {
     // ================================================
     public String uploadProfileImage(Integer userId, MultipartFile file) throws IOException {
 
-        if (file.isEmpty()) {
-            throw new RuntimeException("업로드할 파일이 없습니다.");
-        }
-
-        String uploadDir = "uploads/profile/";
-        File dir = new File(uploadDir);
-        if (!dir.exists()) dir.mkdirs();
-
-        String filename = userId + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path filePath = Paths.get(uploadDir + filename);
-
-        Files.copy(file.getInputStream(), filePath);
-
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저 없음"));
-
-        String imageUrl = "/uploads/profile/" + filename;
-        user.setAvatarIcon(imageUrl);
-
-        return imageUrl;
+    if (file.isEmpty()) {
+        throw new RuntimeException("업로드할 파일이 없습니다.");
     }
+
+    // 디렉토리 생성 보장
+    String uploadDir = "uploads/profile/";
+    Files.createDirectories(Paths.get(uploadDir));
+
+    // 파일명 생성
+    String filename = "profile_" + userId + "_" + System.currentTimeMillis() + ".png";
+    Path filePath = Paths.get(uploadDir + filename);
+
+    // 파일 저장
+    Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+    // DB 업데이트
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("유저 없음"));
+
+    String imageUrl = "uploads/profile/" + filename;   // DB에는 상대경로 저장
+    user.setAvatarIcon(imageUrl);
+
+    return imageUrl;
+}
+
 
     // ================================================
     // 3) 프레임 or 뱃지 적용
