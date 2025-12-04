@@ -75,6 +75,9 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
         .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
         .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
+        .requestMatchers(HttpMethod.POST, "/api/community/comments/**").authenticated()
+        .requestMatchers(HttpMethod.PUT, "/api/community/comments/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/community/comments/**").authenticated()
 
         .requestMatchers("/api/user/**").authenticated()
         .requestMatchers("/api/comment/**").authenticated()

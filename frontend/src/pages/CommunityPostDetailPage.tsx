@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/api";
 
-import { MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { MessageSquare, ThumbsUp, ThumbsDown, Edit } from "lucide-react";
 import { Avatar } from "../components/Avatar";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -140,10 +140,14 @@ export function CommunityPostDetailPage() {
   if (!user) return requireLogin();
 
   try {
-    await api.post(`/community/comments/${commentId}/like`);
+    console.log("댓글 추천 요청:", commentId);
+    const res = await api.post(`/community/comments/${commentId}/like`);
+    console.log("댓글 추천 성공:", res.data);
     await loadComments();  // 최신 데이터 다시 불러오기
-  } catch (e) {
+  } catch (e: any) {
     console.error("댓글 추천 실패", e);
+    console.error("에러 상세:", e.response?.data || e.message);
+    alert(e.response?.data?.message || "댓글 추천에 실패했습니다.");
   }
 };
 
@@ -151,10 +155,14 @@ export function CommunityPostDetailPage() {
   if (!user) return requireLogin();
 
   try {
-    await api.post(`/community/comments/${commentId}/dislike`);
+    console.log("댓글 비추천 요청:", commentId);
+    const res = await api.post(`/community/comments/${commentId}/dislike`);
+    console.log("댓글 비추천 성공:", res.data);
     await loadComments();  // 최신 데이터 다시 불러오기
-  } catch (e) {
+  } catch (e: any) {
     console.error("댓글 비추천 실패", e);
+    console.error("에러 상세:", e.response?.data || e.message);
+    alert(e.response?.data?.message || "댓글 비추천에 실패했습니다.");
   }
 };
 
@@ -251,16 +259,19 @@ const submitEditComment = async (commentId: number) => {
   if (!editText.trim()) return;
 
   try {
-    await api.put(`/community/comments/${commentId}`, {
+    console.log("댓글 수정 요청:", commentId, editText);
+    const res = await api.put(`/community/comments/${commentId}`, {
       content: editText,
     });
+    console.log("댓글 수정 성공:", res.data);
 
     setEditingCommentId(null);
     setEditText("");
     await loadComments();
-  } catch (e) {
+  } catch (e: any) {
     console.error("댓글 수정 실패", e);
-    alert("댓글 수정 중 오류가 발생했습니다.");
+    console.error("에러 상세:", e.response?.data || e.message);
+    alert(e.response?.data?.message || "댓글 수정 중 오류가 발생했습니다.");
   }
 };
 
@@ -349,13 +360,26 @@ const deleteComment = async (commentId: number) => {
       </div>
     );
 
-  const isMyPost = user && String(user.nickname) === String(post.authorId);
+  // 본인 게시글 여부 확인 (user.id와 post.authorId 비교)
+  const isMyPost = user?.id && post.authorId && Number(user.id) === Number(post.authorId);
 
   return (
     <div className="min-h-screen text-white p-8">
-      <button onClick={() => navigate("/community")} className="mb-6">
-        ← 목록으로
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={() => navigate("/community")} className="text-purple-300 hover:text-purple-200">
+          ← 목록으로
+        </button>
+        {/* 본인 게시글일 때만 수정 버튼 표시 */}
+        {isMyPost && (
+          <Button
+            onClick={() => navigate(`/community/edit/${postId}`)}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            수정
+          </Button>
+        )}
+      </div>
 
       <div className="max-w-4xl mx-auto">
         {/* 게시글 내용 */}

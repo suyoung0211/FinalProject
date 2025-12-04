@@ -24,11 +24,11 @@ public class CommunityCommentReactionService {
     }
 
     private String likeCountKey(Long id) {
-        return "community:comment:" + id + ":like:count";
+        return "cc:" + id + ":like";
     }
 
     private String dislikeCountKey(Long id) {
-        return "community:comment:" + id + ":dislike:count";
+        return "cc:" + id + ":dislike";
     }
 
     /** 댓글 추천 (Like) */
@@ -46,7 +46,8 @@ public class CommunityCommentReactionService {
 
         if (alreadyLiked) {
             // 좋아요 취소
-            comment.setLikeCount(comment.getLikeCount() - 1);
+            int currentLikeCount = (comment.getLikeCount() != null) ? comment.getLikeCount() : 0;
+            comment.setLikeCount(Math.max(0, currentLikeCount - 1));
             commentRepo.save(comment);
 
             redis.opsForSet().remove(likeSet, userId.toString());
@@ -60,7 +61,8 @@ public class CommunityCommentReactionService {
                 Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeSet, userId.toString()));
 
         if (alreadyDisliked) {
-            comment.setDislikeCount(comment.getDislikeCount() - 1);
+            int currentDislikeCount = (comment.getDislikeCount() != null) ? comment.getDislikeCount() : 0;
+            comment.setDislikeCount(Math.max(0, currentDislikeCount - 1));
             commentRepo.save(comment);
 
             redis.opsForSet().remove(dislikeSet, userId.toString());
@@ -68,7 +70,8 @@ public class CommunityCommentReactionService {
         }
 
         // 좋아요 추가
-        comment.setLikeCount(comment.getLikeCount() + 1);
+        int currentLikeCount = (comment.getLikeCount() != null) ? comment.getLikeCount() : 0;
+        comment.setLikeCount(currentLikeCount + 1);
         commentRepo.save(comment);
 
         redis.opsForSet().add(likeSet, userId.toString());
@@ -92,7 +95,8 @@ public class CommunityCommentReactionService {
 
         if (alreadyDisliked) {
             // 비추천 취소
-            comment.setDislikeCount(comment.getDislikeCount() - 1);
+            int currentDislikeCount = (comment.getDislikeCount() != null) ? comment.getDislikeCount() : 0;
+            comment.setDislikeCount(Math.max(0, currentDislikeCount - 1));
             commentRepo.save(comment);
 
             redis.opsForSet().remove(dislikeSet, userId.toString());
@@ -106,7 +110,8 @@ public class CommunityCommentReactionService {
                 Boolean.TRUE.equals(redis.opsForSet().isMember(likeSet, userId.toString()));
 
         if (alreadyLiked) {
-            comment.setLikeCount(comment.getLikeCount() - 1);
+            int currentLikeCount = (comment.getLikeCount() != null) ? comment.getLikeCount() : 0;
+            comment.setLikeCount(Math.max(0, currentLikeCount - 1));
             commentRepo.save(comment);
 
             redis.opsForSet().remove(likeSet, userId.toString());
@@ -114,7 +119,8 @@ public class CommunityCommentReactionService {
         }
 
         // 비추천 추가
-        comment.setDislikeCount(comment.getDislikeCount() + 1);
+        int currentDislikeCount = (comment.getDislikeCount() != null) ? comment.getDislikeCount() : 0;
+        comment.setDislikeCount(currentDislikeCount + 1);
         commentRepo.save(comment);
 
         redis.opsForSet().add(dislikeSet, userId.toString());
