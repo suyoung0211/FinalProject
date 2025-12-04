@@ -38,7 +38,7 @@ public class VoteEntity {
 
     /** 🏷 상태 */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(columnDefinition = "ENUM('REVIEWING', 'ONGOING', 'FINISHED', 'RESOLVED', 'REWARDED', 'CANCELLED')", nullable = false)
     @Builder.Default
     private Status status = Status.ONGOING;
 

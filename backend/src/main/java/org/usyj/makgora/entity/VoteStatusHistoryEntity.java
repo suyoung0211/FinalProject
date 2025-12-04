@@ -31,7 +31,7 @@ public class VoteStatusHistoryEntity {
 
     /** 상태 정보 (진행중/마감/결과확정/보상분배) */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(name = "status", columnDefinition = "ENUM('ONGOING', 'FINISHED', 'RESOLVED', 'REWARDED', 'CANCELLED')", nullable = false, length = 20)
     private Status status;   // ← Enum 타입으로 변경
 
     /** 상태 변경 시각 */

@@ -27,7 +27,7 @@ public class UserEntity {
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10, nullable = false)
+    @Column(length = 10, columnDefinition = "ENUM('USER', 'ADMIN', 'SUPER_ADMIN')", nullable = false)
     @Builder.Default
     private Role role = Role.USER;
 
@@ -53,7 +53,7 @@ public class UserEntity {
     private String verificationEmail;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 30, nullable = false)
+    @Column(length = 30, columnDefinition = "ENUM('ACTIVE', 'INACTIVE', 'DELETED')", nullable = false)
     @Builder.Default
     private Status status = Status.ACTIVE;
 

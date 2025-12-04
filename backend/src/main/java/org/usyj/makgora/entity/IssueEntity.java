@@ -54,7 +54,7 @@ public class IssueEntity {
 
     // ENUM 컬럼
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(columnDefinition = "ENUM('PENDING', 'APPROVED', 'REJECTED')", nullable = false)
     @Builder.Default
     private Status status = Status.PENDING;
 
@@ -62,7 +62,7 @@ public class IssueEntity {
     private LocalDateTime rejectedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(columnDefinition = "ENUM('SYSTEM', 'ADMIN', 'AI','USER')", nullable = false)
     @Builder.Default
     private CreatedBy createdBy = CreatedBy.AI;
 

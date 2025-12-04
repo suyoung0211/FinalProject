@@ -4,6 +4,7 @@ import { Clock, Plus, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-rea
 import { Button } from '../../ui/button';
 import { getAllAdminRssFeeds } from '../../../api/adminAPI';
 import EditRssFeedModal from './EditRssFeedModal';
+import CreateRssFeedModal from './CreateRssFeedModal';
 
 // -----------------------------
 // RSS 피드 타입 정의 (✔ 정정 완료)
@@ -22,6 +23,7 @@ export const RssFeeds: React.FC = () => {
   const [rssFeeds, setRssFeeds] = useState<RssFeed[]>([]);
   const [collapsedSources, setCollapsedSources] = useState<Record<string, boolean>>({});
   const [selectedFeed, setSelectedFeed] = useState<RssFeed | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchFeeds = async () => {
     try {
@@ -37,6 +39,7 @@ export const RssFeeds: React.FC = () => {
         status: feed.status as 'active' | 'inactive',
       }));
 
+      console.log(feeds)
       setRssFeeds(feeds);
 
       setCollapsedSources(prev => {
@@ -80,8 +83,10 @@ export const RssFeeds: React.FC = () => {
 
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <h3 className="font-bold text-white">RSS 피드 목록</h3>
-          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm">
-            <Plus className="w-4 h-4 mr-2" />
+          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm"
+            onClick={() => setShowCreateModal(true)}
+          >
+            <Plus className="w-4 h-4 mr-2"/>
             피드 추가
           </Button>
         </div>
@@ -137,7 +142,7 @@ export const RssFeeds: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex justify-center items-center gap-2 text-sm text-gray-400">
                             <Clock className="w-4 h-4" />
-                            {feed.lastFetched.slice(0, 19).replace('T', ' ')}
+                            {feed.lastFetched?.slice(0, 19).replace('T', ' ') ?? '-'}
                           </div>
                         </td>
 
@@ -171,6 +176,15 @@ export const RssFeeds: React.FC = () => {
           feedData={selectedFeed}
           onClose={() => setSelectedFeed(null)}
           onUpdate={fetchFeeds}
+        />
+      )}
+      {showCreateModal && (
+        <CreateRssFeedModal
+          onClose={() => setShowCreateModal(false)}
+          onAddSuccess={() => {
+            fetchFeeds(); // 목록 새로고침
+            setShowCreateModal(false);
+          }}
         />
       )}
     </div>

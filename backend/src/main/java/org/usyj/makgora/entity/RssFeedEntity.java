@@ -41,7 +41,7 @@ public class RssFeedEntity {
     private LocalDateTime lastFetched;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 10, nullable = false)
+    @Column(columnDefinition = "ENUM('ACTIVE', 'INACTIVE')", nullable = false)
     @Builder.Default
     private Status status = Status.ACTIVE;
 
