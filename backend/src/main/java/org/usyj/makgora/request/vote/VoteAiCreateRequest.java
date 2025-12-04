@@ -1,44 +1,31 @@
 // src/main/java/org/usyj/makgora/request/vote/VoteAiCreateRequest.java
 package org.usyj.makgora.request.vote;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Python AI Worker가 호출하는 전용 투표 생성 요청 DTO
- */
-@Getter
-@Setter
+@Data
 public class VoteAiCreateRequest {
 
-    /** 🔗 어떤 이슈에 대한 투표인지 */
     private Integer issueId;
-
-    /** 🤖 AI가 만든 투표 질문 */
     private String question;
-
-    /** 🤖 AI가 만든 선택지 목록 (예: ["비트코인", "나스닥"]) */
-    private List<String> options;
-
-    /** 📅 투표 종료 시간 (AI 쪽에서 기본 7일 뒤로 계산해서 넘겨줌) */
     private LocalDateTime endAt;
+    private String initialStatus;  // 기본 REVIEWING
+    private Double feeRate;
 
-    /** 🧾 투표 룰 타입 (예: BASIC, OVER_UNDER, MULTI 등) */
-    private String ruleType;
+    private List<OptionDto> options;
+    private RuleDto rule;
 
-    /** 🧾 투표 룰 설명 (사람이 읽을 수 있는 문장) */
-    private String ruleDescription;
+    @Data
+    public static class OptionDto {
+        private String title;
+        private List<String> choices; // YES / NO (/ DRAW)
+    }
 
-    /** 초기 상태 (예: "ONGOING", "REVIEW" 등) */
-    private String initialStatus;
-
-    /**
-     * 결과 타입
-     *  - "YES_NO"       → YES / NO 두 개 선택지
-     *  - "YES_NO_DRAW"  → YES / NO / DRAW 세 개 선택지
-     */
-    private String resultType;
+    @Data
+    public static class RuleDto {
+        private String type;
+        private String description;
+    }
 }

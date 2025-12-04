@@ -1,19 +1,18 @@
+// src/main/java/org/usyj/makgora/service/IssueService.java
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
-
 import org.usyj.makgora.entity.IssueEntity;
 import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.request.vote.VoteCreateRequest;
 import org.usyj.makgora.response.issue.IssueResponse;
 import org.usyj.makgora.response.issue.IssueWithVotesResponse;
 import org.usyj.makgora.response.vote.VoteResponse;
-import org.usyj.makgora.request.vote.VoteCreateRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,32 +23,42 @@ public class IssueService {
 
     private final IssueRepository issueRepository;
     private final VoteService voteService;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final StringRedisTemplate redis;   // 🔥 Redis 주입
 
-    private final String PYTHON_AI_URL = "http://localhost:8010/python/run-ai-vote/";
+    // 🆕 Vote 자동 생성을 위한 별도 큐
+    private static final String VOTE_QUEUE = "VOTE_TRIGGER_QUEUE";
 
-    /** 🔥 Issue 승인 → Python Worker로 투표 자동 생성 요청 */
+    /** 🔥 관리자 승인: Issue 상태 APPROVED + Vote 생성 트리거 push */
     @Transactional
-    public IssueEntity approveIssue(Integer issueId) {
-        IssueEntity issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+public IssueEntity approveIssue(Integer issueId) {
 
-        issue.setStatus(IssueEntity.Status.APPROVED);
-        issue.setApprovedAt(LocalDateTime.now());
-        issueRepository.save(issue);
+    IssueEntity issue = issueRepository.findById(issueId)
+            .orElseThrow(() -> new RuntimeException("Issue not found"));
 
-        try {
-            String url = PYTHON_AI_URL + issueId;
-            restTemplate.postForObject(url, null, String.class);
-            System.out.println("[AI-VOTE] Python Worker 호출 완료 → " + url);
-        } catch (Exception e) {
-            System.err.println("[AI-VOTE][ERROR] Python Worker 요청 실패: " + e.getMessage());
-        }
+    // ENUM 올바르게 설정
+    issue.setStatus(IssueEntity.Status.APPROVED);
+    issue.setApprovedAt(LocalDateTime.now());
 
-        return issue;
+    // save()는 IssueEntity를 반환 → 저장 후 다시 변수에 담아주는 것도 가능
+    issue = issueRepository.save(issue);
+
+    // Redis 플래그 체크
+    String flagKey = "issue:" + issueId + ":voteCreated";
+    String flag = redis.opsForValue().get(flagKey);
+
+    if (!"1".equals(flag)) {
+        redis.opsForList().leftPush("VOTE_TRIGGER_QUEUE", "issue:" + issueId);
+        System.out.println("[ISSUE-APPROVE] Vote Queue push => issue:" + issueId);
+    } else {
+        System.out.println("[ISSUE-APPROVE] 이미 Vote 생성됨 → 큐 push 생략");
     }
 
-    /** 🔥 투표 생성 */
+    return issue;
+}
+
+
+
+    /** 🔥 투표 생성 (수동용 - 기존 로직) */
     @Transactional
     public VoteResponse createVote(Integer issueId, VoteCreateRequest req) {
         return voteService.createVote(issueId, req);
@@ -96,14 +105,14 @@ public class IssueService {
 
     /** 🔹 최신 이슈 */
     @Transactional(readOnly = true)
-public List<IssueResponse> getLatestIssues(int limit) {
-    Pageable pageable = PageRequest.of(0, limit);
+    public List<IssueResponse> getLatestIssues(int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
 
-    return issueRepository
-            .findByStatusOrderByCreatedAtDesc(IssueEntity.Status.APPROVED, pageable)
-            .getContent()  // Page → List 변환
-            .stream()
-            .map(IssueResponse::from)
-            .toList();
-}
+        return issueRepository
+                .findByStatusOrderByCreatedAtDesc(IssueEntity.Status.APPROVED, pageable)
+                .getContent()
+                .stream()
+                .map(IssueResponse::from)
+                .toList();
+    }
 }

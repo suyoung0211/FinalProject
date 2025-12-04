@@ -22,6 +22,7 @@ public class VoteService {
     private final VoteOptionChoiceRepository choiceRepository;
     private final VoteUserRepository voteUserRepository;
     private final UserRepository userRepository;
+    private final VoteRuleRepository voteRuleRepository;
     private final VotesStatusHistoryRepository historyRepository;
 
     private void logHistory(VoteEntity vote, VoteStatusHistoryEntity.Status status) {
@@ -612,99 +613,99 @@ public VoteResponse cancelMyVote(Long voteUserId, Integer userId) {
                 .build();
     }
 
-    // ==================================================
-    // 🔥🔥🔥 AI 자동 투표 생성 (Python Worker 호출)
-    // ==================================================
     @Transactional
-    public VoteResponse createVoteByAI(VoteAiCreateRequest req) {
+public VoteResponse createVoteByAI(VoteAiCreateRequest req) {
 
-        IssueEntity issue = issueRepository.findById(req.getIssueId())
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+    IssueEntity issue = issueRepository.findById(req.getIssueId())
+            .orElseThrow(() -> new RuntimeException("Issue not found"));
 
-        // 기본 상태값: ONGOING
-        VoteEntity.Status status = VoteEntity.Status.ONGOING;
-
-        if (req.getInitialStatus() != null) {
-            try {
-                status = VoteEntity.Status.valueOf(req.getInitialStatus());
-            } catch (Exception ignore) {}
-        }
-
-        VoteEntity vote = VoteEntity.builder()
-                .issue(issue)
-                .title(req.getQuestion())
-                .endAt(req.getEndAt())
-                .status(status)
-                .feeRate(0.10)
-                .build();
-
-        voteRepository.save(vote);
-
-        List<VoteResponse.OptionResponse> optionResponses = new ArrayList<>();
-
-        boolean includeDraw =
-                req.getResultType() != null &&
-                        req.getResultType().equalsIgnoreCase("YES_NO_DRAW");
-
-        for (String optionName : req.getOptions()) {
-
-            VoteOptionEntity option = VoteOptionEntity.builder()
-                    .vote(vote)
-                    .optionTitle(optionName)
-                    .build();
-
-            optionRepository.save(option);
-
-            List<VoteResponse.ChoiceResponse> choices = new ArrayList<>();
-
-            // YES
-            VoteOptionChoiceEntity yes = VoteOptionChoiceEntity.builder()
-                    .option(option)
-                    .choiceText("YES")
-                    .pointsTotal(0)
-                    .participantsCount(0)
-                    .build();
-            choiceRepository.save(yes);
-            choices.add(VoteResponse.ChoiceResponse.fromEntity(yes));
-
-            // NO
-            VoteOptionChoiceEntity no = VoteOptionChoiceEntity.builder()
-                    .option(option)
-                    .choiceText("NO")
-                    .pointsTotal(0)
-                    .participantsCount(0)
-                    .build();
-            choiceRepository.save(no);
-            choices.add(VoteResponse.ChoiceResponse.fromEntity(no));
-
-            // DRAW
-            if (includeDraw) {
-                VoteOptionChoiceEntity draw = VoteOptionChoiceEntity.builder()
-                        .option(option)
-                        .choiceText("DRAW")
-                        .pointsTotal(0)
-                        .participantsCount(0)
-                        .build();
-                choiceRepository.save(draw);
-                choices.add(VoteResponse.ChoiceResponse.fromEntity(draw));
-            }
-
-            optionResponses.add(
-                    VoteResponse.OptionResponse.builder()
-                            .optionId(option.getId())
-                            .optionTitle(option.getOptionTitle())
-                            .choices(choices)
-                            .build()
-            );
-        }
-
-        return VoteResponse.builder()
-                .voteId(vote.getId())
-                .title(vote.getTitle())
-                .status(vote.getStatus().name())
-                .endAt(vote.getEndAt())
-                .rewarded(vote.getRewarded())
-                .options(optionResponses)
-                .build();
+    // 기본 상태값
+    VoteEntity.Status status = VoteEntity.Status.REVIEWING;
+    if (req.getInitialStatus() != null) {
+        try {
+            status = VoteEntity.Status.valueOf(req.getInitialStatus());
+        } catch (Exception ignore) {}
     }
+
+    // ===== 1) VoteEntity 생성 =====
+    VoteEntity vote = VoteEntity.builder()
+            .issue(issue)
+            .title(req.getQuestion())
+            .status(status)
+            .feeRate(req.getFeeRate() != null ? req.getFeeRate() : 0.10)
+            .endAt(req.getEndAt())
+            .build();
+
+    voteRepository.save(vote);
+
+
+    // ===== 2) 옵션 + 선택지 저장 =====
+    List<VoteResponse.OptionResponse> optionResponses = new ArrayList<>();
+
+    for (VoteAiCreateRequest.OptionDto opt : req.getOptions()) {
+
+        // 옵션 저장
+        VoteOptionEntity option = VoteOptionEntity.builder()
+                .vote(vote)
+                .optionTitle(opt.getTitle())
+                .build();
+        optionRepository.save(option);
+
+        List<VoteResponse.ChoiceResponse> choiceResponses = new ArrayList<>();
+
+        // 선택지 저장 (YES / NO / DRAW)
+        for (String choiceText : opt.getChoices()) {
+
+            VoteOptionChoiceEntity choice = VoteOptionChoiceEntity.builder()
+                    .option(option)
+                    .choiceText(choiceText)
+                    .participantsCount(0)
+                    .pointsTotal(0)
+                    .build();
+
+            choiceRepository.save(choice);
+
+            choiceResponses.add(VoteResponse.ChoiceResponse.fromEntity(choice));
+        }
+
+        optionResponses.add(
+                VoteResponse.OptionResponse.builder()
+                        .optionId(option.getId())
+                        .optionTitle(option.getOptionTitle())
+                        .choices(choiceResponses)
+                        .build()
+        );
+    }
+
+
+    // ===== 3) 룰 저장 =====
+    if (req.getRule() != null) {
+        VoteRuleEntity rule = VoteRuleEntity.builder()
+                .vote(vote)
+                .ruleType(req.getRule().getType())
+                .ruleDescription(req.getRule().getDescription())
+                .build();
+        voteRuleRepository.save(rule);
+    }
+
+
+    // ===== 4) 상태 히스토리 저장 =====
+    VoteStatusHistoryEntity history = VoteStatusHistoryEntity.builder()
+            .vote(vote)
+            .status(VoteStatusHistoryEntity.Status.REVIEWING)
+            .statusDate(LocalDateTime.now())
+            .build();
+    historyRepository.save(history);
+
+
+    // ===== 5) Response 반환 =====
+    return VoteResponse.builder()
+            .voteId(vote.getId())
+            .title(vote.getTitle())
+            .status(vote.getStatus().name())
+            .endAt(vote.getEndAt())
+            .rewarded(vote.getRewarded())
+            .options(optionResponses)
+            .build();
+}
 }

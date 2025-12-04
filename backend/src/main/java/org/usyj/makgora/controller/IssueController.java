@@ -1,19 +1,18 @@
-    // src/main/java/org/usyj/makgora/controller/IssueController.java
-    package org.usyj.makgora.controller;
+// src/main/java/org/usyj/makgora/controller/IssueController.java
+package org.usyj.makgora.controller;
 
-    import lombok.RequiredArgsConstructor;
-    import org.springframework.http.ResponseEntity;
-    import org.springframework.web.bind.annotation.*;
-    import org.usyj.makgora.response.issue.IssueResponse;
-    import org.usyj.makgora.response.issue.IssueWithVotesResponse;
-    import org.usyj.makgora.response.vote.VoteResponse;
-    import org.usyj.makgora.service.IssueService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.response.issue.IssueResponse;
+import org.usyj.makgora.response.issue.IssueWithVotesResponse;
+import org.usyj.makgora.response.vote.VoteResponse;
+import org.usyj.makgora.service.IssueService;
 import org.usyj.makgora.service.VoteService;
 import org.usyj.makgora.entity.IssueEntity;
 import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 import org.usyj.makgora.request.vote.VoteCreateRequest;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -22,7 +21,7 @@ import java.util.List;
 public class IssueController {
 
     private final IssueService issueService;
-    private final VoteService voteService; 
+    private final VoteService voteService;
 
     /** 🔹 AI 추천 이슈 목록 */
     @GetMapping("/recommended")
@@ -54,7 +53,7 @@ public class IssueController {
         return ResponseEntity.ok(issueService.getAllIssuesWithVotes());
     }
 
-    /** 🔥 투표 생성 */
+    /** 🔥 일반 투표 생성 (관리자/사용자) */
     @PostMapping("/{issueId}/votes")
     public ResponseEntity<VoteResponse> createVote(
             @PathVariable Integer issueId,
@@ -63,28 +62,19 @@ public class IssueController {
         return ResponseEntity.ok(issueService.createVote(issueId, req));
     }
 
-    /** AI 자동 생성 투표 (파이썬이 호출하는 엔드포인트) */
+    /** 🔥 AI 자동 생성 투표 (Python Worker 전용) */
     @PostMapping("/ai-create")
-    public ResponseEntity<VoteResponse> createByAi(@RequestBody VoteAiCreateRequest req) {
+    public ResponseEntity<VoteResponse> createVoteByAi(@RequestBody VoteAiCreateRequest req) {
         return ResponseEntity.ok(voteService.createVoteByAI(req));
     }
 
-    /** 🔥 관리자: Issue 승인 + Vote 생성 */
+    /** 🔥 관리자: Issue 승인 (★ 여기서는 Vote 생성 절대 안 함) */
     @PostMapping("/{issueId}/approve")
-    public ResponseEntity<?> approveIssue(@PathVariable Integer issueId) {
+public ResponseEntity<IssueResponse> approveIssue(@PathVariable Integer issueId) {
 
-        IssueEntity issue = issueService.approveIssue(issueId);
+    IssueEntity issue = issueService.approveIssue(issueId);
+    // Python + Redis 를 통해 비동기로 Vote 생성됨
 
-        VoteAiCreateRequest req = new VoteAiCreateRequest();
-        req.setIssueId(issueId);
-        req.setQuestion(issue.getAiSummary());   // 요약문이 투표 질문
-        req.setResultType("YES_NO");             // 기본값
-        req.setEndAt(LocalDateTime.now().plusDays(7));
-        req.setInitialStatus("ONGOING");
-
-        VoteResponse vote = voteService.createVoteByAI(req);
-
-        return ResponseEntity.ok(vote);
-    }
+    return ResponseEntity.ok(IssueResponse.from(issue));
 }
-
+}

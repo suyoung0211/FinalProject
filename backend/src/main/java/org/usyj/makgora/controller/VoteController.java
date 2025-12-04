@@ -105,13 +105,10 @@ public ResponseEntity<?> getVoteList() {
     return ResponseEntity.ok(voteService.getAllVotes());
 }
 
-/**
-     * 🔥 Python AI가 호출하는 자동 투표 생성 엔드포인트
-     * POST /api/votes/ai-create
-     */
+
+    /** 🔥 Python Worker → AI 자동 생성 투표 저장 */
     @PostMapping("/ai-create")
     public ResponseEntity<VoteResponse> createByAi(@RequestBody VoteAiCreateRequest req) {
-        VoteResponse res = voteService.createVoteByAI(req);
-        return ResponseEntity.ok(res);
+        return ResponseEntity.ok(voteService.createVoteByAI(req));
     }
 }

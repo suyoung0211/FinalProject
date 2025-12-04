@@ -4,7 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.security.CustomUserDetails;
-import org.usyj.makgora.service.CommunityCommentReactionService;
+import org.usyj.makgora.community.service.CommunityCommentReactionService;
 
 import lombok.RequiredArgsConstructor;
 

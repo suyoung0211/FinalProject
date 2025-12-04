@@ -56,6 +56,8 @@ public class CommunityScoreSyncScheduler {
 
             // 5) 임계치 체크 후 트리거
             triggerPushService.checkAndPushCommunity(postId, score);
+            System.out.println("[Scheduler] Community syncScores() 실행됨");
+            System.out.println("[Scheduler] postId=" + postId + " views=" + views + " likes=" + likes + " comments=" + comments + " score=" + score);
         }
     }
 }
