@@ -98,6 +98,12 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
     setIsEditingPhoto(false);
   };
 
+  const resolveImage = (path?: string | null) => {
+  if (!path) return "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:8080/${path}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Header */}
@@ -136,26 +142,23 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
               {/* 프로필 이미지 + 프레임 */}
               <div className="relative w-24 h-24 rounded-full overflow-hidden flex-shrink-0">
                 <img
-                  src={
-                    user.avatarIcon ||
-                    "https://cdn-icons-png.flaticon.com/512/847/847969.png"
-                  }
+                  src={resolveImage(user.avatarIcon)}
                   className="object-cover w-full h-full"
                 />
 
                 {user.profileFrame && (
-                  <img
-                    src={user.profileFrame}
-                    className="absolute inset-0 w-full h-full pointer-events-none"
+                <img
+                  src={resolveImage(user.profileFrame)}
+                  className="absolute inset-0 w-full h-full"
                   />
                 )}
               </div>
 
               {/* 닉네임 배지 */}
               {user.profileBadge && (
-                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-                  <img src={user.profileBadge} className="w-10 h-10" />
-                </div>
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
+                <img src={resolveImage(user.profileBadge)} className="w-10 h-10" />
+              </div>
               )}
             </div>
 
