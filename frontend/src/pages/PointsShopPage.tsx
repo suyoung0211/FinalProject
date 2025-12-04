@@ -1,13 +1,16 @@
 import { useAuth } from "../hooks/useAuth";
 import { useEffect, useState } from "react";
-import {
-  TrendingUp,
-  Sparkles,
-  Gem,
-} from "lucide-react";
+import { Gem } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { getItems, getMyItems, purchaseItem } from "../api/storeApi";
 import { Header } from "../components/layout/Header";
+
+/** 이미지 URL 보정 */
+const resolveImage = (path?: string | null) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `http://localhost:8080/${path}`;
+};
 
 /** 🔥 아이템 타입 정의 */
 interface ShopItem {
@@ -15,27 +18,18 @@ interface ShopItem {
   name: string;
   price: number;
   description: string;
-  emoji: string;
+  imageUrl: string | null;  // << 변경됨
   category: "icons" | "badges" | "banners";
   rarity: "common" | "rare" | "epic" | "legendary";
 }
-export interface UserType {
-  id: number;
-  loginId: string;
-  nickname: string;
-  points: number;   // 🔥 추가
-  level: number;    // 있으면 추가
-  profileImage?: string;
-}
 
-
-/** 🔥 서버에서 받아오는 원본 아이템 타입 */
+/** 🔥 서버에서 받아오는 원본 타입 */
 interface StoreItemResponse {
   itemId: number;
   name: string;
   price: number;
   image: string | null;
-  category: "AVATAR" | "BADGE" | "BACKGROUND" | "SKIN";
+  category: "AVATAR" | "BADGE" | "BACKGROUND" | "FRAME";
 }
 
 interface MyItemResponse {
@@ -43,44 +37,33 @@ interface MyItemResponse {
 }
 
 export function PointsShopPage({ onBack }: any) {
-
   const { user, setUser } = useAuth();
-  useEffect(() => {
-  console.log("🧪 현재 user:", user);
-  console.log("🧪 userPoints 초기값:", userPoints);
-}, [user]);
+
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
-  
+
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [myItems, setMyItems] = useState<number[]>([]);
   const [userPoints, setUserPoints] = useState<number>(user?.points || 50000);
 
   /** 🔥 백엔드 카테고리 → 프론트 카테고리 매핑 */
-  const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["category"] => {
-    switch (backendCategory) {
-      case "AVATAR":
-        return "icons";
-      case "BADGE":
-        return "badges";
-      case "BACKGROUND":
-      case "SKIN":
-        return "banners";
-      default:
-        return "icons";
-    }
-  };
+  const mapCategory = (backendCategory: string): ShopItem["category"] => {
+  switch (backendCategory) {
+    case "FRAME":
+      return "icons";   // 프레임 아이템 → 아이콘 탭에서 표시
+    case "BADGE":
+      return "badges";  // 뱃지는 뱃지 탭에서 표시
+    default:
+      return "icons";   // 혹시 모를 예외 대비
+  }
+};
 
-  /** 🔥 가격 기반 희귀도 계산 */
-  const getRarityFromPrice = (price: number): ShopItem["rarity"] => {
-    if (price >= 1500) return "legendary";
-    if (price >= 900) return "epic";
-    if (price >= 500) return "rare";
-    return "common";
-  };
+  /** 🔥 가격 기준 희귀도 */
+  const getRarityFromPrice = (price: number): ShopItem["rarity"] =>
+    price >= 1500 ? "legendary" : price >= 900 ? "epic" : price >= 500 ? "rare" : "common";
 
-  /** 🔥 서버에서 아이템 목록 로딩 */
+  /** 🔥 서버에서 아이템 목록 가져오기 */
   useEffect(() => {
     const loadItems = async () => {
       try {
@@ -92,7 +75,7 @@ export function PointsShopPage({ onBack }: any) {
           name: i.name,
           price: i.price,
           description: `${i.category} 카테고리`,
-          emoji: i.image || "🌹",
+          imageUrl: resolveImage(i.image),   // << 여기서 변환!
           category: mapCategory(i.category),
           rarity: getRarityFromPrice(i.price),
         }));
@@ -117,64 +100,54 @@ export function PointsShopPage({ onBack }: any) {
     loadMyItems();
   }, []);
 
-  /** 내 아이템인지 확인 */
+  /** 내 아이템인지 체크 */
   const isOwned = (itemId: number) => myItems.includes(itemId);
 
   /** 🔥 구매 처리 */
   const confirmPurchase = async () => {
-  if (!selectedItem) return;
-  try {
-    await purchaseItem(selectedItem.id);
-    alert("구매 완료!");
+    if (!selectedItem) return;
+    try {
+      await purchaseItem(selectedItem.id);
+      alert("구매 완료!");
 
-    // 상점 페이지 로컬 포인트 갱신
-    setUserPoints(prev => prev - selectedItem.price);
+      setUserPoints((prev) => prev - selectedItem.price);
+      setMyItems((prev) => [...prev, selectedItem.id]);
 
-    // 내 아이템 추가
-    setMyItems(prev => [...prev, selectedItem.id]);
+      setUser((prev) => ({
+        ...prev,
+        points: prev.points - selectedItem.price,
+      }));
 
-    // ⭐ 헤더 포인트 업데이트 (가장 중요!!)
-    setUser((prev) => ({
-      ...prev,
-      points: prev.points - selectedItem.price,
-    }));
+      setShowPurchaseModal(false);
+      setSelectedItem(null);
+    } catch (e) {
+      alert("포인트 부족 또는 오류 발생!");
+    }
+  };
 
-    setShowPurchaseModal(false);
-    setSelectedItem(null);
-  } catch (e) {
-    alert("포인트 부족 또는 오류 발생!");
-  }
-};
-
-  /** 🔥 카테고리 필터링 */
   const filteredItems = shopItems.filter(
     (item) => selectedCategory === "all" || item.category === selectedCategory
   );
 
-  /** 🔥 희귀도 색상 */
   const getRarityColor = (rarity: ShopItem["rarity"]) => {
     switch (rarity) {
       case "rare":
-        return "text-blue-400 border-blue-500/30";
+        return "border-blue-500/30";
       case "epic":
-        return "text-purple-400 border-purple-500/30";
+        return "border-purple-500/30";
       case "legendary":
-        return "text-yellow-400 border-yellow-500/30";
+        return "border-yellow-500/30";
       default:
-        return "text-gray-400 border-gray-500/30";
+        return "border-gray-500/30";
     }
   };
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
-
-      {/* HEADER */}
       <Header activeMenu="store" />
 
-      {/* CONTENT */}
       <div className="container mx-auto px-24 pt-36">
-
-        {/* Category Tabs */}
+        {/* 카테고리 */}
         <div className="flex gap-2 mb-8 overflow-x-auto">
           {["all", "icons", "badges", "banners"].map((c) => (
             <button
@@ -196,24 +169,23 @@ export function PointsShopPage({ onBack }: any) {
           ))}
         </div>
 
-        {/* Items Grid */}
+        {/* 아이템 카드 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className={`bg-white/5 border rounded-2xl overflow-hidden hover:scale-105 transition ${getRarityColor(item.rarity)}`}
+              className={`bg-white/5 border rounded-2xl overflow-hidden hover:scale-105 transition ${getRarityColor(
+                item.rarity
+              )}`}
             >
               <div className="aspect-square flex items-center justify-center bg-black/20">
-                {item.emoji.startsWith("http") ? (
-                  <img
-                    src={item.emoji}
-                    alt={item.name}
-                    className="w-24 h-24 object-contain"
-                  />
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} className="w-24 h-24 object-contain" />
                 ) : (
-                  <span className="text-6xl">{item.emoji}</span>
+                  <span className="text-6xl">🌟</span>
                 )}
               </div>
+
               <div className="p-4">
                 <h3 className="text-white font-semibold mb-1">{item.name}</h3>
                 <p className="text-gray-400 text-sm mb-4">{item.description}</p>
@@ -230,9 +202,10 @@ export function PointsShopPage({ onBack }: any) {
                       setShowPurchaseModal(true);
                     }}
                     disabled={isOwned(item.id)}
-                    className={`${isOwned(item.id)
-                      ? "bg-gray-600 cursor-not-allowed"
-                      : "bg-linear-to-r from-purple-600 to-pink-600"
+                    className={`${
+                      isOwned(item.id)
+                        ? "bg-gray-600 cursor-not-allowed"
+                        : "bg-linear-to-r from-purple-600 to-pink-600"
                     } text-white text-sm px-4`}
                   >
                     {isOwned(item.id) ? "보유중" : "구매"}
@@ -244,21 +217,20 @@ export function PointsShopPage({ onBack }: any) {
         </div>
       </div>
 
-      {/* Purchase Modal */}
+      {/* 구매 모달 */}
       {showPurchaseModal && selectedItem && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-white/20 rounded-2xl p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold text-white mb-6">구매 확인</h2>
 
             <div className="aspect-square flex items-center justify-center mb-6">
-              {selectedItem.emoji.startsWith("http") ? (
+              {selectedItem.imageUrl ? (
                 <img
-                  src={selectedItem.emoji}
-                  alt={selectedItem.name}
+                  src={selectedItem.imageUrl}
                   className="w-32 h-32 object-contain"
                 />
               ) : (
-                <span className="text-8xl">{selectedItem.emoji}</span>
+                <span className="text-8xl">🌟</span>
               )}
             </div>
 
@@ -273,6 +245,7 @@ export function PointsShopPage({ onBack }: any) {
               >
                 취소
               </Button>
+
               <Button
                 onClick={confirmPurchase}
                 disabled={userPoints < selectedItem.price}
