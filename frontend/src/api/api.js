@@ -6,7 +6,7 @@ import axios from "axios";
 // ⭐ Axios 인스턴스 생성
 // ------------------------------------------------------------
 const api = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: "/api",
   withCredentials: true, // 🔹 HttpOnly 쿠키(Refresh Token) 자동 전송
 });
 
@@ -39,7 +39,7 @@ api.interceptors.response.use(
       try {
         // 🔹 Refresh Token은 HttpOnly 쿠키로 전송되므로 body 필요 없음
         const refreshResponse = await axios.post(
-          "http://localhost:8080/api/auth/refresh",
+          "/auth/refresh",
           {}, // Body 없음
           { withCredentials: true } // 쿠키 포함
         );
