@@ -72,17 +72,28 @@ public class CommunityPostController {
             @Valid @RequestBody CommunityPostCreateRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        System.out.println("✏️ 게시글 수정 요청 도착, id = " + postId);
-        System.out.println("   - 요청자: " + userDetails.getUser().getNickname()
-                + " (ID: " + userDetails.getUser().getId() + ")");
-        System.out.println("   - 수정 제목: " + request.getTitle());
-        System.out.println("   - 수정 postType: " + request.getPostType());
+        if (userDetails == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        
+        try {
+            System.out.println("✏️ 게시글 수정 요청 도착, id = " + postId);
+            System.out.println("   - 요청자: " + userDetails.getUser().getNickname()
+                    + " (ID: " + userDetails.getUser().getId() + ")");
+            System.out.println("   - 수정 제목: " + request.getTitle());
+            System.out.println("   - 수정 내용 길이: " + (request.getContent() != null ? request.getContent().length() : 0) + "자");
+            System.out.println("   - 수정 postType: " + request.getPostType());
 
-        CommunityPostResponse response =
-                communityPostService.updatePost(postId, request, userDetails.getUser());
+            CommunityPostResponse response =
+                    communityPostService.updatePost(postId, request, userDetails.getUser());
 
-        System.out.println("✅ 게시글 수정 완료, id = " + response.getPostId());
-        return response;
+            System.out.println("✅ 게시글 수정 완료, id = " + response.getPostId());
+            return response;
+        } catch (Exception e) {
+            System.err.println("❌ 게시글 수정 에러: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     // ⭐ 게시글 추천/비추천 반응

@@ -31,9 +31,21 @@ public class CommunityCommentService {
         return "cc:" + commentId + ":" + type;
     }
 
-    private long getCommentCount(Long commentId, String type) {
+    private long getCommentCount(Long commentId, String type, CommunityCommentEntity entity) {
         String v = redis.opsForValue().get(commentKey(commentId, type));
-        return (v == null) ? 0L : Long.parseLong(v);
+        if (v != null) {
+            return Long.parseLong(v);
+        }
+        // Redis에 값이 없으면 DB 값 사용 및 동기화
+        long dbValue = 0L;
+        if ("like".equals(type)) {
+            dbValue = (entity.getLikeCount() != null) ? entity.getLikeCount().longValue() : 0L;
+        } else if ("dislike".equals(type)) {
+            dbValue = (entity.getDislikeCount() != null) ? entity.getDislikeCount().longValue() : 0L;
+        }
+        // Redis에 동기화
+        redis.opsForValue().set(commentKey(commentId, type), String.valueOf(dbValue));
+        return dbValue;
     }
 
     /** 댓글 목록 조회 */
@@ -127,7 +139,8 @@ public class CommunityCommentService {
         }
 
         comment.setContent(request.getContent());
-        return toResponse(comment, userId);
+        CommunityCommentEntity saved = communityCommentRepository.save(comment);
+        return toResponse(saved, userId);
     }
 
     /** 댓글 삭제 */
@@ -152,8 +165,8 @@ public class CommunityCommentService {
         boolean mine = (currentUserId != null) &&
                 entity.getUser().getId().equals(currentUserId);
 
-        long likeCount = getCommentCount(entity.getCommentId(), "like");
-        long dislikeCount = getCommentCount(entity.getCommentId(), "dislike");
+        long likeCount = getCommentCount(entity.getCommentId(), "like", entity);
+        long dislikeCount = getCommentCount(entity.getCommentId(), "dislike", entity);
 
         return CommunityCommentResponse.builder()
                 .commentId(entity.getCommentId())

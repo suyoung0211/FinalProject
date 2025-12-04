@@ -112,9 +112,11 @@ public class CommunityPostService {
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
         post.setPostType(request.getPostType() == null ? "일반" : request.getPostType());
+        
+        CommunityPostEntity saved = communityPostRepository.save(post);
 
         return CommunityPostResponse.fromEntityWithCounts(
-                post,
+                saved,
                 postReactionService.getViewCount(postId),
                 postReactionService.getCommentCount(postId),
                 postReactionService.getLikeCount(postId),
