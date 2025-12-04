@@ -70,12 +70,11 @@ public class IssueController {
 
     /** 🔥 관리자: Issue 승인 (★ 여기서는 Vote 생성 절대 안 함) */
     @PostMapping("/{issueId}/approve")
-public ResponseEntity<?> approveIssue(@PathVariable Integer issueId) {
+public ResponseEntity<IssueResponse> approveIssue(@PathVariable Integer issueId) {
 
     IssueEntity issue = issueService.approveIssue(issueId);
+    // Python + Redis 를 통해 비동기로 Vote 생성됨
 
-    return ResponseEntity.ok(
-            "Issue " + issue.getId() + " approved. AI vote creation started."
-    );
+    return ResponseEntity.ok(IssueResponse.from(issue));
 }
 }

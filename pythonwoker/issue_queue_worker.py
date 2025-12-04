@@ -1,53 +1,39 @@
+# pythonworker/worker_vote.py
 import time
 import redis
 import traceback
-from generateIssueCard import run_issue_for_article, run_issue_for_community
+from generateIssueCard import run_vote_for_issue
 
 # Redis 연결
 r = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-QUEUE = "ISSUE_TRIGGER_QUEUE"
+VOTE_QUEUE = "VOTE_TRIGGER_QUEUE"
 
 def worker():
-    print("🔄 Issue Queue Worker started. Listening for jobs...")
+    print("🔄 Vote Queue Worker started. Listening for jobs...")
 
     while True:
         try:
-            raw = r.rpop(QUEUE)
+            raw = r.rpop(VOTE_QUEUE)
 
             if raw is None:
                 time.sleep(0.3)
                 continue
 
-            print(f"📌 Queue Received: {raw}")
+            print(f"📌 VoteQueue Received: {raw}")
 
-            # ARTICLE
-            if raw.startswith("article:"):
-                article_id = int(raw.split(":")[1])
-                print(f"➡ Processing Article Issue: {article_id}")
+            if raw.startswith("issue:"):
+                issue_id = int(raw.split(":")[1])
+                print(f"➡ Processing Issue → Vote: {issue_id}")
 
-                result = run_issue_for_article(article_id)
+                result = run_vote_for_issue(issue_id)
                 print("📝 Result:", result)
 
-                # 🔥 article에도 triggered flag 저장
-                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
-                    r.set(f"article:{article_id}:triggered", "1")
-
-            # COMMUNITY
-            elif raw.startswith("cp:"):
-                post_id = int(raw.split(":")[1])
-                print(f"➡ Processing Community Issue: {post_id}")
-
-                result = run_issue_for_community(post_id)
-                print("📝 Result:", result)
-
-                # 🔥 community에도 triggered flag 저장
-                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
-                    r.set(f"cp:{post_id}:triggered", "1")
+                # 성공/이미 생성/무시 등 상태일 때 triggered flag 설정
+                if result.get("status") in ["success", "ignored", "ignored_vote_exists"]:
+                    r.set(f"issue:{issue_id}:voteCreated", "1")
 
         except Exception as e:
-            print("❌ Worker Exception:", e)
+            print("❌ Vote Worker Exception:", e)
             traceback.print_exc()
-            time.sleep(1)  # 문제 발생 시 딜레이
+            time.sleep(1)
 
-if __name__ == "__main__":
-    worker()
