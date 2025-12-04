@@ -3,6 +3,7 @@ package org.usyj.makgora.profile.controller;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -59,14 +60,19 @@ public class ProfileController {
     // 🔹 프로필 사진 업로드
     // ==========================================
     @PostMapping("/upload-photo")
-    public ResponseEntity<?> uploadPhoto(
-            @AuthenticationPrincipal CustomUserDetails user,
-            @RequestParam("file") MultipartFile file
-    ) throws IOException {
-        String imageUrl = profileService.uploadProfileImage(user.getId(), file);
-        return ResponseEntity.ok(imageUrl);
-    }
+public ResponseEntity<?> uploadPhoto(
+        @RequestParam("file") MultipartFile file,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    try {
+        String savedUrl = profileService.uploadProfileImage(user.getId(), file);
+        return ResponseEntity.ok(savedUrl);
 
+    } catch (Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(500).body("업로드 실패: " + e.getMessage());
+    }
+}
     // ==========================================
     // 🔹 상점 아이템 적용 (프레임/뱃지)
     // ==========================================
