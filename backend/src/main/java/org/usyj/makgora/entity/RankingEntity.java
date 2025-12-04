@@ -23,7 +23,7 @@ public class RankingEntity {
     private UserEntity user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "ranking_type", nullable = false)
+    @Column(columnDefinition = "ENUM('POINTS', 'WINRATE', 'STREAK')", nullable = false)
     private RankingType rankingType;
 
     @Column(name = "ranking")

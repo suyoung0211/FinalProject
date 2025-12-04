@@ -22,3 +22,9 @@ export const getAllAdminRssFeeds = () => api.get("/admin/rss-feeds");
 
 // 관리자 페이지 rss 정보 수정
 export const updateAdminRssFeedApi = (feedId, body) => api.put(`/admin/rss-feeds/${feedId}`, body);
+
+// GET: 카테고리 목록 조회
+export const getCategories = () => api.get("/admin/rss-feeds/categories");
+
+// POST: 피드 생성
+export const createAdminRssFeed = (body) => api.post("/admin/rss-feeds", body);
