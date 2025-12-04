@@ -88,6 +88,7 @@ public class AuthService {
 
         // 5. 유저 정보 → 안전한 DTO로 변환
         UserInfoResponse safeUser = new UserInfoResponse(
+                user.getLoginId(),
                 user.getNickname(),
                 user.getLevel(),
                 user.getPoints(),
