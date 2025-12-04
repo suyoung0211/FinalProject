@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { MainPage } from './pages/MainPage';
 import { LoginPage } from './pages/LoginPage';
 import { AuthProvider } from './context/AuthContext';
@@ -43,13 +43,13 @@ export default function App() {
             <Route path="/vote" element={<VoteListPage />} />
             <Route path="/vote/:voteId" element={<VoteDetailPage />} />
             <Route path="/store" element={<PointsShopPage />} />
-            <Route path="/admin" element={<AdminPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/article" element={<ArticleListPage />} />
             <Route path="/article/:articleId" element={<ArticleDetailPage />} />
             <Route path="/profile" element={<ProfilePageContainer />} />
             {/* 관리자 페이지 */}
             <Route path="/admin/*" element={<AdminPage />} />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin22" element={<AdminPage22 />} />
           </Routes>
         </div>
