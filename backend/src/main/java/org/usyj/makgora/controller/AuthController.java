@@ -3,7 +3,6 @@ package org.usyj.makgora.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CookieValue;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,7 +55,7 @@ public class AuthController {
 
             // ⭐ 핵심: CORS 환경에서는 SameSite=None 이 필수!
             // SameSite=Lax/Strict → 다른 도메인에서 쿠키 전송 불가
-            refreshCookie.setAttribute("SameSite", "None");
+            // refreshCookie.setAttribute("SameSite", "None"); // ✅ 이 줄은 잠시 주석 처리
 
             // 쿠키를 실제 Response에 추가
             response.addCookie(refreshCookie);
@@ -87,18 +86,34 @@ public class AuthController {
     }
 
     /** 로그아웃 */
-    @PostMapping("/logout/{userId}")
-    public ResponseEntity<?> logout(@PathVariable Integer userId, HttpServletResponse response) {
-        authService.logout(userId);
+    @PostMapping("/logout") // ✅ 수정 @PostMapping("/logout"/{userId}) -> @PostMapping("/logout")
+    public ResponseEntity<?> logout(@CookieValue(name = "refreshToken", required = false) String refreshToken, HttpServletResponse response) {
 
-        // Refresh Token 쿠키 삭제 처리
+        // 1) DB에서 해당 RT 삭제 (이 브라우저 세션 무효화
+        authService.logout(refreshToken);
+
+        // 2) 쿠키도 삭제
         Cookie refreshCookie = new Cookie("refreshToken", null);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false);
+        refreshCookie.setSecure(false); // 운영에서 https면 true
         refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(0);
+        refreshCookie.setMaxAge(0); // 즉시 만료
         response.addCookie(refreshCookie);
 
         return ResponseEntity.ok("Logged out");
     }
 }
+/* 
+✅ 현재 방식 : userId 전체 토큰 삭제 방식으로 구현됨
+-> 특정 기기 로그아웃이 아닌 "해당 유저의 모든 기기 로그아웃"임
+
+refresh token 전달? ❌
+cookie에서 읽기? ❌
+body에서 받기? ❌
+👉 삭제해야 할 대상 토큰 자체가 없음 → DB에서 삭제할 방법이 없음.
+❌ “형식적 로그아웃(O)”
+❌ “실제 보안 로그아웃(X)”
+
+=> Refresh Token을 전달받지 않는다
+=> 로그아웃 = “특정 Refresh Token을 DB에서 삭제”
+*/
