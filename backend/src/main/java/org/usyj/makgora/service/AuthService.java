@@ -101,7 +101,7 @@ public class AuthService {
         );
 
         // 6. 로그인 성공 응답
-        return new LoginResponse(accessToken, null, safeUser);
+        return new LoginResponse(accessToken, refreshToken, safeUser);
     }
 
     /**

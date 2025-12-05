@@ -134,9 +134,9 @@ export function AdminPage({ onBack }: AdminPageProps) {
   // 렌더링
   // -------------------------------------------------
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-950/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
+      <aside className="w-64 h-screen bg-slate-950/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">

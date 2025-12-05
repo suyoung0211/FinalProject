@@ -37,6 +37,7 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
         return new UserInfoResponse(
+                user.getLoginId(),
                 user.getNickname(),
                 user.getLevel(),
                 user.getPoints(),

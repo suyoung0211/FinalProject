@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -16,26 +17,27 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    // -----------------------------
-    // 실무에서 많이 쓰이는 만료 시간
-    // -----------------------------
-    private final long accessTokenExpire = 1000L * 60 * 15;        // 15분
-    private final long refreshTokenExpire = 1000L * 60 * 60 * 24 * 14; // 14일
+    // -------------------------------------------------------------
+    // ⭐ 토큰 만료 시간
+    // -------------------------------------------------------------
+    private final long accessTokenExpire = 1000L * 60 * 60;              // 15분( 일단 1시간 )
+    private final long refreshTokenExpire = 1000L * 60 * 60 * 24 * 14;   // 14일
 
     /** SecretKey를 Key 객체로 변환 */
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(secretKey.getBytes());
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // -----------------------------
-    // 액세스 토큰 생성
-    // -----------------------------
-    // 담을 정보: id, role, nickname
+    // -------------------------------------------------------------
+    // ⭐ 액세스 토큰 생성
+    // 사용자 ID / Role / Nickname 포함
+    // -------------------------------------------------------------
     public String createAccessToken(Integer id, String role, String nickname) {
         Claims claims = Jwts.claims();
         claims.put("id", id);
         claims.put("role", role);
-        claims.put("nickname", nickname); // 전역에서 바로 꺼내 쓸 수 있음
+        claims.put("nickname", nickname);
 
         Date now = new Date();
         return Jwts.builder()
@@ -46,13 +48,13 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // -----------------------------
-    // 리프레시 토큰 생성
-    // -----------------------------
-    // 담을 정보: id만
+    // -------------------------------------------------------------
+    // ⭐ 리프레시 토큰 생성
+    // 사용자 ID만 포함 → DB에서 필요한 정보 다시 조회 가능
+    // -------------------------------------------------------------
     public String createRefreshToken(Integer id) {
         Claims claims = Jwts.claims();
-        claims.put("id", id); // 액세스 토큰 재발급 시 DB 조회 후 role, nickname 추가
+        claims.put("id", id);
 
         Date now = new Date();
         return Jwts.builder()
@@ -63,9 +65,10 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // -----------------------------
-    // 토큰 검증
-    // -----------------------------
+    // -------------------------------------------------------------
+    // ⭐ 토큰 유효성 검사
+    // 성공하면 true, 실패하면 false
+    // -------------------------------------------------------------
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -75,23 +78,21 @@ public class JwtTokenProvider {
             return true;
         } catch (ExpiredJwtException e) {
             System.out.println("JWT 만료됨");
-        } catch (UnsupportedJwtException e) {
-            System.out.println("지원되지 않는 JWT");
-        } catch (MalformedJwtException e) {
-            System.out.println("Invalid JWT");
-        } catch (SignatureException e) {
-            System.out.println("잘못된 JWT 서명");
-        } catch (IllegalArgumentException e) {
-            System.out.println("JWT empty");
+        } catch (JwtException | IllegalArgumentException e) {
+            System.out.println("JWT 유효성 실패: " + e.getMessage());
         }
-        return false; // 만료되거나 잘못된 토큰은 false 반환
+        return false;
     }
 
-    // -----------------------------
-    // 토큰에서 정보 추출
-    // -----------------------------
+    // -------------------------------------------------------------
+    // ⭐ 토큰 정보 추출
+    // Integer/Long 타입 오류 대비
+    // -------------------------------------------------------------
     public Integer getUserId(String token) {
-        return (Integer) getClaims(token).get("id");
+        Object id = getClaims(token).get("id");
+        if (id instanceof Integer) return (Integer) id;
+        if (id instanceof Long) return ((Long) id).intValue();
+        return null;
     }
 
     public String getRole(String token) {
@@ -102,9 +103,7 @@ public class JwtTokenProvider {
         return (String) getClaims(token).get("nickname");
     }
 
-    // -----------------------------
-    // Claims 파싱 공통 처리
-    // -----------------------------
+    /** Claims 공통 처리 */
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
