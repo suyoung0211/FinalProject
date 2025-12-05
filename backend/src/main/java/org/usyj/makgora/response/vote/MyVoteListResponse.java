@@ -11,21 +11,19 @@ import java.time.LocalDateTime;
 @Builder
 public class MyVoteListResponse {
 
-    private Long voteUserId;
-
-    private Integer voteId;
-    private String voteTitle;
-    private String issueTitle;   // ⭐ 추가
-
+    private Long voteUserId;          // 베팅 거래 ID
+    private Integer voteId;           // 투표 ID
+    private String voteTitle;         // 투표 제목
+    private String issueTitle;        // 이슈 제목
+    
     private Long choiceId;
     private String choiceText;
 
-    private Integer pointsBet;
-     private Integer rewardAmount; // ⭐ 승패 결과 금액 (+120, -250 등)
+    private Integer pointsBet;        // 내가 건 포인트
+    private Integer rewardAmount;     // 이득/손실 값 (정산 후)
 
-    private String result; // WIN / LOSE / PENDING / CANCELLED
-
+    private String result;            // WIN / LOSE / CANCELLED / PENDING
     private LocalDateTime voteCreatedAt;
     private LocalDateTime voteEndAt;
-    private String voteStatus; // ONGOING / FINISHED / RESOLVED / REWARDED / CANCELLED
+    private String voteStatus;        // ONGOING / FINISHED / etc
 }

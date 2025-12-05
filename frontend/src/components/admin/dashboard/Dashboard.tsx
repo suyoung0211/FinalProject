@@ -9,10 +9,45 @@ import UserActionButtons from "./UserActionButtons";
 import EditUserModal from "./EditUserModal";
 
 export function Dashboard() {
+  // 전체 유저 데이터
   const [users, setUsers] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // 로딩
   const [loading, setLoading] = useState(true);
+  
+  // 모달
   const [modal, setModal] = useState<ModalType>({ type: null });
+
+  // 검색 
+  const [searchQuery, setSearchQuery] = useState("");             // 실제 검색 기준
+  const [tempQuery, setTempQuery] = useState("");                 // 입력창 상태
+
+  
+  // 🔹 검색 실행 (엔터 또는 돋보기 클릭)
+  const handleSearch = () => {
+    setSearchQuery(tempQuery.trim()); // searchQuery 업데이트
+  };
+
+  // 🔹 렌더링 시점에서 필터링 + 정렬
+  const filteredUsers = (searchQuery === ""
+    ? users // 검색어 없으면 전체 사용자
+    : users.filter(user =>
+        user.nickname.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+  ).sort((a, b) => {
+    // role 우선순위 정의
+    const rolePriority: { [key: string]: number } = {
+      "SUPER_ADMIN": 0, // 최고관리자
+      "ADMIN": 1,       // 관리자
+      "USER": 2         // 일반 유저
+    };
+
+    const aPriority = rolePriority[a.role] ?? 99; // role 정의 안 되어 있으면 마지막
+    const bPriority = rolePriority[b.role] ?? 99;
+
+    return aPriority - bPriority; // 낮은 순서가 먼저
+  });
+      
 
   // 모달 관리 타입
   type ModalType =
@@ -39,10 +74,6 @@ export function Dashboard() {
   useEffect(() => {
     fetchUsers();
   }, []);
-
-  const filteredUsers = users.filter(user =>
-    user.loginId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -100,17 +131,38 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* 🔹 검색 영역 - 엔터/아이콘 클릭으로 검색 */}
+      <div className="p-6 mb-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h3 className="text-white text-lg md:text-xl">사용자 검색</h3>
+
+        <div className="w-full md:w-64 relative flex items-center">
+          <input
+            type="text"
+            value={tempQuery}
+            onChange={(e) => setTempQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch(); // 엔터 눌렀을 때 검색
+            }}
+            placeholder="닉네임으로 검색..."
+            className="w-full px-4 py-2 pr-10 rounded-lg bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white/20 transition-colors"
+          />
+
+          {/* 돋보기 아이콘 - 클릭 시 검색 */}
+          <Search
+            className="absolute right-3 w-5 h-5 text-gray-400 cursor-pointer hover:text-white"
+            onClick={handleSearch}
+          />
+        </div>
+      </div>
+
       {/* Users Table */}
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-white">전체 사용자 목록</h3>
-            {searchQuery && (
-              <p className="text-sm text-gray-400 mt-1">
-                검색 결과: <span className="text-white font-bold">{filteredUsers.length}</span>명
-              </p>
-            )}
+            <h3 className="font-bold text-white text-lg md:text-xl">전체 사용자 목록</h3>
           </div>
+
+          {/* 관리자 추가 버튼 */}
           <div>
             <Button
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm"
@@ -121,6 +173,7 @@ export function Dashboard() {
             </Button>
           </div>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-white/5">
@@ -177,7 +230,7 @@ export function Dashboard() {
                   <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="text-gray-400">
                       <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>검색 결과가 없습니다.</p>
+                      <p>사용자가 없습니다.</p>
                       <p className="text-sm mt-1">다른 검색어를 입력해보세요.</p>
                     </div>
                   </td>

@@ -22,7 +22,7 @@ public class RedisQueueStarter {
     public void startConsumer() {
 
         Thread consumerThread = new Thread(() -> {
-            System.out.println("📌 Redis Queue Consumer started...");
+            System.out.println("📌 Redis ISSUE_TRIGGER_QUEUE Consumer started...");
 
             while (running) {
                 try {

@@ -1,6 +1,5 @@
 package org.usyj.makgora.profile.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +36,7 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
         return new UserInfoResponse(
+                user.getLoginId(),
                 user.getNickname(),
                 user.getLevel(),
                 user.getPoints(),
