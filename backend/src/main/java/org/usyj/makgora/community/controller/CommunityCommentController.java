@@ -53,24 +53,8 @@ public class CommunityCommentController {
             @RequestBody CommunityCommentRequest request,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        if (userDetails == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
-        }
-        
-        try {
-            System.out.println("✏️ 댓글 수정 요청 - commentId: " + commentId + ", userId: " + userDetails.getId());
-            System.out.println("   - 수정 내용: " + request.getContent());
-            
-            Integer userId = userDetails.getId();
-            CommunityCommentResponse response = communityCommentService.updateComment(commentId, userId, request);
-            
-            System.out.println("✅ 댓글 수정 완료 - commentId: " + commentId);
-            return response;
-        } catch (Exception e) {
-            System.err.println("❌ 댓글 수정 에러: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
+        Integer userId = userDetails.getId();
+        return communityCommentService.updateComment(commentId, userId, request);
     }
 
     /**

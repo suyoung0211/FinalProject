@@ -27,6 +27,10 @@ public class VoteUserEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", nullable = false)
     private VoteEntity vote;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "normal_vote_id", nullable = false)
+    private NormalVoteEntity normalVote;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

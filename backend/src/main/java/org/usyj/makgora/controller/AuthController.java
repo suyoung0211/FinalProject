@@ -39,19 +39,29 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest req, HttpServletResponse response) {
         try {
-            // db 로부터 accessToken, refreshToken, user 받음
+            // DB에서 Access/Refresh Token + User 정보를 응답 객체로 받음
             LoginResponse loginResponse = authService.login(req);
 
-            // ⭐ Refresh Token을 HttpOnly 쿠키로 저장
+            // -----------------------------------------
+            // ⭐ Refresh Token을 HttpOnly Cookie로 저장
+            //   → 자바스크립트 접근 차단(XSS 방지)
+            //   → 자동 전송 (권한이 필요하지 않은 /auth/refresh 요청에서도)
+            // -----------------------------------------
             Cookie refreshCookie = new Cookie("refreshToken", loginResponse.getRefreshToken());
-            refreshCookie.setHttpOnly(true);
-            refreshCookie.setSecure(false); // 로컬 개발환경에서는 false, 운영 HTTPS환경에서는 true
-            refreshCookie.setPath("/");
-            refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일
+
+            refreshCookie.setHttpOnly(true); // JS로 접근 막음 → 보안 강화
+            refreshCookie.setSecure(false);  // ⭐ 개발환경(http)에서는 false / 운영환경(https)에서는 true
+            refreshCookie.setPath("/");      // 모든 경로 요청에서 자동 전송되도록 설정
+            refreshCookie.setMaxAge(14 * 24 * 60 * 60); // 14일 유지
+
+            // ⭐ 핵심: CORS 환경에서는 SameSite=None 이 필수!
+            // SameSite=Lax/Strict → 다른 도메인에서 쿠키 전송 불가
+            refreshCookie.setAttribute("SameSite", "None");
+
+            // 쿠키를 실제 Response에 추가
             response.addCookie(refreshCookie);
 
-            // Access Token + safeUser 그대로 클라이언트 전달
-            // 서비스에서 safeUser 로 전처리 완료 
+            // 클라이언트에게 Access Token + 사용자 정보 반환
             return ResponseEntity.ok(loginResponse);
 
         } catch (Exception e) {
