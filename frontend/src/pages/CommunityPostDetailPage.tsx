@@ -339,28 +339,38 @@ export function CommunityPostDetailPage() {
           {post.content}
         </div>
 
-        {/* 게시글 추천 */}
-<div className="flex gap-4">
-  <button
-    onClick={handleLikePost}
-    className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
-      post.isLiked ? "border-purple-400 text-purple-400" : "border-gray-500 text-gray-300"
-    }`}
-  >
-    <ThumbsUp className="w-4 h-4" />
-    추천 {post.recommendationCount ?? 0}
-  </button>
+        {/* 게시글 추천 및 수정 */}
+        <div className="flex gap-4 items-center">
+          <button
+            onClick={handleLikePost}
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
+              post.isLiked ? "border-purple-400 text-purple-400" : "border-gray-500 text-gray-300"
+            }`}
+          >
+            <ThumbsUp className="w-4 h-4" />
+            추천 {post.recommendationCount ?? 0}
+          </button>
 
-  <button
-    onClick={handleDislikePost}
-    className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
-      post.isDisliked ? "border-red-400 text-red-400" : "border-gray-500 text-gray-300"
-    }`}
-  >
-    <ThumbsDown className="w-4 h-4" />
-    비추천 {post.dislikeCount ?? 0}
-  </button>
-</div>
+          <button
+            onClick={handleDislikePost}
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
+              post.isDisliked ? "border-red-400 text-red-400" : "border-gray-500 text-gray-300"
+            }`}
+          >
+            <ThumbsDown className="w-4 h-4" />
+            비추천 {post.dislikeCount ?? 0}
+          </button>
+
+          {/* 게시글 수정 버튼 (본인 게시글일 때만) */}
+          {user?.id && post.authorId && Number(user.id) === Number(post.authorId) && (
+            <button
+              onClick={() => navigate(`/community/posts/${postId}/edit`)}
+              className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:text-blue-400 hover:border-blue-400"
+            >
+              수정
+            </button>
+          )}
+        </div>
 
         {/* 댓글 섹션 */}
         <div className="mt-10 bg-white/5 p-6 rounded-xl">
@@ -458,52 +468,21 @@ export function CommunityPostDetailPage() {
                     답글
                   </button>
 
-                  {/* 🔥 내 댓글일 때만 */}
+                  {/* 🔥 내 댓글일 때만 수정/삭제 */}
                   {(comment.mine || isMyComment(comment.userId)) && (
                     <>
                       <button
-                        onClick={() => handleLikeComment(comment.commentId)}
-                        className={`text-sm ${
-                          comment.likedByMe ? "text-purple-400" : "text-gray-400"
-                        }`}
+                        onClick={() => startEditComment(comment)}
+                        className="text-sm text-gray-400 hover:text-blue-400"
                       >
-                        <ThumbsUp className="inline w-3 h-3" /> {comment.likeCount}
+                        수정
                       </button>
-
                       <button
-                        onClick={() => handleDislikeComment(comment.commentId)}
-                        className={`text-sm ${
-                          comment.dislikedByMe ? "text-red-400" : "text-gray-400"
-                        }`}
+                        onClick={() => deleteComment(comment.commentId)}
+                        className="text-sm text-gray-400 hover:text-red-400"
                       >
-                        <ThumbsDown className="inline w-3 h-3" /> {comment.dislikeCount}
+                        삭제
                       </button>
-
-                      <button
-                        className="text-sm text-gray-400"
-                        onClick={() =>
-                          setReplyTo(replyTo === comment.commentId ? null : comment.commentId)
-                        }
-                      >
-                        답글
-                      </button>
-
-                      {comment.mine && (
-                        <>
-                          <button
-                            onClick={() => startEditComment(comment)}
-                            className="text-sm text-blue-400"
-                          >
-                            수정
-                          </button>
-                          <button
-                            onClick={() => deleteComment(comment.commentId)}
-                            className="text-sm text-red-400"
-                          >
-                            삭제
-                          </button>
-                        </>
-                      )}
                     </>
                   )}
                     </div>
@@ -610,41 +589,17 @@ export function CommunityPostDetailPage() {
                             {(reply.mine || isMyComment(reply.userId)) && (
                               <>
                                 <button
-                                  onClick={() => handleLikeComment(reply.commentId)}
-                                  className={`text-xs ${
-                                    reply.likedByMe ? "text-purple-400" : "text-gray-400"
-                                  }`}
+                                  onClick={() => startEditComment(reply)}
+                                  className="text-xs text-gray-400 hover:text-blue-400"
                                 >
-                                  <ThumbsUp className="inline w-3 h-3" />{" "}
-                                  {reply.likeCount}
+                                  수정
                                 </button>
-
                                 <button
-                                  onClick={() => handleDislikeComment(reply.commentId)}
-                                  className={`text-xs ${
-                                    reply.dislikedByMe ? "text-red-400" : "text-gray-400"
-                                  }`}
+                                  onClick={() => deleteComment(reply.commentId)}
+                                  className="text-xs text-gray-400 hover:text-red-400"
                                 >
-                                  <ThumbsDown className="inline w-3 h-3" />{" "}
-                                  {reply.dislikeCount}
+                                  삭제
                                 </button>
-
-                                {reply.mine && (
-                                  <>
-                                    <button
-                                      onClick={() => startEditComment(reply)}
-                                      className="text-xs text-blue-300"
-                                    >
-                                      수정
-                                    </button>
-                                    <button
-                                      onClick={() => deleteComment(reply.commentId)}
-                                      className="text-xs text-red-300"
-                                    >
-                                      삭제
-                                    </button>
-                                  </>
-                                )}
                               </>
                             )}
                           </div>
