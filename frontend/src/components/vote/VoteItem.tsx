@@ -1,14 +1,15 @@
 /* ================================================================
-   DRAW UI 적용 + 3단 바 + 도넛 3분할 적용된 최종 VoteItem
+   DRAW UI + 도넛 3분할 + 옵션 접기/펼치기 적용된 최종 VoteItem
 ================================================================ */
 
 import { useEffect, useState } from "react";
-import { User, Coins } from "lucide-react";
+import { User } from "lucide-react";
 import { fetchVoteDetail, fetchVoteOdds } from "../../api/voteApi";
 
 export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
   const [vote, setVote] = useState<any>(initialVote ?? null);
   const [loading, setLoading] = useState(!initialVote);
+  const [showAllOptions, setShowAllOptions] = useState(false);
 
   /* ------------------------------------------------------------- */
   /* 🔥 AI 투표 상세 로드 */
@@ -49,7 +50,9 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
   }, [voteId]);
 
   if (!vote) {
-    return <div className="bg-white/5 p-6 rounded-2xl text-gray-400">로딩 중...</div>;
+    return (
+      <div className="bg-white/5 p-6 rounded-2xl text-gray-400">로딩 중...</div>
+    );
   }
 
   /* ------------------------------------------------------------- */
@@ -90,118 +93,70 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
   });
 
   /* ------------------------------------------------------------- */
-  /* 🔥 옵션 UI 렌더링 (YES/NO + DRAW 지원) */
+  /* 🔥 옵션 UI 렌더링 함수 */
   /* ------------------------------------------------------------- */
-  const renderOptions = () => {
-    const opt = optionsWithPercent[0];
-    const choices = opt?.choices || [];
 
-    /* 옵션 1개 */
-    if (optionsWithPercent.length === 1) {
-      return (
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3 mt-3">
+  const renderOptionCard = (opt: any) => {
+    const hasDraw = opt.draw > 0;
 
-          {/* YES / NO only */}
-          {choices.length === 2 && (
-            <>
-              <div className="w-full h-8 bg-white/10 rounded-full overflow-hidden shadow-inner">
-                <div
-                  className="h-full"
-                  style={{
-                    background: `
-                      linear-gradient(
-                        to right,
-                        #22c55e ${opt.yesP}%,
-                        #ef4444 ${opt.yesP}%
-                      )
-                    `,
-                  }}
-                />
-              </div>
+    return (
+      <div key={opt.optionId} className="bg-white/5 border border-white/10 rounded-xl p-3 mb-3">
+        <p className="text-white font-semibold text-sm mb-2">{opt.title}</p>
 
-              <div className="flex justify-between text-xs font-semibold px-1">
-                <span className="text-green-400">YES {opt.yesP}%</span>
-                <span className="text-red-400">NO {opt.noP}%</span>
-              </div>
-            </>
-          )}
+        {/* DRAW 포함 3단 바 */}
+        {hasDraw ? (
+          <>
+            <div className="w-full h-6 rounded-full overflow-hidden flex bg-white/10 shadow-inner">
+              <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
+              <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
+              <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
+            </div>
 
-          {/* YES / DRAW / NO (3단 바) */}
-          {choices.length === 3 && (
-            <>
-              <div className="w-full h-6 rounded-full overflow-hidden flex bg-white/10 shadow-inner">
-                <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
-                <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
-                <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
-              </div>
+            <div className="grid grid-cols-3 text-xs font-semibold text-center mt-1">
+              <span className="text-green-400">YES {opt.yesP}%</span>
+              <span className="text-gray-300">DRAW {opt.drawP}%</span>
+              <span className="text-red-400">NO {opt.noP}%</span>
+            </div>
+          </>
+        ) : (
+          /* 기존 YES/NO 형태 */
+          <>
+            <div className="w-full h-6 rounded-full overflow-hidden bg-white/10 shadow-inner">
+              <div
+                className="h-full"
+                style={{
+                  background: `
+                    linear-gradient(
+                      to right,
+                      #22c55e ${opt.yesP}%,
+                      #ef4444 ${opt.yesP}%
+                    )
+                  `,
+                }}
+              />
+            </div>
 
-              <div className="grid grid-cols-3 text-xs font-semibold text-center">
-                <span className="text-green-400">YES {opt.yesP}%</span>
-                <span className="text-gray-300">DRAW {opt.drawP}%</span>
-                <span className="text-red-400">NO {opt.noP}%</span>
-              </div>
-            </>
-          )}
-        </div>
-      );
-    }
-
-    /* 옵션 여러 개 → 각 옵션에 DRAW 포함되면 자동으로 3단 바 적용 */
-    return optionsWithPercent.map((opt : any) => {
-      const hasDraw = opt.draw > 0;
-
-      return (
-        <div key={opt.optionId} className="bg-white/5 border border-white/10 rounded-xl p-1 mb-3">
-          <p className="text-white font-semibold text-sm mb-2">{opt.title}</p>
-
-          {/* DRAW 있는 경우 → 3단 */}
-          {hasDraw ? (
-            <>
-              <div className="w-full h-5 rounded-full overflow-hidden flex bg-white/10 shadow-inner ">
-                <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
-                <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
-                <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
-              </div>
-
-              <div className="flex justify-between mt-2 text-xs font-semibold px-1">
-                <span className="text-green-400">YES {opt.yesP}%</span>
-                <span className="text-gray-300">DRAW {opt.drawP}%</span>
-                <span className="text-red-400">NO {opt.noP}%</span>
-              </div>
-            </>
-          ) : (
-            /* DRAW 없는 경우 → 기존 YES/NO 바 */
-            <>
-              <div className="w-full h-5 bg-white/10 rounded-full overflow-hidden shadow-inner">
-                <div
-                  className="h-full"
-                  style={{
-                    background: `
-                      linear-gradient(
-                        to right,
-                        #22c55e ${opt.yesP}%,
-                        #ef4444 ${opt.yesP}%
-                      )
-                    `,
-                  }}
-                />
-              </div>
-
-              <div className="flex justify-between mt-2 text-xs font-semibold px-1">
-                <span className="text-green-400">YES {opt.yesP}%</span>
-                <span className="text-red-400">NO {opt.noP}%</span>
-              </div>
-            </>
-          )}
-        </div>
-      );
-    });
+            <div className="flex justify-between text-xs font-semibold mt-1 px-1">
+              <span className="text-green-400">YES {opt.yesP}%</span>
+              <span className="text-red-400">NO {opt.noP}%</span>
+            </div>
+          </>
+        )}
+      </div>
+    );
   };
+
+  /* ------------------------------------------------------------- */
+  /* 🔥 옵션 접기/펼치기 적용 */
+  /* ------------------------------------------------------------- */
+  const visibleOptions =
+    optionsWithPercent.length > 2 && !showAllOptions
+      ? optionsWithPercent.slice(0, 2)
+      : optionsWithPercent;
 
   /* ------------------------------------------------------------- */
   /* 🔥 최종 UI */
   /* ------------------------------------------------------------- */
-
   const yesDeg = yesPercent * 3.6;
   const drawDeg = drawPercent * 3.6;
 
@@ -209,13 +164,12 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
     <div
       onClick={() => onMarketClick(vote.id)}
       className="flex flex-col rounded-2xl p-4 cursor-pointer bg-[#261b3a] border border-purple-700/30 hover:bg-[#381f5c]"
-      style={{ minHeight: "300px" }}
     >
       {/* HEADER */}
       <div className="flex justify-between pb-3">
         <h3 className="text-white font-bold text-lg flex-1">{vote.title}</h3>
 
-        {/* 도넛 3단 */}
+        {/* 도넛 */}
         <div className="flex flex-col items-center">
           <div className="relative w-14 h-14 flex items-center justify-center">
             <div
@@ -223,7 +177,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
               style={{
                 background: `
                   conic-gradient(
-                    #22c55e ${yesDeg}deg,
+                    #22c55e 0deg ${yesDeg}deg,
                     #9ca3af ${yesDeg}deg ${yesDeg + drawDeg}deg,
                     #ef4444 ${yesDeg + drawDeg}deg 360deg
                   )
@@ -231,14 +185,29 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
               }}
             />
             <div className="absolute inset-2 bg-[#261b3a] rounded-full" />
-            {/* <div className="relative text-white font-bold text-xs">{yesPercent}%</div> */}
           </div>
-          {/* <span className="text-xs text-gray-400 mt-1">chance</span> */}
         </div>
       </div>
 
       {/* OPTIONS */}
-      <div className="flex-1 flex flex-col justify-end">{renderOptions()}</div>
+      <div className="flex-1">
+        {visibleOptions.map(renderOptionCard)}
+
+        {/* 옵션 더보기 / 접기 버튼 */}
+        {optionsWithPercent.length > 2 && (
+          <button
+            className="w-full text-center py-2 text-sm text-purple-300 hover:text-purple-400"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAllOptions((prev) => !prev);
+            }}
+          >
+            {showAllOptions
+              ? "접기 ▲"
+              : `옵션 더보기 (${optionsWithPercent.length - 2}개) ▼`}
+          </button>
+        )}
+      </div>
 
       {/* FOOTER */}
       <div className="flex justify-between items-center text-gray-300 text-xs border-t border-white/10 pt-2 mt-3">
@@ -255,10 +224,10 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
             onMarketClick(vote.id);
           }}
           className="
-  bg-gradient-to-r from-purple-500 to-pink-500
-  text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-lg
-  hover:opacity-90 transform hover:scale-[1.03] transition
-"
+            bg-gradient-to-r from-purple-500 to-pink-500
+            text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-lg
+            hover:opacity-90 transform hover:scale-[1.03] transition
+          "
         >
           투표하러가기
         </button>

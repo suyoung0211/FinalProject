@@ -134,7 +134,7 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
         </div>
 
         {/* 정렬 */}
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-6 flex items-center justify-end gap-3">
           <select
             value={sortType}
             onChange={(e) => setSortType(e.target.value)}
@@ -148,7 +148,7 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
         {loading ? (
           <div className="text-center text-white py-20">로딩 중...</div>
         ) : (
-          <div className="space-y-16">
+          <div className="space-y-10">
             
             {/* 🔵 AI VOTE SECTION */}
             <div>

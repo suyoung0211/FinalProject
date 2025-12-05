@@ -17,7 +17,7 @@ export function AiVoteList({ items, onMarketClick }: AiVoteListProps) {
     <div className="space-y-6">
 
       {/* 🔵 기본 1줄(3개) 보여줌 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-auto">
         {firstRow.map((issue, index) => (
           <VoteItem
             key={`AI-${issue.id}-${index}`}
@@ -30,7 +30,7 @@ export function AiVoteList({ items, onMarketClick }: AiVoteListProps) {
 
       {/* 🔽 펼쳐진 상태에서만 나머지 투표 표시 */}
       {expanded && rest.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 auto-rows-auto">
           {rest.map((issue, index) => (
             <VoteItem
               key={`AI-EX-${issue.id}-${index}`}
