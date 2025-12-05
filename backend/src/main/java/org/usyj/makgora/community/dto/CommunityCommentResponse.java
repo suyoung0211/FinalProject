@@ -11,6 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CommunityCommentResponse {
+
     private Long commentId;
     private Long postId;
     private Long parentCommentId;
@@ -25,8 +26,9 @@ public class CommunityCommentResponse {
     private Long likeCount;
     private Long dislikeCount;
 
-    private boolean mine; // 현재 로그인 유저가 쓴 댓글인지
+    private boolean mine;          // 내가 쓴 댓글인지 여부
+    private boolean likedByMe;     // 👍 내가 좋아요 눌렀는지
+    private boolean dislikedByMe;  // 👎 내가 비추천 눌렀는지
 
-    // 대댓글 리스트 (2단계까지만 쓴다 해도 구조는 이렇게 잡아두면 좋음)
-    private List<CommunityCommentResponse> replies;
+    private List<CommunityCommentResponse> replies; // 대댓글
 }

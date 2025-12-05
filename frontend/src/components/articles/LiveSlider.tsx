@@ -14,7 +14,7 @@ export default function LiveSlider({ articles }: Props) {
   const navigate = useNavigate();
 
   // 최근 40개 + 이미지 있는 기사만
-  const sliderArticles = articles.slice(0, 40).filter((a) => !!a.image);
+  const sliderArticles = articles.slice(0, 39).filter((a) => !!a.image);
 
   const [currentPage, setCurrentPage] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(1);
