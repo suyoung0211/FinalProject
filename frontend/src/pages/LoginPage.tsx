@@ -94,6 +94,8 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const res = await loginApi({ loginId, password });
+      console.log(res.data);
+      
       
       const accessToken = res.data.accessToken;
       const refreshToken = res.data.refreshToken;

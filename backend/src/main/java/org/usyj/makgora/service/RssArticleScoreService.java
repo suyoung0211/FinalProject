@@ -17,12 +17,10 @@ public class RssArticleScoreService {
     private final ArticleCommentRepository commentRepo;
     private final ArticleReactionRepository reactionRepo;
 
+    private final IssueTriggerPushService triggerPushService;   // 🔥 추가
+
     /**
      * 기사 AI 점수 계산 공식
-     * - 조회수 0.1
-     * - 좋아요 1.0
-     * - 댓글수 2.0
-     * - 댓글 좋아요 합 1.0
      */
     public int calculateScore(RssArticleEntity article) {
 
@@ -47,8 +45,14 @@ public class RssArticleScoreService {
     @Transactional
     public int updateScoreAndReturn(RssArticleEntity article) {
         int score = calculateScore(article);
+
+        // DB 저장
         article.setAiSystemScore(score);
         articleRepo.save(article);
+
+        // 🔥🔥🔥 RSS 트리거 push (누락된 핵심 코드)
+        triggerPushService.checkAndPush(article.getId(), score);
+
         return score;
     }
 }

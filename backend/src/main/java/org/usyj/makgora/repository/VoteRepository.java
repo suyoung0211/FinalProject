@@ -16,10 +16,12 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
     // 특정 이슈와 연관된 투표 조회
     List<VoteEntity> findByIssue(IssueEntity issue);
 
+    
+
     // 상태별 투표 조회
     List<VoteEntity> findByStatus(VoteEntity.Status status);
 
-    List<VoteEntity> findByStatusAndEndAtBefore(VoteEntity.Status status, LocalDateTime time);
+    List<VoteEntity> findByStatusAndEndAtBefore(VoteEntity.Status status, LocalDateTime endAtBefore);
 
     // 특정 이슈 + 상태로 투표 조회
     List<VoteEntity> findByIssueAndStatus(IssueEntity issue, VoteEntity.Status status);
@@ -29,4 +31,12 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
 
     @Query("SELECT v FROM VoteEntity v WHERE v.endAt > CURRENT_TIMESTAMP ORDER BY v.totalPoints DESC")
     List<VoteEntity> findTop3ByOrderByTotalPointsDesc();
+
+    @Query("""
+    SELECT DISTINCT v FROM VoteEntity v
+    LEFT JOIN FETCH v.options o
+    LEFT JOIN FETCH o.choices c
+""")
+List<VoteEntity> findAllWithOptionsAndChoices();
+
 }

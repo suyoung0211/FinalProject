@@ -26,26 +26,12 @@ public class CommunityCommentService {
     private final CommunityPostReactionService postReactionService;
     private final UserRepository userRepository;
     private final StringRedisTemplate redis;
+    private final CommunityCommentReactionService communityCommentReactionService;
 
-    private String commentKey(Long commentId, String type) {
-        return "cc:" + commentId + ":" + type;
-    }
-
-    private long getCommentCount(Long commentId, String type, CommunityCommentEntity entity) {
-        String v = redis.opsForValue().get(commentKey(commentId, type));
-        if (v != null) {
-            return Long.parseLong(v);
-        }
-        // Redis에 값이 없으면 DB 값 사용 및 동기화
-        long dbValue = 0L;
-        if ("like".equals(type)) {
-            dbValue = (entity.getLikeCount() != null) ? entity.getLikeCount().longValue() : 0L;
-        } else if ("dislike".equals(type)) {
-            dbValue = (entity.getDislikeCount() != null) ? entity.getDislikeCount().longValue() : 0L;
-        }
-        // Redis에 동기화
-        redis.opsForValue().set(commentKey(commentId, type), String.valueOf(dbValue));
-        return dbValue;
+    /** Redis count 가져오기 */
+    private long getCount(String key) {
+        String val = redis.opsForValue().get(key);
+        return (val == null) ? 0L : Long.parseLong(val);
     }
 
     /** 댓글 목록 조회 */
@@ -56,7 +42,7 @@ public class CommunityCommentService {
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
         List<CommunityCommentEntity> entities =
-                communityCommentRepository.findByPost_PostIdOrderByCreatedAtAsc(postId);
+                communityCommentRepository.findCommentsOrdered(postId);
 
         Map<Long, CommunityCommentResponse> dtoMap = new LinkedHashMap<>();
 
@@ -112,13 +98,7 @@ public class CommunityCommentService {
                         .build()
         );
 
-        Long commentId = saved.getCommentId();
-
-        // 🔥 댓글 좋아요/싫어요 Redis 초기값 세팅
-        redis.opsForValue().set(commentKey(commentId, "like"), "0");
-        redis.opsForValue().set(commentKey(commentId, "dislike"), "0");
-
-        // 🔥 게시글 댓글 수 증가 (Redis Only)
+        // 게시글 댓글 count 증가
         postReactionService.addComment(postId);
 
         return toResponse(saved, userId);
@@ -139,8 +119,7 @@ public class CommunityCommentService {
         }
 
         comment.setContent(request.getContent());
-        CommunityCommentEntity saved = communityCommentRepository.save(comment);
-        return toResponse(saved, userId);
+        return toResponse(comment, userId);
     }
 
     /** 댓글 삭제 */
@@ -155,24 +134,36 @@ public class CommunityCommentService {
 
         communityCommentRepository.delete(comment);
 
-        // 🔥 댓글 감소는 정책에 따라 선택
-        // postReactionService.decreaseComment(comment.getPost().getPostId());
+        // Redis clean
+        communityCommentReactionService.clearCommentReaction(commentId);
     }
 
     /** DTO 변환 */
     private CommunityCommentResponse toResponse(CommunityCommentEntity entity, Integer currentUserId) {
 
+        Long id = entity.getCommentId();
+
         boolean mine = (currentUserId != null) &&
                 entity.getUser().getId().equals(currentUserId);
 
-        long likeCount = getCommentCount(entity.getCommentId(), "like", entity);
-        long dislikeCount = getCommentCount(entity.getCommentId(), "dislike", entity);
+        long likeCount = getCount("community:comment:" + id + ":like:count");
+        long dislikeCount = getCount("community:comment:" + id + ":dislike:count");
+
+        boolean likedByMe = false;
+        boolean dislikedByMe = false;
+
+        if (currentUserId != null) {
+            likedByMe = Boolean.TRUE.equals(redis.opsForSet()
+                    .isMember("community:comment:" + id + ":like:users", currentUserId.toString()));
+
+            dislikedByMe = Boolean.TRUE.equals(redis.opsForSet()
+                    .isMember("community:comment:" + id + ":dislike:users", currentUserId.toString()));
+        }
 
         return CommunityCommentResponse.builder()
-                .commentId(entity.getCommentId())
+                .commentId(id)
                 .postId(entity.getPost().getPostId())
-                .parentCommentId(entity.getParent() != null ?
-                        entity.getParent().getCommentId() : null)
+                .parentCommentId(entity.getParent() != null ? entity.getParent().getCommentId() : null)
                 .userId(entity.getUser().getId())
                 .nickname(entity.getUser().getNickname())
                 .content(entity.getContent())
@@ -181,6 +172,8 @@ public class CommunityCommentService {
                 .likeCount(likeCount)
                 .dislikeCount(dislikeCount)
                 .mine(mine)
+                .likedByMe(likedByMe)
+                .dislikedByMe(dislikedByMe)
                 .replies(new ArrayList<>())
                 .build();
     }
