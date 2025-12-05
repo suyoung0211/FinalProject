@@ -298,6 +298,3 @@ CREATE TABLE Article_AiTitles (
 
     FOREIGN KEY (article_id) REFERENCES RSS_Articles(article_id) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='기사 AI 제목 재작성 관리';
-
-    SELECT item_id, name, category, image 
-    FROM Store_Items;

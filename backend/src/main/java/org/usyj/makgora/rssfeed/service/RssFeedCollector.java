@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RssFeedCollector {
 
-    private final RssFeedcollectAndSaveService rssFeedService; // RSS 기사 수집 서비스
+    private final RssFeedService rssFeedService; // RSS 기사 수집 서비스
     private final RestTemplate restTemplate = new RestTemplate(); // 외부 API 호출용 객체
 
     // Python AI 제목 생성 API URL

@@ -22,11 +22,11 @@ public class StoreItemEntity {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", columnDefinition = "ENUM('POINT', 'CASH')", nullable = false)
+    @Column(name = "type", nullable = false)
     private ItemType type;   // POINT, CASH
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", columnDefinition = "ENUM('FRAME', 'BADGE')", nullable = false)
+    @Column(name = "category", nullable = false)
     private Category category;   // FRAME, BADGE
 
     @Column(name = "price", nullable = false)
