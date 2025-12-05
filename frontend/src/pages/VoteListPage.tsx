@@ -5,14 +5,14 @@ import { Header } from '../components/layout/Header';
 import { CreateVoteModal } from '../components/vote/CreateVoteModal';
 import { VoteList } from '../components/vote/VoteList';
 import { fetchVoteList } from "../api/voteApi";
+import { fetchNormalVoteList } from "../api/normalVoteApi";
 import { useAuth } from "../hooks/useAuth";
 
 export function VoteListPage({ onBack, onMarketClick }: any) {
   const [voteIssues, setVoteIssues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortType, setSortType] = useState("latest"); 
+  const [sortType, setSortType] = useState("latest");
 
-  // 동적 카테고리 + 상태
   const [categories, setCategories] = useState<string[]>(["전체"]);
   const [statuses] = useState<string[]>(["전체", "진행중", "종료", "취소됨"]);
 
@@ -20,9 +20,10 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
   const [selectedStatus, setSelectedStatus] = useState("전체");
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateVoteModal, setShowCreateVoteModal] = useState(false);
+
   const { user } = useAuth();
 
-  // 백엔드 status → 프론트 상태명 매핑
+  /* 상태 매핑 */
   const mapStatus = (status: string) => {
     switch (status) {
       case "ONGOING": return "진행중";
@@ -33,104 +34,117 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
       default: return "기타";
     }
   };
-  console.log("🔵 [DEBUG] mapped item before filter =", voteIssues);
 
-  /** 🧲 백엔드에서 투표 리스트 가져오기 */
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetchVoteList();
-        console.log("🟡 [FRONT] fetchVoteList() raw =", res.data);
-        const list = res.data;
+  /* ==========================================================
+     🔥 공통 투표 리스트 불러오기 함수 (AI + Normal 전부)
+     ========================================================== */
+  const loadVoteList = async () => {
+    setLoading(true);
 
-        // 카테고리 자동 추출
-        const dynamicCategories = new Set<string>();
-        dynamicCategories.add("전체");
-        
-        const mapped = list
-          .filter((v: any) => v.status !== "REVIEWING") // REVIEWING은 리스트에서 제외
-          .map((v: any) => {
-            console.log("✔ type of v.endAt =", typeof v.endAt, "value =", v.endAt);
+    try {
+      const [aiRes, normalRes] = await Promise.all([
+        fetchVoteList(),
+        fetchNormalVoteList()
+      ]);
 
-            const category = v.category ?? "기타";
-            dynamicCategories.add(category);
+      const aiList = aiRes.data || [];
+      const normalList = normalRes.data.votes || [];
 
-            return {
-              id: v.id,
-              category,
-              title: v.title ?? "(제목 없음)",
-              description: v.description ?? "",
-              totalVolume: v.totalPoints ?? 0,
-              participants: v.totalParticipants ?? 0,
-              deadline: v.endAt ? String(v.endAt).slice(0, 10) : "",
-              status: mapStatus(v.status),
-              options: v.options ?? [],
-              createdAt: v.createdAt,
-            };
-          });
-         console.log("🟣 [FRONT] mapped vote issues =", mapped);
+      const dynamicCategories = new Set<string>();
+      dynamicCategories.add("전체");
 
-        setVoteIssues(mapped);
-        setCategories(Array.from(dynamicCategories));
+      /* AI 매핑 */
+      const aiMapped = aiList
+        .filter((v: any) => v.status !== "REVIEWING")
+        .map((v: any) => {
+          dynamicCategories.add(v.category ?? "기타");
+          return {
+            id: v.id,
+            type: "AI",
+            category: v.category ?? "기타",
+            title: v.title,
+            description: v.description ?? "",
+            totalVolume: v.totalPoints,
+            participants: v.totalParticipants,
+            deadline: String(v.endAt).slice(0, 10),
+            status: mapStatus(v.status),
+            createdAt: v.createdAt,
+            options: v.options,
+          };
+        });
 
-      } catch (err) {
-        console.error("투표 목록 불러오기 실패:", err);
-      }
-      setLoading(false);
+      /* NORMAL 매핑 */
+      const normalMapped = normalList.map((v: any) => {
+        dynamicCategories.add(v.category ?? "기타");
+        return {
+          id: v.id,
+          type: "NORMAL",
+          category: v.category ?? "기타",
+          title: v.title,
+          description: v.description ?? "",
+          totalVolume: v.totalPoints ?? 0,
+          participants: v.participantCount ?? 0,
+          deadline: v.endAt ? String(v.endAt).slice(0, 10) : "",
+          status: mapStatus(v.status),
+          createdAt: v.createdAt,
+          options: v.options,
+        };
+      });
+
+      setVoteIssues([...aiMapped, ...normalMapped]);
+      setCategories(Array.from(dynamicCategories));
+
+    } catch (err) {
+      console.error("투표 목록 불러오기 실패:", err);
     }
 
-    load();
+    setLoading(false);
+  };
+
+  /* 최초 로딩 */
+  useEffect(() => {
+    loadVoteList();
   }, []);
 
-  /** 🔍 필터링 */
+  /* 필터링 */
   const filteredIssues = voteIssues.filter(issue => {
-  const categoryMatch =
-    selectedCategory === '전체' || issue.category === selectedCategory;
+    return (
+      (selectedCategory === '전체' || issue.category === selectedCategory) &&
+      (selectedStatus === '전체' || issue.status === selectedStatus) &&
+      (
+        issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  });
 
-  const statusMatch =
-    selectedStatus === '전체' || issue.status === selectedStatus;
-
-  const searchMatch =
-    issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    issue.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-  return categoryMatch && statusMatch && searchMatch;
-});
-
-// 🔥 최신순 / 인기순 정렬
-const sortedIssues = [...filteredIssues].sort((a, b) => {
-  if (sortType === "latest") {
-    // 1순위: createdAt (내림차순)
-    const aTime = a.createdAt ? Date.parse(a.createdAt) : NaN;
-    const bTime = b.createdAt ? Date.parse(b.createdAt) : NaN;
-
-    if (!Number.isNaN(aTime) && !Number.isNaN(bTime) && aTime !== bTime) {
-      return bTime - aTime;
+  /* 정렬 */
+  const sortedIssues = [...filteredIssues].sort((a, b) => {
+    if (sortType === "ai-first") {
+      if (a.type === "AI" && b.type !== "AI") return -1;
+      if (a.type !== "AI" && b.type === "AI") return 1;
     }
 
-    // 2순위: id (내림차순)
-    return (b.id ?? 0) - (a.id ?? 0);
-  }
+    if (sortType === "latest") {
+      return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+    }
 
-  if (sortType === "popular") {
-    return (b.participants ?? 0) - (a.participants ?? 0);
-  }
+    if (sortType === "popular") {
+      return (b.participants ?? 0) - (a.participants ?? 0);
+    }
 
-  return 0;
-});
+    return 0;
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Header activeMenu="vote" />
 
       <div className="container mx-auto px-4 py-8 pt-24">
-
-        {/* 제목 */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white">이슈 투표</h1>
-            <p className="text-gray-400">
-              다양한 이슈를 예측하고 포인트를 획득하세요
-            </p>
+            <p className="text-gray-400">AI 예측 마켓과 일반 투표를 참여해보세요</p>
           </div>
         </div>
 
@@ -142,63 +156,60 @@ const sortedIssues = [...filteredIssues].sort((a, b) => {
             placeholder="이슈 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white/5 backdrop-blur-xl 
-                       border border-white/20 rounded-2xl text-white"
+            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/20 rounded-2xl text-white"
           />
         </div>
 
-        {/* 카테고리 & 정렬 & 투표 생성 */}
-<div className="mb-6 flex items-center justify-between">
+        {/* 카테고리 + 정렬 + 생성 */}
+        <div className="mb-6 flex items-center justify-between">
 
-  {/* 카테고리 부분 */}
-  <div>
-    <div className="flex items-center gap-2 mb-3">
-      <Filter className="w-4 h-4 text-gray-400" />
-      <span className="text-gray-400 text-sm">카테고리</span>
-    </div>
+          {/* 카테고리 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-400 text-sm">카테고리</span>
+            </div>
 
-    <div className="flex gap-2 overflow-x-auto pb-2">
-      {categories.map(category => (
-        <button
-          key={category}
-          onClick={() => setSelectedCategory(category)}
-          className={`px-4 py-2 rounded-full ${
-            selectedCategory === category
-              ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-              : "bg-white/5 text-gray-400 hover:bg-white/10"
-          }`}
-        >
-          {category}
-        </button>
-      ))}
-    </div>
-  </div>
-  {/* 🔥 우측: 정렬 + 생성 버튼 */}
-  <div className="flex items-center gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {categories.map(category => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-full ${
+                    selectedCategory === category
+                      ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                      : "bg-white/5 text-gray-400 hover:bg-white/10"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
 
-    {/* 정렬 선택 */}
-    <select
-      value={sortType}
-      onChange={(e) => setSortType(e.target.value)}
-      className="bg-white/40 text-black px-3 py-2 rounded-lg border border-gradient-to-r/20"
-    >
-      <option value="latest">최신순</option>
-      <option value="popular">인기순</option>
-    </select>
+          {/* 정렬 + 생성 버튼 */}
+          <div className="flex items-center gap-3">
+            <select
+              value={sortType}
+              onChange={(e) => setSortType(e.target.value)}
+              className="bg-white/40 text-black px-3 py-2 rounded-lg"
+            >
+              <option value="latest">최신순</option>
+              <option value="popular">인기순</option>
+              <option value="ai-first">AI 우선</option>
+            </select>
 
-    {/* 투표 생성 버튼 */}
-    {user && (
-      <Button
-        onClick={() => setShowCreateVoteModal(true)}
-        className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
-      >
-        <Plus className="w-5 h-5" />
-        <span className="hidden sm:inline">투표 생성</span>
-      </Button>
-    )}
-  </div>
-
-</div>
+            {user && (
+              <Button
+                onClick={() => setShowCreateVoteModal(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">투표 생성</span>
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* 상태 필터 */}
         <div className="mb-6">
@@ -224,7 +235,7 @@ const sortedIssues = [...filteredIssues].sort((a, b) => {
           </div>
         </div>
 
-        {/* 본문 리스트 */}
+        {/* 리스트 */}
         {loading ? (
           <div className="text-center text-white py-20">로딩 중...</div>
         ) : (
@@ -238,9 +249,11 @@ const sortedIssues = [...filteredIssues].sort((a, b) => {
         )}
       </div>
 
+      {/* NORMAL 생성 모달 */}
       <CreateVoteModal
         isOpen={showCreateVoteModal}
         onClose={() => setShowCreateVoteModal(false)}
+        onCreate={loadVoteList}   // 🔥 생성 후 자동 새로고침
       />
     </div>
   );
