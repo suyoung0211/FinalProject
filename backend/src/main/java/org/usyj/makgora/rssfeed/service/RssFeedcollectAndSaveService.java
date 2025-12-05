@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RssFeedService {
+public class RssFeedcollectAndSaveService {
 
     private final List<RssFeedSource> sources;
     private final RssFeedManagementService feedService;
