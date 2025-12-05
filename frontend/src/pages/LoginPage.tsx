@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { loginApi, signupApi } from "../api/authApi";
 import { useAuth } from "../hooks/useAuth";
 import EmailVerifyModal from "../components/email/EmailVerifyModal";
+import { jwtDecode } from "jwt-decode";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -94,12 +95,26 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const res = await loginApi({ loginId, password });
-      
       const accessToken = res.data.accessToken;
-      const refreshToken = res.data.refreshToken;
-      const userData = res.data.user;
+      const userData = res.data.user; // ✅ 전체 정보 받기, id 없음
+      // const refreshToken = res.data.refreshToken; // refreshToken은 쿠키에 자동 저장되므로 받을 필요 없음
 
-      login(userData, accessToken);
+      // 🔥 토큰에서 id 디코딩
+      const decoded: any = jwtDecode(accessToken);
+
+      // 🔥 userData + id 합치기
+      const userWithId = {
+        ...userData,    // loginId, nickname, level, points, role...
+        id: decoded.id, // ✅ 토큰 claim에서 가져온 id
+      };
+      
+      login(userWithId, accessToken); // Context에 저장, userData -> userWithId
+
+      /*
+       * 우리는 보안 정책 상, 응답 JSON에는 id를 넣지 않는다.
+       * 대신 id는 JWT claim에서만 꺼낸다.
+       * 그래서 로그인 직후에도 토큰을 한 번 디코딩해서 user.id를 세팅한다.
+       */
 
       // ✅ 유저 역할 확인 후 이동
       if (userData.role === "SUPER_ADMIN" || userData.role === "ADMIN") {

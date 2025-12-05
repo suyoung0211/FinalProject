@@ -41,4 +41,14 @@ public interface CommunityCommentRepository extends JpaRepository<CommunityComme
 
     // 특정 게시글의 모든 댓글/대댓글을 작성시간 기준으로 가져오기
     List<CommunityCommentEntity> findByPost_PostIdOrderByCreatedAtAsc(Long postId);
+
+    @Query("""
+    SELECT c
+    FROM CommunityCommentEntity c
+    WHERE c.post.postId = :postId
+    ORDER BY 
+        CASE WHEN c.parent IS NULL THEN 0 ELSE 1 END,
+        c.createdAt ASC
+""")
+List<CommunityCommentEntity> findCommentsOrdered(@Param("postId") Long postId);
 }
