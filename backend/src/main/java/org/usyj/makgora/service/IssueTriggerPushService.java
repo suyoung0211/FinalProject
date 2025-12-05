@@ -1,11 +1,11 @@
-// src/main/java/org/usyj/makgora/service/IssueTriggerPushService.java
 package org.usyj.makgora.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.repository.IssueRepository;
-
-import lombok.RequiredArgsConstructor;
+import org.usyj.makgora.community.repository.CommunityPostRepository;
+import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -14,49 +14,85 @@ public class IssueTriggerPushService {
     private final StringRedisTemplate redis;
     private final IssueRepository issueRepo;
 
-    // 임계치
+    private final CommunityPostRepository communityPostRepository;   // 🔥 추가
+    private final RssArticleRepository rssArticleRepository;         // 🔥 추가
+
     private static final int THRESHOLD = 20;
     private static final String QUEUE = "ISSUE_TRIGGER_QUEUE";
 
-    /**
-     * 기사(RSS Article)의 점수가 임계치를 넘었을 때,
-     * Redis Queue에 "article:{id}" 형태로 넣어둔다.
-     */
+    // =========================================================
+    // 🔥 RSS Article 트리거
+    // =========================================================
     public void checkAndPush(int articleId, int score) {
 
-        if (score < THRESHOLD) return;
+        System.out.println("[TriggerDebug] ARTICLE 체크 시작 articleId=" + articleId + ", score=" + score);
 
-        // 이미 트리거된 기사면 push 금지
-        String flag = redis.opsForValue().get("article:" + articleId + ":triggered");
-        if ("1".equals(flag)) return;
-
-        // 큐에는 prefix 포함해서 넣음
-        redis.opsForList().leftPush(QUEUE, "article:" + articleId);
-        System.out.println("[Trigger] Article queued: " + articleId);
-    }
-
-    /**
-     * 커뮤니티 게시글의 점수가 임계치를 넘었을 때,
-     * Redis Queue에 "cp:{postId}" 형태로 넣어둔다.
-     */
-    /** 📌 COMMUNITY Post 트리거 */
-    public void checkAndPushCommunity(long postId, int score) {
-
-        if (score < THRESHOLD) return;
-
-        // 🔥 DB에서 Issue가 이미 존재하면 push 금지
-        boolean exists = issueRepo.findByCommunityPostId(postId).isPresent();
-
-        if (exists) {
-            System.out.println("[Trigger] 이미 이 Post로 Issue 존재 → push 생략: " + postId);
+        // 1) 존재 여부 체크
+        if (!rssArticleRepository.existsById(articleId)) {
+            System.out.println("[TriggerDebug] 존재하지 않는 Article → skip articleId=" + articleId);
             return;
         }
 
-        // Redis triggered flag 체크
-        String flag = redis.opsForValue().get("cp:" + postId + ":triggered");
-        if ("1".equals(flag)) return;
+        // 2) 점수 부족
+        if (score < THRESHOLD) {
+            System.out.println("[TriggerDebug] 점수 부족 → skip articleId=" + articleId);
+            return;
+        }
 
+        // 3) 이미 Issue 생성됨?
+        boolean exists = issueRepo.findByArticleId(articleId).isPresent();
+        if (exists) {
+            System.out.println("[TriggerDebug] 이미 Issue 존재 → skip articleId=" + articleId);
+            return;
+        }
+
+        // 4) Redis 플래그 체크
+        String flag = redis.opsForValue().get("article:" + articleId + ":triggered");
+        if ("1".equals(flag)) {
+            System.out.println("[TriggerDebug] Redis triggered=1 → skip articleId=" + articleId);
+            return;
+        }
+
+        // 5) QUEUE push
+        redis.opsForList().leftPush(QUEUE, "article:" + articleId);
+        System.out.println("[TriggerDebug] Queue push 성공 → articleId=" + articleId);
+    }
+
+    // =========================================================
+    // 🔥 Community Post 트리거
+    // =========================================================
+    public void checkAndPushCommunity(long postId, int score) {
+
+        System.out.println("[TriggerDebug] COMMUNITY 체크 시작 postId=" + postId + ", score=" + score);
+
+        // 1) 존재 여부 체크 (🔥 반드시 필요)
+        if (!communityPostRepository.existsById(postId)) {
+            System.out.println("[TriggerDebug] 존재하지 않는 PostId → skip postId=" + postId);
+            return;
+        }
+
+        // 2) 점수 부족
+        if (score < THRESHOLD) {
+            System.out.println("[TriggerDebug] 점수 부족 → skip postId=" + postId);
+            return;
+        }
+
+        // 3) 이미 Issue 생성됨?
+        boolean exists = issueRepo.findByCommunityPostId(postId).isPresent();
+        if (exists) {
+            System.out.println("[TriggerDebug] 이미 Issue 존재 → skip postId=" + postId);
+            return;
+        }
+
+        // 4) Redis flagged?
+        String flag = redis.opsForValue().get("cp:" + postId + ":triggered");
+        if ("1".equals(flag)) {
+            System.out.println("[TriggerDebug] Redis triggered=1 → skip postId=" + postId);
+            return;
+        }
+
+        // 5) Queue push
         redis.opsForList().leftPush(QUEUE, "cp:" + postId);
-        System.out.println("[Trigger] CommunityPost queued: " + postId);
+        System.out.println("[TriggerDebug] Queue push 성공 → postId=" + postId);
     }
 }

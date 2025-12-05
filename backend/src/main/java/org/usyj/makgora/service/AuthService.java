@@ -92,16 +92,14 @@ public class AuthService {
                 user.getNickname(),
                 user.getLevel(),
                 user.getPoints(),
-
                 user.getAvatarIcon(),     // 수정됨
                 user.getProfileFrame(),   // 수정됨
                 user.getProfileBadge(),   // 수정됨
-
                 user.getRole().name()   
         );
 
         // 6. 로그인 성공 응답
-        return new LoginResponse(accessToken, null, safeUser);
+        return new LoginResponse(accessToken, refreshToken, safeUser);
     }
 
     /**
