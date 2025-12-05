@@ -250,15 +250,21 @@ export function CommunityPostDetailPage() {
   };
 
   // 댓글 수정 시작
-const startEditComment = (comment: Comment) => {
-  if (!user) return requireLogin();
+  const startEditComment = (comment: Comment) => {
+    if (!user) return requireLogin();
 
-  const mine = comment.mine || isMyComment(comment.userId);
-  if (!mine) return;  // 안전망
+    const mine = comment.mine || isMyComment(comment.userId);
+    if (!mine) return;  // 안전망
 
-  setEditingCommentId(comment.commentId);
-  setEditText(comment.content);
-};
+    setEditingCommentId(comment.commentId);
+    setEditText(comment.content);
+  };
+
+  // 댓글 수정 취소
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditText("");
+  };
 
   const submitEditComment = async (commentId: number) => {
     if (!editText.trim()) return;
@@ -393,53 +399,30 @@ const startEditComment = (comment: Comment) => {
 
                     {/* 수정 또는 본문 */}
                     {editingCommentId === comment.commentId ? (
-                      <>
+                      <div className="mb-3 space-y-2">
                         <Textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
+                          className="bg-white/5 text-white text-sm"
                         />
-                        <div className="flex gap-2 mt-2">
-                          <Button onClick={() => submitEditComment(comment.commentId)}>
-                            저장
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setEditingCommentId(null)}
-                          >
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="outline" onClick={cancelEditComment}>
                             취소
                           </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => submitEditComment(comment.commentId)}
+                          >
+                            수정 완료
+                          </Button>
                         </div>
-                      </>
+                      </div>
                     ) : (
-                      <p className="text-gray-300 mt-2">{comment.content}</p>
+                      <p className="text-gray-300 mb-3">{comment.content}</p>
                     )}
 
-                {/* 🔧 수정 모드 vs 일반 모드 */}
-                {editingCommentId === comment.commentId ? (
-                  <div className="mb-3 space-y-2">
-                    <Textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="bg-white/5 text-white text-sm"
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <Button size="sm" variant="outline" onClick={cancelEditComment}>
-                        취소
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => submitEditComment(comment.commentId)}
-                      >
-                        수정 완료
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-300 mb-3">{comment.content}</p>
-                )}
-
-                {/* 댓글 추천/비추천 + 답글 + (본인일 때만) 수정/삭제 */}
-                <div className="flex items-center gap-4 mb-2">
+                    {/* 댓글 추천/비추천 + 답글 + (본인일 때만) 수정/삭제 */}
+                    <div className="flex items-center gap-4 mb-2">
                   <button
                     onClick={() => handleLikeComment(comment.commentId)}
                     className={`flex items-center gap-1 text-sm ${
@@ -521,9 +504,13 @@ const startEditComment = (comment: Comment) => {
                           </button>
                         </>
                       )}
+                    </>
+                  )}
                     </div>
+                  </div>
+                </div>
 
-                    {/* 대댓글 작성 */}
+                {/* 대댓글 작성 */}
                     {replyTo === comment.commentId && (
                       <div className="ml-10 mt-3">
                         <Textarea
@@ -559,40 +546,36 @@ const startEditComment = (comment: Comment) => {
                                 {new Date(reply.createdAt).toLocaleString()}
                               </div>
 
-                              <p className="text-gray-300 mt-1 text-sm">
-                                {reply.content}
-                              </p>
-
-                          {editingCommentId === reply.commentId ? (
-                            <div className="mb-2 space-y-2">
-                              <Textarea
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
-                                className="bg-white/5 text-white text-sm"
-                              />
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={cancelEditComment}
-                                >
-                                  취소
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    submitEditComment(reply.commentId)
-                                  }
-                                >
-                                  수정 완료
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-gray-300 text-sm mb-2">
-                              {reply.content}
-                            </p>
-                          )}
+                              {editingCommentId === reply.commentId ? (
+                                <div className="mb-2 space-y-2">
+                                  <Textarea
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    className="bg-white/5 text-white text-sm"
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={cancelEditComment}
+                                    >
+                                      취소
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        submitEditComment(reply.commentId)
+                                      }
+                                    >
+                                      수정 완료
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-gray-300 text-sm mb-2">
+                                  {reply.content}
+                                </p>
+                              )}
 
                           <div className="flex items-center gap-4">
                             <button
@@ -662,19 +645,19 @@ const startEditComment = (comment: Comment) => {
                                     </button>
                                   </>
                                 )}
-                              </div>
-                            </div>
+                              </>
+                            )}
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
             ))}
-          </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
