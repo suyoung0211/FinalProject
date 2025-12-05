@@ -14,10 +14,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.append(BASE_DIR)
 
-from generateIssueCard import (
-    run_issue_for_article,
-    run_issue_for_community,
-)
+# from generateIssueCard import (
+#     run_issue_for_article,
+#     run_issue_for_community,
+# )
 from generateAiTitle import run_generate_ai_titles
 
 

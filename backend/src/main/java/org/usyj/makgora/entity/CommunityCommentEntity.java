@@ -44,7 +44,7 @@ public class CommunityCommentEntity {
 
     /** 자식 댓글(대댓글) 목록 */
     @Builder.Default
-    @OneToMany(mappedBy = "parent")
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true) // 부모 삭제 시 자식도 함께 삭제
     private List<CommunityCommentEntity> children = new ArrayList<>();
 
     /** 댓글 내용 */

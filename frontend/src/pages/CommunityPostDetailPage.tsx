@@ -28,7 +28,6 @@ type PostDetail = {
   commentCount?: number;
 };
 
-// 🔥 백엔드 CommunityCommentResponse 기준으로 타입 정의
 type Comment = {
   commentId: number;
   postId: number;
@@ -44,14 +43,26 @@ type Comment = {
   likeCount: number;
   dislikeCount: number;
 
-  mine: boolean;
+  mine?: boolean; // ✅ 옵셔널로, 안 내려오는 경우도 고려
+
+  likedByMe?: boolean;
+  dislikedByMe?: boolean;
 
   replies: Comment[];
 
-  // (옵션) 아바타 표시용 UI 전용 필드
   avatarType?: "male" | "female";
   avatarVariant?: number;
 };
+
+// 댓글 트리 재귀 매핑
+function mapComment(c: Comment): Comment {
+  return {
+    ...c,
+    avatarType: c.avatarType ?? "male",
+    avatarVariant: c.avatarVariant ?? 1,
+    replies: (c.replies ?? []).map((r) => mapComment(r)),
+  };
+}
 
 export function CommunityPostDetailPage() {
   const { postId } = useParams<{ postId: string }>();
@@ -62,7 +73,6 @@ export function CommunityPostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ 이제 댓글은 백엔드와 동기화
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
@@ -72,147 +82,158 @@ export function CommunityPostDetailPage() {
 
   const requireLogin = () => navigate("/login");
 
-  // --------------------------------
-  // 📌 게시글 추천/비추천 (그대로 사용)
-  // --------------------------------
+  // 🔥 댓글/대댓글을 개별 업데이트하는 헬퍼
+  const updateComment = (commentId: number, update: Partial<Comment>) => {
+    setComments((prev) =>
+      prev.map((c) =>
+        c.commentId === commentId
+          ? { ...c, ...update }
+          : {
+              ...c,
+              replies: c.replies.map((r) =>
+                r.commentId === commentId ? { ...r, ...update } : r
+              ),
+            }
+      )
+    );
+  };
+
+  // 🔥 게시글 추천
   const handleLikePost = async () => {
-  if (!user) return requireLogin();
-  if (!post || !postId) return;
+    if (!user) return requireLogin();
+    if (!postId) return;
 
-  try {
-    const res = await api.post(`/community/posts/${postId}/reactions`, {
-      reactionValue: post.myReaction === 1 ? 0 : 1,
-    });
+    try {
+      const res = await api.post(`/community/posts/${postId}/reactions`, {
+        reactionValue: post?.myReaction === 1 ? 0 : 1,
+      });
 
-    const data = res.data;
+      const data = res.data;
 
-    setPost((prev) =>
-      prev
-        ? {
-            ...prev,
-            recommendationCount: data.recommendationCount,
-            dislikeCount: data.dislikeCount,
-            myReaction: data.myReaction,
-            isLiked: data.myReaction === 1,
-            isDisliked: data.myReaction === -1,
-          }
-        : prev
-    );
-  } catch (e) {
-    console.error("게시글 추천 처리 실패", e);
-  }
-};
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              recommendationCount: data.recommendationCount,
+              dislikeCount: data.dislikeCount,
+              myReaction: data.myReaction,
+              isLiked: data.myReaction === 1,
+              isDisliked: data.myReaction === -1,
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error("게시글 추천 실패", e);
+    }
+  };
 
+  // 🔥 게시글 비추천
   const handleDislikePost = async () => {
-  if (!user) return requireLogin();
-  if (!post || !postId) return;
+    if (!user) return requireLogin();
+    if (!postId) return;
 
-  try {
-    const res = await api.post(`/community/posts/${postId}/reactions`, {
-      reactionValue: post.myReaction === -1 ? 0 : -1,
-    });
+    try {
+      const res = await api.post(`/community/posts/${postId}/reactions`, {
+        reactionValue: post?.myReaction === -1 ? 0 : -1,
+      });
 
-    const data = res.data;
+      const data = res.data;
 
-    setPost((prev) =>
-      prev
-        ? {
-            ...prev,
-            recommendationCount: data.recommendationCount,
-            dislikeCount: data.dislikeCount,
-            myReaction: data.myReaction,
-            isLiked: data.myReaction === 1,
-            isDisliked: data.myReaction === -1,
-          }
-        : prev
-    );
-  } catch (e) {
-    console.error("게시글 비추천 처리 실패", e);
-  }
-};
+      setPost((prev) =>
+        prev
+          ? {
+              ...prev,
+              recommendationCount: data.recommendationCount,
+              dislikeCount: data.dislikeCount,
+              myReaction: data.myReaction,
+              isLiked: data.myReaction === 1,
+              isDisliked: data.myReaction === -1,
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error("게시글 비추천 실패", e);
+    }
+  };
 
-
-  // --------------------------------
-  // 📌 댓글 추천/비추천 (지금은 프론트 로컬)
-  //    → 나중에 백엔드 연동되면 API 호출로 바꾸면 됨
-  // --------------------------------
+  // 🔥 댓글 추천
   const handleLikeComment = async (commentId: number) => {
-  if (!user) return requireLogin();
+    if (!user) return requireLogin();
 
-  try {
-    await api.post(`/community/comments/${commentId}/like`);
-    await loadComments();  // 최신 데이터 다시 불러오기
-  } catch (e) {
-    console.error("댓글 추천 실패", e);
-  }
-};
+    try {
+      const res = await api.post(`/community/comments/${commentId}/like`);
+      const data = res.data;
 
+      updateComment(commentId, {
+        likeCount: data.likeCount,
+        dislikeCount: data.dislikeCount,
+        likedByMe: data.likedByMe,
+        dislikedByMe: data.dislikedByMe,
+      });
+    } catch (e) {
+      console.error("댓글 추천 실패", e);
+    }
+  };
+
+  // 🔥 댓글 비추천
   const handleDislikeComment = async (commentId: number) => {
-  if (!user) return requireLogin();
+    if (!user) return requireLogin();
 
-  try {
-    await api.post(`/community/comments/${commentId}/dislike`);
-    await loadComments();  // 최신 데이터 다시 불러오기
-  } catch (e) {
-    console.error("댓글 비추천 실패", e);
-  }
-};
+    try {
+      const res = await api.post(`/community/comments/${commentId}/dislike`);
+      const data = res.data;
 
-  // --------------------------------
-  // 📌 댓글/대댓글 로딩 함수 (백엔드 연동)
-  // --------------------------------
+      updateComment(commentId, {
+        likeCount: data.likeCount,
+        dislikeCount: data.dislikeCount,
+        likedByMe: data.likedByMe,
+        dislikedByMe: data.dislikedByMe,
+      });
+    } catch (e) {
+      console.error("댓글 비추천 실패", e);
+    }
+  };
+
+  // 댓글 로딩
   const loadComments = async () => {
-  if (!postId) return;
+    try {
+      const res = await api.get(`/community/posts/${postId}/comments`);
+      setComments(res.data.map((c: Comment) => mapComment(c)));
+    } catch (e) {
+      console.error("댓글 불러오기 실패", e);
+    }
+  };
 
-  try {
-    const res = await api.get(`/community/posts/${postId}/comments`);
-    const data = res.data as Comment[];
-
-    // 아바타용 임시 필드 추가
-    const withAvatar: Comment[] = data.map((c) => ({
-      ...c,
-      avatarType: "male",     // UI용 임시 값
-      avatarVariant: 1,
-      replies: (c.replies ?? []).map((r) => ({
-        ...r,
-        avatarType: "male",
-        avatarVariant: 1,
-      })),
-    }));
-
-    setComments(withAvatar);
-  } catch (e) {
-    console.error("댓글 불러오기 실패", e);
-  }
-};
-
-  // --------------------------------
-  // 📌 댓글 작성 (루트 댓글, 백엔드 연동)
-  // --------------------------------
+  // 댓글 작성
   const handlePostComment = async () => {
     if (!user) return requireLogin();
-    if (!commentText.trim() || !postId) return;
+    if (!commentText.trim()) return;
 
     try {
       await api.post(`/community/posts/${postId}/comments`, {
         content: commentText,
         parentCommentId: null,
       });
-
       setCommentText("");
-      await loadComments();
+      loadComments();
     } catch (e) {
       console.error("댓글 작성 실패", e);
-      alert("댓글 작성 중 오류가 발생했습니다.");
     }
   };
 
   // --------------------------------
   // 📌 대댓글 작성 (백엔드 연동)
   // --------------------------------
+
+  // 컴포넌트 함수 안에 추가
+  const isMyComment = (commentUserId: number) => {
+    if (!user?.id) return false;
+    return Number(user.id) === Number(commentUserId);
+  };
+
   const handlePostReply = async (parentCommentId: number) => {
     if (!user) return requireLogin();
-    if (!replyText.trim() || !postId) return;
+    if (!replyText.trim()) return;
 
     try {
       await api.post(`/community/posts/${postId}/comments`, {
@@ -222,84 +243,64 @@ export function CommunityPostDetailPage() {
 
       setReplyText("");
       setReplyTo(null);
-      await loadComments();
+      loadComments();
     } catch (e) {
       console.error("대댓글 작성 실패", e);
-      alert("대댓글 작성 중 오류가 발생했습니다.");
     }
   };
 
   // 댓글 수정 시작
-const startEditComment = (comment: Comment) => {
-  if (!user) return requireLogin();
-  // 본인 댓글만
-  if (!comment.mine) return;
+  const startEditComment = (comment: Comment) => {
+    if (!user) return requireLogin();
 
-  setEditingCommentId(comment.commentId);
-  setEditText(comment.content);
-};
+    const mine = comment.mine || isMyComment(comment.userId);
+    if (!mine) return;  // 안전망
 
-// 수정 취소
-const cancelEditComment = () => {
-  setEditingCommentId(null);
-  setEditText("");
-};
+    setEditingCommentId(comment.commentId);
+    setEditText(comment.content);
+  };
 
-// 댓글 수정 제출
-const submitEditComment = async (commentId: number) => {
-  if (!user) return requireLogin();
-  if (!editText.trim()) return;
-
-  try {
-    await api.put(`/community/comments/${commentId}`, {
-      content: editText,
-    });
-
+  // 댓글 수정 취소
+  const cancelEditComment = () => {
     setEditingCommentId(null);
     setEditText("");
-    await loadComments();
-  } catch (e) {
-    console.error("댓글 수정 실패", e);
-    alert("댓글 수정 중 오류가 발생했습니다.");
-  }
-};
+  };
 
-// 댓글 삭제
-const deleteComment = async (commentId: number) => {
-  if (!user) return requireLogin();
+  const submitEditComment = async (commentId: number) => {
+    if (!editText.trim()) return;
 
-  if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
+    try {
+      await api.put(`/community/comments/${commentId}`, {
+        content: editText,
+      });
 
-  try {
-    await api.delete(`/community/comments/${commentId}`);
-    await loadComments();
-  } catch (e) {
-    console.error("댓글 삭제 실패", e);
-    alert("댓글 삭제 중 오류가 발생했습니다.");
-  }
-};
+      setEditingCommentId(null);
+      setEditText("");
+      loadComments();
+    } catch (e) {
+      console.error("댓글 수정 실패", e);
+    }
+  };
 
+  // 삭제
+  const deleteComment = async (commentId: number) => {
+    if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
 
-  // --------------------------------
-  // 📌 게시글 로딩
-  // --------------------------------
+    try {
+      await api.delete(`/community/comments/${commentId}`);
+      loadComments();
+    } catch (e) {
+      console.error("댓글 삭제 실패", e);
+    }
+  };
+
+  // 게시글 로딩
   useEffect(() => {
-    if (!postId) return;
-
-    let isMounted = true; // 컴포넌트가 마운트되어 있는지 추적
-
-    const fetchPost = async () => {
+    const loadPost = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
         const res = await api.get(`/community/posts/${postId}`);
-        
-        // 컴포넌트가 언마운트되었으면 상태 업데이트 안 함
-        if (!isMounted) return;
-
-        const data = res.data as any;
-        const myReaction: number = data.myReaction ?? 0;
+        const data = res.data;
+        const myReaction = data.myReaction ?? 0;
 
         setPost({
           ...data,
@@ -307,49 +308,19 @@ const deleteComment = async (commentId: number) => {
           isLiked: myReaction === 1,
           isDisliked: myReaction === -1,
         });
-      } catch (e) {
-        if (!isMounted) return;
-        console.error(e);
+      } catch {
         setError("게시글을 불러오지 못했습니다.");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    fetchPost();
-
-    // cleanup 함수: 컴포넌트 언마운트 시 플래그 설정
-    return () => {
-      isMounted = false;
-    };
-  }, [postId]);
-
-  // 📌 댓글은 별도로 로딩
-  useEffect(() => {
+    loadPost();
     loadComments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId]);
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex justify-center items-center text-white">
-        로딩 중...
-      </div>
-    );
-
-  if (error || !post)
-    return (
-      <div className="min-h-screen p-8 text-white">
-        <button onClick={() => navigate("/community")} className="mb-4">
-          ← 목록으로
-        </button>
-        {error || "게시글이 존재하지 않습니다."}
-      </div>
-    );
-
-  const isMyPost = user && String(user.nickname) === String(post.authorId);
+  if (loading) return <div className="text-white">로딩중...</div>;
+  if (error || !post) return <div className="text-white">{error}</div>;
 
   return (
     <div className="min-h-screen text-white p-8">
@@ -358,27 +329,22 @@ const deleteComment = async (commentId: number) => {
       </button>
 
       <div className="max-w-4xl mx-auto">
-        {/* 게시글 내용 */}
         <h1 className="text-3xl font-bold mb-4">{post.title}</h1>
 
-        <div className="text-sm text-gray-400 flex gap-2 mb-6">
-          <span>{post.authorNickname || post.author}</span>
-          <span>·</span>
-          <span>{new Date(post.createdAt).toLocaleString()}</span>
+        <div className="text-sm text-gray-400 mb-6">
+          {post.authorNickname} · {new Date(post.createdAt).toLocaleString()}
         </div>
 
         <div className="bg-black/20 p-6 rounded-xl mb-6 whitespace-pre-wrap">
           {post.content}
         </div>
 
-        {/* 게시글 추천/비추천 버튼 */}
-        <div className="flex items-center gap-4 mb-10">
+        {/* 게시글 추천 및 수정 */}
+        <div className="flex gap-4 items-center">
           <button
             onClick={handleLikePost}
-            className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
-              post.isLiked
-                ? "border-purple-400 text-purple-400"
-                : "border-gray-500 text-gray-300 hover:text-purple-300"
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
+              post.isLiked ? "border-purple-400 text-purple-400" : "border-gray-500 text-gray-300"
             }`}
           >
             <ThumbsUp className="w-4 h-4" />
@@ -387,96 +353,86 @@ const deleteComment = async (commentId: number) => {
 
           <button
             onClick={handleDislikePost}
-            className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
-              post.isDisliked
-                ? "border-red-400 text-red-400"
-                : "border-gray-500 text-gray-300 hover:text-red-300"
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
+              post.isDisliked ? "border-red-400 text-red-400" : "border-gray-500 text-gray-300"
             }`}
           >
             <ThumbsDown className="w-4 h-4" />
             비추천 {post.dislikeCount ?? 0}
           </button>
+
+          {/* 게시글 수정 버튼 (본인 게시글일 때만) */}
+          {user?.id && post.authorId && Number(user.id) === Number(post.authorId) && (
+            <button
+              onClick={() => navigate(`/community/posts/${postId}/edit`)}
+              className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:text-blue-400 hover:border-blue-400"
+            >
+              수정
+            </button>
+          )}
         </div>
 
         {/* 댓글 섹션 */}
-        <div className="bg-white/5 p-8 rounded-2xl">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-purple-400" />
-            댓글 {comments.length}
-          </h2>
+        <div className="mt-10 bg-white/5 p-6 rounded-xl">
+          <h2 className="text-xl font-bold mb-6">댓글 {comments.length}</h2>
 
           {/* 댓글 작성 */}
-          {user ? (
-            <div className="mb-8">
+          {user && (
+            <div className="mb-6">
               <Textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="댓글을 작성하세요..."
-                className="bg-white/5 text-white"
+                placeholder="댓글을 입력하세요"
               />
-              <div className="flex justify-end mt-3">
-                <Button onClick={handlePostComment}>댓글 작성</Button>
+              <div className="flex justify-end mt-2">
+                <Button onClick={handlePostComment}>작성</Button>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              댓글 작성하려면 로그인이 필요합니다.
-              <Button onClick={requireLogin} className="ml-2">
-                로그인
-              </Button>
             </div>
           )}
 
-          {/* 댓글 리스트 (백엔드 데이터 기반) */}
+          {/* 댓글 리스트 */}
           <div className="space-y-8">
-                    {comments.map((comment) => (
-          <div
-            key={comment.commentId}
-            className="border-b border-white/10 pb-6"
-          >
-            <div className="flex gap-3">
-              <Avatar
-                type={comment.avatarType || "male"}
-                variant={comment.avatarVariant || 1}
-                size={48}
-              />
+            {comments.map((comment) => (
+              <div key={comment.commentId}>
+                <div className="flex gap-3">
+                  <Avatar
+                    type={comment.avatarType ?? "male"}
+                    variant={comment.avatarVariant ?? 1}
+                    size={48}
+                  />
 
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-white font-medium">
-                    {comment.nickname}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(comment.createdAt).toLocaleString()}
-                  </span>
-                </div>
-
-                {/* 🔧 수정 모드 vs 일반 모드 */}
-                {editingCommentId === comment.commentId ? (
-                  <div className="mb-3 space-y-2">
-                    <Textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="bg-white/5 text-white text-sm"
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <Button size="sm" variant="outline" onClick={cancelEditComment}>
-                        취소
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => submitEditComment(comment.commentId)}
-                      >
-                        수정 완료
-                      </Button>
+                  <div className="flex-1">
+                    <div className="text-white font-medium">{comment.nickname}</div>
+                    <div className="text-xs text-gray-500">
+                      {new Date(comment.createdAt).toLocaleString()}
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-300 mb-3">{comment.content}</p>
-                )}
 
-                {/* 댓글 추천/비추천 + 답글 + (본인일 때만) 수정/삭제 */}
-                <div className="flex items-center gap-4 mb-2">
+                    {/* 수정 또는 본문 */}
+                    {editingCommentId === comment.commentId ? (
+                      <div className="mb-3 space-y-2">
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="bg-white/5 text-white text-sm"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="outline" onClick={cancelEditComment}>
+                            취소
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => submitEditComment(comment.commentId)}
+                          >
+                            수정 완료
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-300 mb-3">{comment.content}</p>
+                    )}
+
+                    {/* 댓글 추천/비추천 + 답글 + (본인일 때만) 수정/삭제 */}
+                    <div className="flex items-center gap-4 mb-2">
                   <button
                     onClick={() => handleLikeComment(comment.commentId)}
                     className={`flex items-center gap-1 text-sm ${
@@ -512,8 +468,8 @@ const deleteComment = async (commentId: number) => {
                     답글
                   </button>
 
-                  {/* 🔥 내 댓글일 때만 */}
-                  {comment.mine && (
+                  {/* 🔥 내 댓글일 때만 수정/삭제 */}
+                  {(comment.mine || isMyComment(comment.userId)) && (
                     <>
                       <button
                         onClick={() => startEditComment(comment)}
@@ -529,83 +485,76 @@ const deleteComment = async (commentId: number) => {
                       </button>
                     </>
                   )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* 대댓글 작성 */}
-                {replyTo === comment.commentId && user && (
-                  <div className="mt-3 space-y-2">
-                    <Textarea
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="답글을 작성하세요..."
-                      className="bg-white/5 text-white text-sm"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" onClick={() => setReplyTo(null)}>
-                        취소
-                      </Button>
-                      <Button
-                        size="sm"
-                        disabled={!replyText.trim()}
-                        onClick={() => handlePostReply(comment.commentId)}
-                      >
-                        답글 작성
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 대댓글 리스트 */}
-                {comment.replies?.length ? (
-                  <div className="mt-4 ml-10 space-y-4">
-                    {comment.replies.map((reply) => (
-                      <div key={reply.commentId} className="flex gap-3">
-                        <Avatar
-                          type={reply.avatarType || "male"}
-                          variant={reply.avatarVariant || 1}
-                          size={36}
+                    {replyTo === comment.commentId && (
+                      <div className="ml-10 mt-3">
+                        <Textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder="답글을 입력하세요"
                         />
+                        <div className="flex gap-2 mt-2">
+                          <Button onClick={() => handlePostReply(comment.commentId)}>
+                            작성
+                          </Button>
+                          <Button variant="outline" onClick={() => setReplyTo(null)}>
+                            취소
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-white text-sm">
-                              {reply.nickname}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {new Date(reply.createdAt).toLocaleString()}
-                            </span>
-                          </div>
+                    {/* 대댓글 렌더링 */}
+                    {comment.replies.length > 0 && (
+                      <div className="ml-10 mt-4 space-y-6">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.commentId} className="flex gap-3">
+                            <Avatar
+                              type={reply.avatarType ?? "male"}
+                              variant={reply.avatarVariant ?? 1}
+                              size={36}
+                            />
 
-                          {editingCommentId === reply.commentId ? (
-                            <div className="mb-2 space-y-2">
-                              <Textarea
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
-                                className="bg-white/5 text-white text-sm"
-                              />
-                              <div className="flex gap-2 justify-end">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={cancelEditComment}
-                                >
-                                  취소
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    submitEditComment(reply.commentId)
-                                  }
-                                >
-                                  수정 완료
-                                </Button>
+                            <div className="flex-1">
+                              <div className="text-white text-sm">{reply.nickname}</div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(reply.createdAt).toLocaleString()}
                               </div>
-                            </div>
-                          ) : (
-                            <p className="text-gray-300 text-sm mb-2">
-                              {reply.content}
-                            </p>
-                          )}
+
+                              {editingCommentId === reply.commentId ? (
+                                <div className="mb-2 space-y-2">
+                                  <Textarea
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    className="bg-white/5 text-white text-sm"
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={cancelEditComment}
+                                    >
+                                      취소
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        submitEditComment(reply.commentId)
+                                      }
+                                    >
+                                      수정 완료
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-gray-300 text-sm mb-2">
+                                  {reply.content}
+                                </p>
+                              )}
 
                           <div className="flex items-center gap-4">
                             <button
@@ -637,7 +586,7 @@ const deleteComment = async (commentId: number) => {
                             </button>
 
                             {/* 대댓글도 내 거면 수정/삭제 */}
-                            {reply.mine && (
+                            {(reply.mine || isMyComment(reply.userId)) && (
                               <>
                                 <button
                                   onClick={() => startEditComment(reply)}
@@ -658,15 +607,12 @@ const deleteComment = async (commentId: number) => {
                       </div>
                     ))}
                   </div>
-                ) : null}
+                )}
               </div>
-            </div>
-          </div>
-        ))}
-          </div>
+            ))}
         </div>
-        {/* 댓글 섹션 끝 */}
       </div>
+    </div>
     </div>
   );
 }

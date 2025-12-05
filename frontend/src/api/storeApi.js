@@ -1,17 +1,13 @@
-import axios from "axios";
+import axios from "axios";  // 🔹 공개용 Axios (토큰 없음)
+import api from "./api";    // 🔹 비공개용 -> 로그인 했을 때(토큰 있음)
 
+// 🔹 공개용 Axios (토큰 없음)
 const API = axios.create({
-  baseURL: "http://localhost:8080/api/store",
+  baseURL: "/api/store",
 });
 
-// 요청마다 토큰 자동 첨부
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// 🔹 비공개용 -> 로그인 했을 때(토큰 있음)
+//    api -> 이걸로 맵핑
 
 // =============================
 // 아이템 목록 조회

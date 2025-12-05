@@ -1,25 +1,14 @@
 package org.usyj.makgora.rssfeed.controller;
 
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.usyj.makgora.rssfeed.dto.Categoryresponse;
-import org.usyj.makgora.rssfeed.dto.RssFeedCreateRequest;
-import org.usyj.makgora.rssfeed.dto.RssFeedResponse;
-import org.usyj.makgora.rssfeed.dto.RssFeedUpdateRequest;
-import org.usyj.makgora.rssfeed.service.RssFeedInfoService;
-import org.usyj.makgora.rssfeed.service.RssFeedCreateService;
-import org.usyj.makgora.rssfeed.service.RssFeedUpdateService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.rssfeed.dto.RssFeedResponse;
+import org.usyj.makgora.rssfeed.service.RssFeedInfoService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/rss-feeds")
@@ -28,12 +17,10 @@ import lombok.RequiredArgsConstructor;
 public class AdminRssFeedController {
 
     private final RssFeedInfoService rssFeedInfoService;
-    private final RssFeedUpdateService rssFeedUpdateService; // ⭐ 수정 전용 서비스 주입
-    private final RssFeedCreateService rssFeedCreateService;
 
     /**
-     * RSS Feed 목록 조회
-     * GET /api/admin/rss-feeds
+     * 프론트 테이블용 RSS Feed 목록 조회
+     * GET /api/rss-feeds
      */
     @GetMapping
     public ResponseEntity<List<RssFeedResponse>> getAllFeeds() {
