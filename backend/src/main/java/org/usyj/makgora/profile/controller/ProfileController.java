@@ -14,6 +14,7 @@ import org.usyj.makgora.profile.dto.RecentVoteActivityResponse;
 import org.usyj.makgora.profile.service.ProfileActivityService;
 import org.usyj.makgora.profile.service.ProfileService;
 import org.usyj.makgora.request.ApplyItemRequest;
+import org.usyj.makgora.request.UserUpdateRequest;
 import org.usyj.makgora.security.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
@@ -83,5 +84,30 @@ public ResponseEntity<?> uploadPhoto(
     ) {
         String result = profileService.applyItem(user.getId(), req.getUserStoreId());
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/my-items")
+    public ResponseEntity<?> getMyItems(@AuthenticationPrincipal CustomUserDetails user) {
+    return ResponseEntity.ok(profileService.getMyItems(user.getId()));
+}
+    @PostMapping("/clear-frame")
+    public ResponseEntity<?> clearFrame(@AuthenticationPrincipal CustomUserDetails user) {
+        profileService.clearFrame(user.getId());
+        return ResponseEntity.ok("프레임 해제 완료");
+    }
+
+    @PostMapping("/clear-badge")
+    public ResponseEntity<?> clearBadge(@AuthenticationPrincipal CustomUserDetails user) {
+        profileService.clearBadge(user.getId());
+        return ResponseEntity.ok("뱃지 해제 완료");
+    }
+
+    @PostMapping("/update")
+    public ResponseEntity<?> updateProfile(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody UserUpdateRequest req
+    ) {
+        profileService.updateProfile(user.getId(), req);
+        return ResponseEntity.ok("프로필 수정 완료");
     }
 }

@@ -11,7 +11,7 @@ import {
 import { Button } from "../components/ui/button";
 import { useState, useEffect } from "react";
 import api from "../api/api";
-
+import ProfileAvatar from "./ProfileAvatar";
 import { ProfileImageEditor } from "./ProfileImageEditor";
 import { ProfileEditorModal } from "./ProfileEditorModal";
 
@@ -24,6 +24,12 @@ interface UserProfile {
   email?: string;
   role: string;
   level: number;
+}
+
+interface ProfileAvatarProps {
+  avatarUrl?: string;
+  frameUrl?: string;
+  size?: number; // px 크기 (32, 48, 96 등)
 }
 
 interface RecentCommunityActivity {
@@ -50,9 +56,10 @@ interface RecentVoteActivity {
   createdAt: string;
 }
 
+
 export function ProfilePage({ onBack }: { onBack: () => void }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-
+  const [isEditingAppearance, setIsEditingAppearance] = useState(false);
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
@@ -66,12 +73,16 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
   // 프로필 정보 불러오기
   //===============================
   useEffect(() => {
-    const loadProfile = async () => {
-      const res = await api.get("/profile/me");
-      setUser(res.data);
-    };
-    loadProfile();
-  }, []);
+  const loadProfile = async () => {
+    const res = await api.get("/profile/me");
+
+    setUser({
+      ...res.data,
+      email: res.data.loginId, // ← 이메일로 쓰기 위해 매핑
+    });
+  };
+  loadProfile();
+}, []);
 
   //===============================
   // 활동 내역
@@ -115,16 +126,18 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
   //===============================
   // 프로필 정보 저장 (모달에서 호출)
   //===============================
-  const handleProfileUpdate = async (updated: Partial<UserProfile>) => {
-    try {
-      await api.post("/profile/update", updated);
+  const handleProfileUpdate = async (updated: { nickname: string; email?: string }) => {
+  try {
+    await api.post("/profile/update", {
+      nickname: updated.nickname,
+      loginId: updated.email, 
+    });
 
-      setUser((prev) => (prev ? { ...prev, ...updated } : prev));
-      setIsEditingProfile(false);
-    } catch (e) {
-      console.error("프로필 업데이트 실패", e);
-    }
-  };
+    setIsEditingProfile(false);
+  } catch (e) {
+    console.error("프로필 업데이트 실패", e);
+  }
+};
 
   //------------------------------
   // JSX 렌더링
@@ -192,18 +205,11 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
     <div className="flex items-start gap-6">
 
       {/* 프로필 이미지 */}
-      <div className="relative w-24 h-24 rounded-full overflow-hidden">
-        <img
-          src={resolveImage(user.avatarIcon)}
-          className="object-cover w-full h-full"
-        />
-        {user.profileFrame && (
-          <img
-            src={resolveImage(user.profileFrame)}
-            className="absolute inset-0 w-full h-full pointer-events-none"
-          />
-        )}
-      </div>
+      <ProfileAvatar
+        avatarUrl={resolveImage(user.avatarIcon)}
+        frameUrl={resolveImage(user.profileFrame)}
+        size={100}
+      />
 
       {/* 텍스트 정보 */}
       <div className="flex-1">
@@ -236,36 +242,26 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
 
       {/* 이미지 + 프레임 편집 버튼 */}
       <div className="relative">
-        <div className="relative w-24 h-24 rounded-full overflow-hidden">
-          <img
-            src={resolveImage(user.avatarIcon)}
-            className="object-cover w-full h-full"
+        <div className="relative flex items-center justify-center">
+          <ProfileAvatar
+            avatarUrl={resolveImage(user.avatarIcon)}
+            frameUrl={resolveImage(user.profileFrame)}
+            size={96}
           />
-          {user.profileFrame && (
-            <img
-              src={resolveImage(user.profileFrame)}
-              className="absolute inset-0 w-full h-full pointer-events-none"
-            />
-          )}
+        
+          
         </div>
-
-        <button
-          onClick={() => setIsEditingPhoto(true)}
-          className="absolute -bottom-2 -right-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full w-8 h-8 flex items-center justify-center"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
       </div>
 
       {/* 편집 입력창 */}
-      <div className="flex-1 space-y-4">
+      <div className="flex-1 space-y-4 max-w-md ml-6">
 
         {/* 닉네임 */}
         <div>
           <label className="text-gray-300 text-sm">닉네임</label>
           <input
             type="text"
-            className="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md p-2"
+            className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px]"
             value={user.nickname}
             onChange={(e) =>
               setUser(prev => prev ? { ...prev, nickname: e.target.value } : prev)
@@ -278,14 +274,32 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
           <label className="text-gray-300 text-sm">이메일</label>
           <input
             type="email"
-            className="w-full mt-1 bg-white/10 border border-white/20 text-white rounded-md p-2"
+            className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px] mb-[16px]"
             value={user.email ?? ""}
             onChange={(e) =>
               setUser(prev => prev ? { ...prev, email: e.target.value } : prev)
             }
           />
         </div>
+            {/* 프레임 & 뱃지 편집 버튼 */}
 
+        <div className="mt-4 flex items-center gap-5" >
+          {/* 테두리 & 뱃지 설정 */}
+          {/* 프로필 사진 변경 */}
+          <Button
+            onClick={() => setIsEditingPhoto(true)}
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg"
+          >
+            프로필 사진 변경
+          </Button>
+          <Button
+            onClick={() => setIsEditingAppearance(true)}
+            className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg"
+          >
+            프로필 테두리 & 뱃지 설정하기
+          </Button>
+                  
+        </div>
       </div>
     </div>
   )}
@@ -348,6 +362,17 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
         <ProfileImageEditor
           onCancel={() => setIsEditingPhoto(false)}
           onSave={handleSaveProfileImage}
+        />
+      )}
+
+      {isEditingAppearance && (
+        <ProfileEditorModal
+          user={user}
+          onClose={() => setIsEditingAppearance(false)}
+          onUpdated={(updated) => {
+            setUser(updated);
+            setIsEditingAppearance(false);
+          }}
         />
       )}
 

@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,8 @@ import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.entity.UserStoreEntity;
 import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.repository.UserStoreRepository;
+import org.usyj.makgora.request.UserUpdateRequest;
+import org.usyj.makgora.response.MyItemResponse;
 import org.usyj.makgora.response.UserInfoResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -33,18 +36,19 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public UserInfoResponse getMyProfile(Integer userId) {
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-        return new UserInfoResponse(
-                user.getNickname(),
-                user.getLevel(),
-                user.getPoints(),
-                user.getAvatarIcon(),
-                user.getProfileFrame(),
-                user.getProfileBadge(),
-                user.getRole().name()
-        );
+    return UserInfoResponse.builder()
+            .loginId(user.getLoginId())   // 필요 없다면 제거해도 됨
+            .nickname(user.getNickname())
+            .level(user.getLevel())
+            .points(user.getPoints())
+            .avatarIcon(user.getAvatarIcon())
+            .profileFrame(user.getProfileFrame())
+            .profileBadge(user.getProfileBadge())
+            .role(user.getRole().name())
+            .build();
     }
 
     // ================================================
@@ -104,5 +108,47 @@ public class ProfileService {
             }
             default -> throw new RuntimeException("지원하지 않는 카테고리입니다.");
         }
+    }
+
+    @Transactional(readOnly = true)
+public List<MyItemResponse> getMyItems(Integer userId) {
+
+    List<UserStoreEntity> list = userStoreRepository.findByUserId(userId);
+
+    return list.stream()
+            .map(us -> MyItemResponse.builder()
+                    .userStoreId(us.getUserStoreId())
+                    .category(us.getItem().getCategory().name())
+                    .image(us.getItem().getImage())
+                    .build()
+            )
+            .toList();
+}
+
+    public void clearFrame(Integer userId) {
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("유저 없음"));
+    user.setProfileFrame(null);
+    }
+
+    public void clearBadge(Integer userId) {
+        UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("유저 없음"));
+        user.setProfileBadge(null);
+    }
+
+    @Transactional
+    public void updateProfile(Integer userId, UserUpdateRequest req) {
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("유저 없음"));
+
+        if (req.getNickname() != null) user.setNickname(req.getNickname());
+        if (req.getProfileFrame() != null) user.setProfileFrame(req.getProfileFrame());
+        if (req.getProfileBadge() != null) user.setProfileBadge(req.getProfileBadge());
+        if (req.getAvatarIcon() != null) user.setAvatarIcon(req.getAvatarIcon());
+        if (req.getLoginId() != null) user.setLoginId(req.getLoginId());
+
+        // 변경 후 save 자동반영(JPA 더티체킹)
     }
 }

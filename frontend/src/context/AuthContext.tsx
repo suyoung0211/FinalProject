@@ -58,16 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ⭐ 초기 로드: localStorage Access Token 기반 유저 세팅
   // --------------------------------------------------
   useEffect(() => {
-    const savedAccess = localStorage.getItem("accessToken");
+  const savedAccess = localStorage.getItem("accessToken");
 
-    if (savedAccess) {
-      setToken(savedAccess);
+  if (savedAccess) {
+    setToken(savedAccess);
 
-      try {
-        // 1) 토큰 디코딩해서 유저 정보 세팅
-        const decoded: any = jwtDecode(savedAccess); // JWT payload 디코딩
-        
-        const newUser = {
+    try {
+      const decoded: any = jwtDecode(savedAccess);
+
+      const newUser = {
         loginId: decoded.loginId,
         nickname: decoded.nickname,
         level: decoded.level || 1,
@@ -78,23 +77,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: decoded.role,
       };
 
-      console.log("Initial user from token:", newUser); // 🔹 여기에서 확인
+      console.log("Initial user from token:", newUser);
 
+      // 🔹 1) 일단 토큰 기반으로 기본 정보 넣고
       setUser(newUser);
 
-      } catch (err) {
-        console.error("AccessToken decode 실패, 서버에서 유저 정보 호출 시도", err);
-        // 2) 토큰이 깨졌으면 서버에서 유저 정보 조회
-        getMyInfoApi()
-          .then((res: any) => setUser(res.data))
-          .catch(() => {
-            setUser(null);
-            setToken(null);
-            localStorage.removeItem("accessToken");
-          });
-      }
+      // 🔹 2) 서버에서 최신 프로필 정보를 가져와서 갱신
+      getMyInfoApi()
+        .then((res: any) => {
+          console.log("서버 최신 프로필:", res.data);
+          setUser(res.data);
+        })
+        .catch(() => console.error("초기 프로필 불러오기 실패"));
+
+    } catch (err) {
+      console.error("AccessToken decode 실패 → 서버에서 유저 정보 요청", err);
+
+      getMyInfoApi()
+        .then((res: any) => setUser(res.data))
+        .catch(() => {
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem("accessToken");
+        });
     }
-  }, []);
+  }
+}, []);
 
   // --------------------------------------------------
   // ⭐ 로그인 처리
@@ -122,32 +130,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ⭐ 토큰 재발급 + 유저 정보 갱신
   // --------------------------------------------------
   const refreshUser = async () => {
-    try {
-      const res = await refreshTokenApi(); // 쿠키로 refresh token 전송
-      const newAccessToken = res.data.accessToken;
+  try {
+    const res = await refreshTokenApi();
+    const newAccessToken = res.data.accessToken;
 
-      // 1) 로컬 저장소 갱신
-      localStorage.setItem("accessToken", newAccessToken);
-      setToken(newAccessToken);
+    localStorage.setItem("accessToken", newAccessToken);
+    setToken(newAccessToken);
 
-      // 2) 토큰 디코딩해서 user state 갱신
-      const decoded: any = jwtDecode(newAccessToken);
-      setUser({
-        loginId: decoded.loginId,
-        nickname: decoded.nickname,
-        level: decoded.level || 1,
-        points: decoded.points || 0,
-        avatarIcon: decoded.avatarIcon,
-        profileFrame: decoded.profileFrame,
-        profileBadge: decoded.profileBadge,
-        role: decoded.role,
-      });
-    } catch (err) {
-      console.error("토큰 갱신 실패", err);
-      logout(); // 실패 시 로그아웃 처리
-    }
-  };
+    const decoded: any = jwtDecode(newAccessToken);
 
+    setUser({
+      loginId: decoded.loginId,
+      nickname: decoded.nickname,
+      level: decoded.level || 1,
+      points: decoded.points || 0,
+      avatarIcon: decoded.avatarIcon,
+      profileFrame: decoded.profileFrame,
+      profileBadge: decoded.profileBadge,
+      role: decoded.role,
+    });
+
+    // ⭐ 프레임/뱃지/포인트 등 최신 정보 DB에서 다시 가져오기
+    const profile = await getMyInfoApi();
+    setUser(profile.data);
+
+  } catch (err) {
+    console.error("토큰 갱신 실패", err);
+    logout();
+  }
+};
   // --------------------------------------------------
   // 🔹 Context 제공
   // --------------------------------------------------

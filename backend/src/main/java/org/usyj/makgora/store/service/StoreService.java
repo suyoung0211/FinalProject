@@ -105,38 +105,4 @@ public class StoreService {
                 .map(UserStoreResponse::fromEntity)
                 .toList();
     }
-
-        /** 프로필에 아이템 적용하기 */
-    public String applyItem(Integer userId, Long userStoreId) {
-
-    // 유저 조회
-    UserEntity user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("유저 없음"));
-
-    // 구매한 아이템 조회
-    UserStoreEntity ownedItem = userStoreRepository.findById(userStoreId)
-            .orElseThrow(() -> new RuntimeException("구매한 아이템이 없습니다."));
-
-    // 본인 소유 검사
-    if (!ownedItem.getUser().getId().equals(userId)) {
-        throw new RuntimeException("본인 소유 아이템만 적용할 수 있습니다.");
-    }
-
-    StoreItemEntity item = ownedItem.getItem();
-
-    switch (item.getCategory()) {
-
-        case FRAME -> {
-            user.setProfileFrame(item.getImage());
-            return "프로필 테두리가 적용되었습니다.";
-        }
-
-        case BADGE -> {
-            user.setProfileBadge(item.getImage());
-            return "닉네임 뱃지가 적용되었습니다.";
-        }
-
-        default -> throw new RuntimeException("지원하지 않는 아이템 카테고리입니다.");
-    }
-}
 }
