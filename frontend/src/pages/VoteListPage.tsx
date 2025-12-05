@@ -5,7 +5,7 @@ import { Header } from '../components/layout/Header';
 import { CreateVoteModal } from '../components/vote/CreateVoteModal';
 import { VoteList } from '../components/vote/VoteList';
 import { fetchVoteList } from "../api/voteApi";
-import { fetchNormalVoteList, createNormalVote } from "../api/normalVoteApi";
+import { fetchNormalVoteList } from "../api/normalVoteApi";
 import { useAuth } from "../hooks/useAuth";
 
 export function VoteListPage({ onBack, onMarketClick }: any) {
@@ -35,123 +35,98 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
     }
   };
 
-  /* ===============================
-     🔥 통합 투표 리스트 불러오기
-     =============================== */
-  useEffect(() => {
-    async function load() {
-      try {
-        const [aiRes, normalRes] = await Promise.all([
-          fetchVoteList(),
-          fetchNormalVoteList()
-        ]);
+  /* ==========================================================
+     🔥 공통 투표 리스트 불러오기 함수 (AI + Normal 전부)
+     ========================================================== */
+  const loadVoteList = async () => {
+    setLoading(true);
 
-        const aiList = aiRes.data || [];
-        const normalList = normalRes.data.votes || [];
-        
-        const dynamicCategories = new Set<string>();
-        dynamicCategories.add("전체");
+    try {
+      const [aiRes, normalRes] = await Promise.all([
+        fetchVoteList(),
+        fetchNormalVoteList()
+      ]);
 
-        /* AI 투표 매핑 */
-        const aiMapped = aiList
-          .filter((v: any) => v.status !== "REVIEWING")
-          .map((v: any) => {
-            dynamicCategories.add(v.category ?? "기타");
+      const aiList = aiRes.data || [];
+      const normalList = normalRes.data.votes || [];
 
-            return {
-              id: v.id,
-              type: "AI",
-              category: v.category ?? "기타",
-              title: v.title,
-              description: v.description ?? "",
-              totalVolume: v.totalPoints,
-              participants: v.totalParticipants,
-              deadline: String(v.endAt).slice(0, 10),
-              status: mapStatus(v.status),
-              createdAt: v.createdAt,
-              options: v.options,
-            };
-          });
+      const dynamicCategories = new Set<string>();
+      dynamicCategories.add("전체");
 
-        /* NORMAL 투표 매핑 */
-        const normalMapped = normalList.map((v: any) => {
+      /* AI 매핑 */
+      const aiMapped = aiList
+        .filter((v: any) => v.status !== "REVIEWING")
+        .map((v: any) => {
           dynamicCategories.add(v.category ?? "기타");
-
           return {
             id: v.id,
-            type: "NORMAL",
+            type: "AI",
             category: v.category ?? "기타",
             title: v.title,
             description: v.description ?? "",
-            totalVolume: v.totalPoints ?? 0,
-            participants: v.participantCount ?? 0,
-            deadline: v.endAt ? String(v.endAt).slice(0, 10) : "",
+            totalVolume: v.totalPoints,
+            participants: v.totalParticipants,
+            deadline: String(v.endAt).slice(0, 10),
             status: mapStatus(v.status),
             createdAt: v.createdAt,
             options: v.options,
           };
         });
 
-        const combined = [...aiMapped, ...normalMapped];
-        setVoteIssues(combined);
-        setCategories(Array.from(dynamicCategories));
-
-      } catch (err) {
-        console.error("투표 목록 불러오기 실패:", err);
-      }
-
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  /* 투표 생성 */
-  const handleCreateNormalVote = async (data: any) => {
-    try {
-      await createNormalVote({
-        title: data.question,
-        description: data.description,
-        category: data.category,
-        endAt: data.endDate
+      /* NORMAL 매핑 */
+      const normalMapped = normalList.map((v: any) => {
+        dynamicCategories.add(v.category ?? "기타");
+        return {
+          id: v.id,
+          type: "NORMAL",
+          category: v.category ?? "기타",
+          title: v.title,
+          description: v.description ?? "",
+          totalVolume: v.totalPoints ?? 0,
+          participants: v.participantCount ?? 0,
+          deadline: v.endAt ? String(v.endAt).slice(0, 10) : "",
+          status: mapStatus(v.status),
+          createdAt: v.createdAt,
+          options: v.options,
+        };
       });
 
-      alert("투표가 생성되었습니다!");
-      window.location.reload(); // 새 리스트 갱신
+      setVoteIssues([...aiMapped, ...normalMapped]);
+      setCategories(Array.from(dynamicCategories));
 
     } catch (err) {
-      console.error("NORMAL 생성 실패:", err);
-      alert("생성 실패");
+      console.error("투표 목록 불러오기 실패:", err);
     }
+
+    setLoading(false);
   };
+
+  /* 최초 로딩 */
+  useEffect(() => {
+    loadVoteList();
+  }, []);
 
   /* 필터링 */
   const filteredIssues = voteIssues.filter(issue => {
-    const categoryMatch =
-      selectedCategory === '전체' || issue.category === selectedCategory;
-
-    const statusMatch =
-      selectedStatus === '전체' || issue.status === selectedStatus;
-
-    const keyword = searchQuery.toLowerCase();
-    const searchMatch =
-      issue.title.toLowerCase().includes(keyword) ||
-      issue.description.toLowerCase().includes(keyword);
-
-    return categoryMatch && statusMatch && searchMatch;
+    return (
+      (selectedCategory === '전체' || issue.category === selectedCategory) &&
+      (selectedStatus === '전체' || issue.status === selectedStatus) &&
+      (
+        issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
   });
 
   /* 정렬 */
   const sortedIssues = [...filteredIssues].sort((a, b) => {
-
     if (sortType === "ai-first") {
       if (a.type === "AI" && b.type !== "AI") return -1;
       if (a.type !== "AI" && b.type === "AI") return 1;
     }
 
     if (sortType === "latest") {
-      const aTime = Date.parse(a.createdAt);
-      const bTime = Date.parse(b.createdAt);
-      return bTime - aTime;
+      return Date.parse(b.createdAt) - Date.parse(a.createdAt);
     }
 
     if (sortType === "popular") {
@@ -166,7 +141,6 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
       <Header activeMenu="vote" />
 
       <div className="container mx-auto px-4 py-8 pt-24">
-
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white">이슈 투표</h1>
@@ -189,6 +163,7 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
         {/* 카테고리 + 정렬 + 생성 */}
         <div className="mb-6 flex items-center justify-between">
 
+          {/* 카테고리 */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Filter className="w-4 h-4 text-gray-400" />
@@ -212,7 +187,7 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
             </div>
           </div>
 
-          {/* 정렬 + 생성 */}
+          {/* 정렬 + 생성 버튼 */}
           <div className="flex items-center gap-3">
             <select
               value={sortType}
@@ -234,7 +209,6 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
               </Button>
             )}
           </div>
-
         </div>
 
         {/* 상태 필터 */}
@@ -275,11 +249,11 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
         )}
       </div>
 
-      {/* NORMAL 생성 */}
+      {/* NORMAL 생성 모달 */}
       <CreateVoteModal
         isOpen={showCreateVoteModal}
         onClose={() => setShowCreateVoteModal(false)}
-        onCreate={handleCreateNormalVote}
+        onCreate={loadVoteList}   // 🔥 생성 후 자동 새로고침
       />
     </div>
   );
