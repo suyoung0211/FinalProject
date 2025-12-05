@@ -137,11 +137,10 @@ export default function LiveSlider({ articles }: Props) {
                       </div>
 
                       <div className="p-4">
-                        <h3 className="text-white font-bold text-sm mb-2 line-clamp-2 hover:text-purple-300 transition">
+                        <h3 className="text-white font-bold text-sm line-clamp-2 hover:text-purple-300 transition">
                           {news.title}
                         </h3>
                         <p className="text-gray-400 text-xs mb-3 line-clamp-2">
-                          {news.summary}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                           <Clock className="w-3 h-3" />
