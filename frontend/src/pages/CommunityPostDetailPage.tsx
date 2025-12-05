@@ -43,7 +43,7 @@ type Comment = {
   likeCount: number;
   dislikeCount: number;
 
-  mine: boolean;
+  mine?: boolean; // ✅ 옵셔널로, 안 내려오는 경우도 고려
 
   likedByMe?: boolean;
   dislikedByMe?: boolean;
@@ -221,7 +221,16 @@ export function CommunityPostDetailPage() {
     }
   };
 
-  // 대댓글 작성
+  // --------------------------------
+  // 📌 대댓글 작성 (백엔드 연동)
+  // --------------------------------
+
+  // 컴포넌트 함수 안에 추가
+  const isMyComment = (commentUserId: number) => {
+    if (!user?.id) return false;
+    return Number(user.id) === Number(commentUserId);
+  };
+
   const handlePostReply = async (parentCommentId: number) => {
     if (!user) return requireLogin();
     if (!replyText.trim()) return;
@@ -240,11 +249,21 @@ export function CommunityPostDetailPage() {
     }
   };
 
-  // 댓글 수정
+  // 댓글 수정 시작
   const startEditComment = (comment: Comment) => {
-    if (!comment.mine) return;
+    if (!user) return requireLogin();
+
+    const mine = comment.mine || isMyComment(comment.userId);
+    if (!mine) return;  // 안전망
+
     setEditingCommentId(comment.commentId);
     setEditText(comment.content);
+  };
+
+  // 댓글 수정 취소
+  const cancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditText("");
   };
 
   const submitEditComment = async (commentId: number) => {
@@ -320,28 +339,38 @@ export function CommunityPostDetailPage() {
           {post.content}
         </div>
 
-        {/* 게시글 추천 */}
-<div className="flex gap-4">
-  <button
-    onClick={handleLikePost}
-    className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
-      post.isLiked ? "border-purple-400 text-purple-400" : "border-gray-500 text-gray-300"
-    }`}
-  >
-    <ThumbsUp className="w-4 h-4" />
-    추천 {post.recommendationCount ?? 0}
-  </button>
+        {/* 게시글 추천 및 수정 */}
+        <div className="flex gap-4 items-center">
+          <button
+            onClick={handleLikePost}
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
+              post.isLiked ? "border-purple-400 text-purple-400" : "border-gray-500 text-gray-300"
+            }`}
+          >
+            <ThumbsUp className="w-4 h-4" />
+            추천 {post.recommendationCount ?? 0}
+          </button>
 
-  <button
-    onClick={handleDislikePost}
-    className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
-      post.isDisliked ? "border-red-400 text-red-400" : "border-gray-500 text-gray-300"
-    }`}
-  >
-    <ThumbsDown className="w-4 h-4" />
-    비추천 {post.dislikeCount ?? 0}
-  </button>
-</div>
+          <button
+            onClick={handleDislikePost}
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 ${
+              post.isDisliked ? "border-red-400 text-red-400" : "border-gray-500 text-gray-300"
+            }`}
+          >
+            <ThumbsDown className="w-4 h-4" />
+            비추천 {post.dislikeCount ?? 0}
+          </button>
+
+          {/* 게시글 수정 버튼 (본인 게시글일 때만) */}
+          {user?.id && post.authorId && Number(user.id) === Number(post.authorId) && (
+            <button
+              onClick={() => navigate(`/community/posts/${postId}/edit`)}
+              className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:text-blue-400 hover:border-blue-400"
+            >
+              수정
+            </button>
+          )}
+        </div>
 
         {/* 댓글 섹션 */}
         <div className="mt-10 bg-white/5 p-6 rounded-xl">
@@ -380,75 +409,87 @@ export function CommunityPostDetailPage() {
 
                     {/* 수정 또는 본문 */}
                     {editingCommentId === comment.commentId ? (
-                      <>
+                      <div className="mb-3 space-y-2">
                         <Textarea
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
+                          className="bg-white/5 text-white text-sm"
                         />
-                        <div className="flex gap-2 mt-2">
-                          <Button onClick={() => submitEditComment(comment.commentId)}>
-                            저장
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => setEditingCommentId(null)}
-                          >
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="outline" onClick={cancelEditComment}>
                             취소
                           </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => submitEditComment(comment.commentId)}
+                          >
+                            수정 완료
+                          </Button>
                         </div>
-                      </>
+                      </div>
                     ) : (
-                      <p className="text-gray-300 mt-2">{comment.content}</p>
+                      <p className="text-gray-300 mb-3">{comment.content}</p>
                     )}
 
-                    {/* 댓글 버튼 */}
-                    <div className="flex gap-4 mt-3">
-                      <button
-                        onClick={() => handleLikeComment(comment.commentId)}
-                        className={`text-sm ${
-                          comment.likedByMe ? "text-purple-400" : "text-gray-400"
-                        }`}
-                      >
-                        <ThumbsUp className="inline w-3 h-3" /> {comment.likeCount}
-                      </button>
+                    {/* 댓글 추천/비추천 + 답글 + (본인일 때만) 수정/삭제 */}
+                    <div className="flex items-center gap-4 mb-2">
+                  <button
+                    onClick={() => handleLikeComment(comment.commentId)}
+                    className={`flex items-center gap-1 text-sm ${
+                      comment.likeCount > 0
+                        ? "text-purple-400"
+                        : "text-gray-400 hover:text-purple-400"
+                    }`}
+                  >
+                    <ThumbsUp className="w-3 h-3" />
+                    {comment.likeCount}
+                  </button>
 
-                      <button
-                        onClick={() => handleDislikeComment(comment.commentId)}
-                        className={`text-sm ${
-                          comment.dislikedByMe ? "text-red-400" : "text-gray-400"
-                        }`}
-                      >
-                        <ThumbsDown className="inline w-3 h-3" /> {comment.dislikeCount}
-                      </button>
+                  <button
+                    onClick={() => handleDislikeComment(comment.commentId)}
+                    className={`flex items-center gap-1 text-sm ${
+                      comment.dislikeCount > 0
+                        ? "text-red-400"
+                        : "text-gray-400 hover:text-red-400"
+                    }`}
+                  >
+                    <ThumbsDown className="w-3 h-3" />
+                    {comment.dislikeCount}
+                  </button>
 
-                      <button
-                        className="text-sm text-gray-400"
-                        onClick={() =>
-                          setReplyTo(replyTo === comment.commentId ? null : comment.commentId)
-                        }
-                      >
-                        답글
-                      </button>
+                  <button
+                    onClick={() =>
+                      setReplyTo(
+                        replyTo === comment.commentId ? null : comment.commentId
+                      )
+                    }
+                    className="text-sm text-gray-400 hover:text-purple-400"
+                  >
+                    답글
+                  </button>
 
-                      {comment.mine && (
-                        <>
-                          <button
-                            onClick={() => startEditComment(comment)}
-                            className="text-sm text-blue-400"
-                          >
-                            수정
-                          </button>
-                          <button
-                            onClick={() => deleteComment(comment.commentId)}
-                            className="text-sm text-red-400"
-                          >
-                            삭제
-                          </button>
-                        </>
-                      )}
+                  {/* 🔥 내 댓글일 때만 수정/삭제 */}
+                  {(comment.mine || isMyComment(comment.userId)) && (
+                    <>
+                      <button
+                        onClick={() => startEditComment(comment)}
+                        className="text-sm text-gray-400 hover:text-blue-400"
+                      >
+                        수정
+                      </button>
+                      <button
+                        onClick={() => deleteComment(comment.commentId)}
+                        className="text-sm text-gray-400 hover:text-red-400"
+                      >
+                        삭제
+                      </button>
+                    </>
+                  )}
                     </div>
+                  </div>
+                </div>
 
-                    {/* 대댓글 작성 */}
+                {/* 대댓글 작성 */}
                     {replyTo === comment.commentId && (
                       <div className="ml-10 mt-3">
                         <Textarea
@@ -484,60 +525,94 @@ export function CommunityPostDetailPage() {
                                 {new Date(reply.createdAt).toLocaleString()}
                               </div>
 
-                              <p className="text-gray-300 mt-1 text-sm">
-                                {reply.content}
-                              </p>
-
-                              <div className="flex gap-3 mt-2">
-                                <button
-                                  onClick={() => handleLikeComment(reply.commentId)}
-                                  className={`text-xs ${
-                                    reply.likedByMe ? "text-purple-400" : "text-gray-400"
-                                  }`}
-                                >
-                                  <ThumbsUp className="inline w-3 h-3" />{" "}
-                                  {reply.likeCount}
-                                </button>
-
-                                <button
-                                  onClick={() => handleDislikeComment(reply.commentId)}
-                                  className={`text-xs ${
-                                    reply.dislikedByMe ? "text-red-400" : "text-gray-400"
-                                  }`}
-                                >
-                                  <ThumbsDown className="inline w-3 h-3" />{" "}
-                                  {reply.dislikeCount}
-                                </button>
-
-                                {reply.mine && (
-                                  <>
-                                    <button
-                                      onClick={() => startEditComment(reply)}
-                                      className="text-xs text-blue-300"
+                              {editingCommentId === reply.commentId ? (
+                                <div className="mb-2 space-y-2">
+                                  <Textarea
+                                    value={editText}
+                                    onChange={(e) => setEditText(e.target.value)}
+                                    className="bg-white/5 text-white text-sm"
+                                  />
+                                  <div className="flex gap-2 justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={cancelEditComment}
                                     >
-                                      수정
-                                    </button>
-                                    <button
-                                      onClick={() => deleteComment(reply.commentId)}
-                                      className="text-xs text-red-300"
+                                      취소
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        submitEditComment(reply.commentId)
+                                      }
                                     >
-                                      삭제
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
+                                      수정 완료
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-gray-300 text-sm mb-2">
+                                  {reply.content}
+                                </p>
+                              )}
+
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={() =>
+                                handleLikeComment(reply.commentId)
+                              }
+                              className={`flex items-center gap-1 text-xs ${
+                                reply.likeCount > 0
+                                  ? "text-purple-400"
+                                  : "text-gray-400 hover:text-purple-400"
+                              }`}
+                            >
+                              <ThumbsUp className="w-3 h-3" />
+                              {reply.likeCount}
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                handleDislikeComment(reply.commentId)
+                              }
+                              className={`flex items-center gap-1 text-xs ${
+                                reply.dislikeCount > 0
+                                  ? "text-red-400"
+                                  : "text-gray-400 hover:text-red-400"
+                              }`}
+                            >
+                              <ThumbsDown className="w-3 h-3" />
+                              {reply.dislikeCount}
+                            </button>
+
+                            {/* 대댓글도 내 거면 수정/삭제 */}
+                            {(reply.mine || isMyComment(reply.userId)) && (
+                              <>
+                                <button
+                                  onClick={() => startEditComment(reply)}
+                                  className="text-xs text-gray-400 hover:text-blue-400"
+                                >
+                                  수정
+                                </button>
+                                <button
+                                  onClick={() => deleteComment(reply.commentId)}
+                                  className="text-xs text-gray-400 hover:text-red-400"
+                                >
+                                  삭제
+                                </button>
+                              </>
+                            )}
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
             ))}
-          </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

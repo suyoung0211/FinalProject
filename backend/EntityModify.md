@@ -284,3 +284,16 @@ category관련 백엔드 아예 빼버려서 따로 ArticleCategory로 살림
 2. python worker/generateIssueCard내부에 generateIssueCard.py실행
 3. python 쪽 flask 패키지 추가 안될 경우 pip install flask 실행
 
+## 12/05
+CommunityCommentEntity.children 규칙 변경
+- 현재 : 자식 댓글이 부모 댓글를 FK로 참조하고 있음
+- 루트 댓글 삭제할 때 대댓글들 있어서 삭제 에러남
+- CASCADE 설정이 없어서 FK 제약 위반 에러 발생
+- cascade = CascadeType.AL // 부모 엔티티의 변경을 자식 엔티티에도 전파
+- orphanRemoval = true // 부모와의 관계가 끊어진 자식을 자동 삭제
+
+@OneToMany(mappedBy = "parent")
+=>
+@OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true) 
+로 변경
+-------------------------------
