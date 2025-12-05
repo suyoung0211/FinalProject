@@ -9,6 +9,8 @@ CREATE TABLE Users (
     level INT DEFAULT 1 COMMENT '사용자 레벨',
     profile_image VARCHAR(255) COMMENT '프로필 사진 URL',
     profile_background VARCHAR(255) COMMENT '프로필 배경 이미지 URL',
+    profile_frame VARCHAR(255) COMMENT '프로필 테두리 URL';
+    profile_badge VARCHAR(255); COMMENT '프로필 닉네임 뱃지 URL'
     
     email_verified TINYINT(1) DEFAULT 0 COMMENT '이메일 인증 여부 (0=미인증, 1=인증 완료)',
     email_verification_token VARCHAR(255) COMMENT '이메일 인증 토큰',
@@ -193,7 +195,7 @@ CREATE TABLE Store_Items (
     item_id INT AUTO_INCREMENT PRIMARY KEY COMMENT '상점 아이템 ID',
     name VARCHAR(255) NOT NULL COMMENT '아이템 이름',
     type ENUM('point','cash') NOT NULL COMMENT '포인트 구매 / 현금 구매',
-    category ENUM('avatar','background','skin','badge') NOT NULL COMMENT '아이템 종류',
+    category ENUM('avatar','frame','badge') NOT NULL COMMENT '아이템 종류',
     price INT NOT NULL COMMENT '가격',
     stock INT DEFAULT 0 COMMENT '재고 수량',
     image VARCHAR(255) COMMENT '이미지 URL',

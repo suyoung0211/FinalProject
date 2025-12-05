@@ -58,17 +58,4 @@ public class StoreController {
 
         return storeService.getMyItems(userId);
     }
-
-
-
-    @PostMapping("/apply")
-    public Object applyItem(
-            HttpServletRequest request,
-            @RequestBody ApplyItemRequest req
-    ) {
-        String token = request.getHeader("Authorization").substring(7);
-        Integer userId = jwtTokenProvider.getUserId(token);
-    
-        return storeService.applyItem(userId, req.getUserStoreId());
-    }
 }
