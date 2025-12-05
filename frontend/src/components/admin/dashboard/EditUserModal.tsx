@@ -1,5 +1,3 @@
-// EditUserModal.tsx
-
 import { useState } from "react";
 import { updateAdminUserApi } from "../../../api/adminAPI";
 import ReactDOM from "react-dom";
