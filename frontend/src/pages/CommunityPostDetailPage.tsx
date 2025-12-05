@@ -44,7 +44,7 @@ type Comment = {
   likeCount: number;
   dislikeCount: number;
 
-  mine: boolean;
+  mine?: boolean; // ✅ 옵셔널로, 안 내려오는 경우도 고려
 
   replies: Comment[];
 
@@ -218,6 +218,13 @@ export function CommunityPostDetailPage() {
   // --------------------------------
   // 📌 대댓글 작성 (백엔드 연동)
   // --------------------------------
+
+  // 컴포넌트 함수 안에 추가
+  const isMyComment = (commentUserId: number) => {
+    if (!user?.id) return false;
+    return Number(user.id) === Number(commentUserId);
+  };
+
   const handlePostReply = async (parentCommentId: number) => {
     if (!user) return requireLogin();
     if (!replyText.trim() || !postId) return;
@@ -240,8 +247,9 @@ export function CommunityPostDetailPage() {
   // 댓글 수정 시작
 const startEditComment = (comment: Comment) => {
   if (!user) return requireLogin();
-  // 본인 댓글만
-  if (!comment.mine) return;
+
+  const mine = comment.mine || isMyComment(comment.userId);
+  if (!mine) return;  // 안전망
 
   setEditingCommentId(comment.commentId);
   setEditText(comment.content);
@@ -537,7 +545,7 @@ const deleteComment = async (commentId: number) => {
                   </button>
 
                   {/* 🔥 내 댓글일 때만 */}
-                  {comment.mine && (
+                  {(comment.mine || isMyComment(comment.userId)) && (
                     <>
                       <button
                         onClick={() => startEditComment(comment)}
@@ -661,7 +669,7 @@ const deleteComment = async (commentId: number) => {
                             </button>
 
                             {/* 대댓글도 내 거면 수정/삭제 */}
-                            {reply.mine && (
+                            {(reply.mine || isMyComment(reply.userId)) && (
                               <>
                                 <button
                                   onClick={() => startEditComment(reply)}

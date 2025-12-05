@@ -14,6 +14,8 @@ import { jwtDecode } from "jwt-decode"; // 액세스 토큰 디코딩용
 // 🔹 유저 정보 타입
 // --------------------------------------------------
 export interface UserType {
+  // ✅ Access Token에서 가져옴
+  id?: number;                // ✅추가 Access Token의 "id"
   loginId?: string;           // 토큰에 있을 경우
   nickname: string;
   level: number;
@@ -56,43 +58,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --------------------------------------------------
   // ⭐ 초기 로드: localStorage Access Token 기반 유저 세팅
+  // 앱이 새로 켜질 때는 localStorage에 있는 accessToken만 믿을 수 있다.
+  // 그래서 토큰을 먼저 디코딩해서 최소한의 id/nickname/role만 세팅한다.
+  // 나머지 상세 정보는 /api/users/me 같은 API로 가져와서 user에 덮어쓴다.
   // --------------------------------------------------
   useEffect(() => {
     const savedAccess = localStorage.getItem("accessToken");
 
-    if (savedAccess) {
+    if (!savedAccess) return;
       setToken(savedAccess);
 
       try {
         // 1) 토큰 디코딩해서 유저 정보 세팅
         const decoded: any = jwtDecode(savedAccess); // JWT payload 디코딩
         
-        const newUser = {
-        loginId: decoded.loginId,
-        nickname: decoded.nickname,
-        level: decoded.level || 1,
-        points: decoded.points || 0,
-        avatarIcon: decoded.avatarIcon,
-        profileFrame: decoded.profileFrame,
-        profileBadge: decoded.profileBadge,
-        role: decoded.role,
-      };
+        // 1차: 토큰 기반 최소 정보 (id, nickname, role)
+        const baseUser: UserType = {
+          id: decoded.id,                       // ✅ 토큰에 있는 id
+          nickname: decoded.nickname || "",
+          role: decoded.role || "USER",
+          level: 1,   // 임시값
+          points: 0,  // 임시값
+        };
 
-      console.log("Initial user from token:", newUser); // 🔹 여기에서 확인
+        setUser(baseUser);
 
-      setUser(newUser);
-
-      } catch (err) {
-        console.error("AccessToken decode 실패, 서버에서 유저 정보 호출 시도", err);
-        // 2) 토큰이 깨졌으면 서버에서 유저 정보 조회
-        getMyInfoApi()
-          .then((res: any) => setUser(res.data))
-          .catch(() => {
-            setUser(null);
-            setToken(null);
-            localStorage.removeItem("accessToken");
+      // 2차: 서버에서 상세 프로필 가져와 덮어쓰기
+      getMyInfoApi()
+        .then((res: any) => {
+          setUser({
+            ...res.data,        // loginId, level, points, avatarIcon, ...
+            id: decoded.id,     // ✅ id는 여전히 토큰 것 유지
           });
-      }
+        })
+        .catch(() => {
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem("accessToken");
+        });
+
+    } catch (err) {
+      console.error("AccessToken decode 실패", err);
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("accessToken");
     }
   }, []);
 
@@ -122,31 +131,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ⭐ 토큰 재발급 + 유저 정보 갱신
   // --------------------------------------------------
   const refreshUser = async () => {
-    try {
-      const res = await refreshTokenApi(); // 쿠키로 refresh token 전송
-      const newAccessToken = res.data.accessToken;
+  try {
+    const res = await refreshTokenApi();
+    const newAccessToken = res.data.accessToken;
 
-      // 1) 로컬 저장소 갱신
-      localStorage.setItem("accessToken", newAccessToken);
-      setToken(newAccessToken);
+    localStorage.setItem("accessToken", newAccessToken);
+    setToken(newAccessToken);
 
-      // 2) 토큰 디코딩해서 user state 갱신
-      const decoded: any = jwtDecode(newAccessToken);
-      setUser({
-        loginId: decoded.loginId,
-        nickname: decoded.nickname,
-        level: decoded.level || 1,
-        points: decoded.points || 0,
-        avatarIcon: decoded.avatarIcon,
-        profileFrame: decoded.profileFrame,
-        profileBadge: decoded.profileBadge,
-        role: decoded.role,
-      });
-    } catch (err) {
-      console.error("토큰 갱신 실패", err);
-      logout(); // 실패 시 로그아웃 처리
-    }
-  };
+    const decoded: any = jwtDecode(newAccessToken);
+
+    // 서버에서 최신 유저 정보 가져오기
+    const userRes = await getMyInfoApi();
+
+    setUser({
+      ...userRes.data,   // 여전히 id는 없음
+      id: decoded.id,    // ✅ 토큰에서 가져온 id만 합쳐줌
+    });
+  } catch (err) {
+    console.error("토큰 갱신 실패", err);
+    logout();
+  }
+};
+
 
   // --------------------------------------------------
   // 🔹 Context 제공
