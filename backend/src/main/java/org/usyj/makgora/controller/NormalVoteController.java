@@ -27,6 +27,17 @@ public class NormalVoteController {
         return ResponseEntity.ok(normalVoteService.createVote(req, user.getId()));
     }
 
+    @PostMapping("/{voteId}/participate")
+    public ResponseEntity<NormalVoteResponse> participate(
+        @PathVariable Long voteId,
+        @RequestParam Long choiceId,
+        @AuthenticationPrincipal CustomUserDetails user
+    ){
+    return ResponseEntity.ok(
+        normalVoteService.participate(voteId, user.getId(), choiceId)
+    );
+}
+
     /* 전체 조회 */
     @GetMapping("/list")
     public ResponseEntity<NormalVoteListResponse> getList() {

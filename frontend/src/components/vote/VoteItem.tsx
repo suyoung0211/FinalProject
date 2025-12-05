@@ -1,19 +1,22 @@
+/* ================================================================
+   DRAW UI + 도넛 3분할 + 옵션 접기/펼치기 적용된 최종 VoteItem
+================================================================ */
+
 import { useEffect, useState } from "react";
-import { User, Coins } from "lucide-react";
+import { User } from "lucide-react";
 import { fetchVoteDetail, fetchVoteOdds } from "../../api/voteApi";
 
-export function VoteItem({
-  voteId,
-  onMarketClick,
-}: {
-  voteId: number;
-  onMarketClick: (id: number) => void;
-}) {
-  const [vote, setVote] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
+  const [vote, setVote] = useState<any>(initialVote ?? null);
+  const [loading, setLoading] = useState(!initialVote);
+  const [showAllOptions, setShowAllOptions] = useState(false);
 
-  /** 🔥 API 호출 */
+  /* ------------------------------------------------------------- */
+  /* 🔥 AI 투표 상세 로드 */
+  /* ------------------------------------------------------------- */
   useEffect(() => {
+    if (initialVote?.type === "NORMAL") return;
+
     async function load() {
       try {
         const detailRes = await fetchVoteDetail(voteId);
@@ -22,7 +25,6 @@ export function VoteItem({
         const detail = detailRes.data;
         const odds = oddsRes.data;
 
-        // 선택지에 odds 매핑
         const mergedOptions = detail.options.map((opt: any) => ({
           ...opt,
           choices: opt.choices.map((c: any) => ({
@@ -33,9 +35,13 @@ export function VoteItem({
           })),
         }));
 
-        setVote({ ...detail, options: mergedOptions });
+        setVote({
+          ...initialVote,
+          ...detail,
+          options: mergedOptions,
+        });
       } catch (err) {
-        console.error("VoteItem load error:", err);
+        console.error(err);
       }
       setLoading(false);
     }
@@ -43,163 +49,188 @@ export function VoteItem({
     load();
   }, [voteId]);
 
-  if (loading || !vote) {
+  if (!vote) {
     return (
       <div className="bg-white/5 p-6 rounded-2xl text-gray-400">로딩 중...</div>
     );
   }
 
-  /* ===========================================================================
-      🔢 전체 YES/NO 비율 (도넛)
-    =========================================================================== */
+  /* ------------------------------------------------------------- */
+  /* 🔢 전체 YES / DRAW / NO 계산 */
+  /* ------------------------------------------------------------- */
   let totalYes = 0;
+  let totalDraw = 0;
   let totalNo = 0;
 
-  vote.options.forEach((opt: any) => {
-    opt.choices.forEach((c: any) => {
+  (vote.options || []).forEach((opt: any) => {
+    (opt.choices || []).forEach((c: any) => {
       if (c.text === "YES") totalYes += c.participantsCount ?? 0;
+      if (c.text === "DRAW") totalDraw += c.participantsCount ?? 0;
       if (c.text === "NO") totalNo += c.participantsCount ?? 0;
     });
   });
 
-  const total = totalYes + totalNo;
-  const yesPercent = total > 0 ? Math.round((totalYes / total) * 100) : 50;
-  const noPercent = 100 - yesPercent;
+  const totalVotes = totalYes + totalDraw + totalNo;
+  const yesPercent = totalVotes ? Math.round((totalYes / totalVotes) * 100) : 33;
+  const drawPercent = totalVotes ? Math.round((totalDraw / totalVotes) * 100) : 33;
+  const noPercent = totalVotes ? 100 - yesPercent - drawPercent : 34;
 
-  /* ===========================================================================
-      🔢 옵션별 YES/NO 비율 계산
-    =========================================================================== */
-  const optionsWithPercent = vote.options.map((opt: any) => {
-    const yesChoice = opt.choices.find((c: any) => c.text === "YES");
-    const noChoice = opt.choices.find((c: any) => c.text === "NO");
+  /* ------------------------------------------------------------- */
+  /* 🔢 옵션별 비율 계산 */
+  /* ------------------------------------------------------------- */
+  const optionsWithPercent = (vote.options || []).map((opt: any) => {
+    const yes = opt.choices.find((c: any) => c.text === "YES")?.participantsCount ?? 0;
+    const draw = opt.choices.find((c: any) => c.text === "DRAW")?.participantsCount ?? 0;
+    const no = opt.choices.find((c: any) => c.text === "NO")?.participantsCount ?? 0;
 
-    const yes = yesChoice?.participantsCount ?? 0;
-    const no = noChoice?.participantsCount ?? 0;
+    const sum = yes + draw + no;
 
-    const sum = yes + no;
-    const percent = sum > 0 ? Math.round((yes / sum) * 100) : 50;
+    const yesP = sum > 0 ? Math.round((yes / sum) * 100) : 33;
+    const drawP = sum > 0 ? Math.round((draw / sum) * 100) : 33;
+    const noP = sum > 0 ? 100 - yesP - drawP : 34;
 
-    return {
-      ...opt,
-      yes,
-      no,
-      percent, // yes 기준
-    };
+    return { ...opt, yes, draw, no, yesP, drawP, noP, sum };
   });
+
+  /* ------------------------------------------------------------- */
+  /* 🔥 옵션 UI 렌더링 함수 */
+  /* ------------------------------------------------------------- */
+
+  const renderOptionCard = (opt: any) => {
+    const hasDraw = opt.draw > 0;
+
+    return (
+      <div key={opt.optionId} className="bg-white/5 border border-white/10 rounded-xl p-3 mb-3">
+        <p className="text-white font-semibold text-sm mb-2">{opt.title}</p>
+
+        {/* DRAW 포함 3단 바 */}
+        {hasDraw ? (
+          <>
+            <div className="w-full h-6 rounded-full overflow-hidden flex bg-white/10 shadow-inner">
+              <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
+              <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
+              <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
+            </div>
+
+            <div className="grid grid-cols-3 text-xs font-semibold text-center mt-1">
+              <span className="text-green-400">YES {opt.yesP}%</span>
+              <span className="text-gray-300">DRAW {opt.drawP}%</span>
+              <span className="text-red-400">NO {opt.noP}%</span>
+            </div>
+          </>
+        ) : (
+          /* 기존 YES/NO 형태 */
+          <>
+            <div className="w-full h-6 rounded-full overflow-hidden bg-white/10 shadow-inner">
+              <div
+                className="h-full"
+                style={{
+                  background: `
+                    linear-gradient(
+                      to right,
+                      #22c55e ${opt.yesP}%,
+                      #ef4444 ${opt.yesP}%
+                    )
+                  `,
+                }}
+              />
+            </div>
+
+            <div className="flex justify-between text-xs font-semibold mt-1 px-1">
+              <span className="text-green-400">YES {opt.yesP}%</span>
+              <span className="text-red-400">NO {opt.noP}%</span>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  /* ------------------------------------------------------------- */
+  /* 🔥 옵션 접기/펼치기 적용 */
+  /* ------------------------------------------------------------- */
+  const visibleOptions =
+    optionsWithPercent.length > 2 && !showAllOptions
+      ? optionsWithPercent.slice(0, 2)
+      : optionsWithPercent;
+
+  /* ------------------------------------------------------------- */
+  /* 🔥 최종 UI */
+  /* ------------------------------------------------------------- */
+  const yesDeg = yesPercent * 3.6;
+  const drawDeg = drawPercent * 3.6;
 
   return (
     <div
       onClick={() => onMarketClick(vote.id)}
-      className="
-      flex flex-col 
-      rounded-2xl p-5 cursor-pointer transition-all
-      bg-[#261b3a] 
-      border border-purple-700/30
-      hover:bg-[#381f5c] 
-      hover:border-purple-400/50
-    "
-      style={{ minHeight: "360px" }}
+      className="flex flex-col rounded-2xl p-4 cursor-pointer bg-[#261b3a] border border-purple-700/30 hover:bg-[#381f5c]"
     >
-      {/* ======================================================
-          🔼 상단 제목 + 도넛 그래프
-      ====================================================== */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3">
-          {vote.thumbnail && (
-            <img
-              src={vote.thumbnail}
-              alt="thumbnail"
-              className="w-12 h-12 object-cover rounded-md"
-            />
-          )}
-          <div className="w-48">
-            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2">
-              {vote.title}
-            </h3>
-          </div>
-        </div>
+      {/* HEADER */}
+      <div className="flex justify-between pb-3">
+        <h3 className="text-white font-bold text-lg flex-1">{vote.title}</h3>
 
-        {/* 🔥 도넛 */}
+        {/* 도넛 */}
         <div className="flex flex-col items-center">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-
-            {/* 비율 색 */}
+          <div className="relative w-14 h-14 flex items-center justify-center">
             <div
               className="absolute inset-0 rounded-full"
               style={{
-                background: `conic-gradient(
-              #22c55e ${yesPercent * 3.6}deg,
-              #ef4444 0deg
-            )`,
+                background: `
+                  conic-gradient(
+                    #22c55e 0deg ${yesDeg}deg,
+                    #9ca3af ${yesDeg}deg ${yesDeg + drawDeg}deg,
+                    #ef4444 ${yesDeg + drawDeg}deg 360deg
+                  )
+                `,
               }}
             />
-
-            {/* 안쪽 구멍 */}
             <div className="absolute inset-2 bg-[#261b3a] rounded-full" />
-
-            <div className="relative text-white font-bold text-sm">
-              {yesPercent}%
-            </div>
           </div>
-
-          <span className="text-xs text-gray-400 mt-1">chance</span>
-          <p className="text-gray-300 text-xs mt-1">{vote.category}</p>
         </div>
       </div>
 
-      {/* ======================================================
-          🔽 옵션 리스트 — 여러 개 가능
-      ====================================================== */}
-      <div className="mt-4 space-y-3">
-        {optionsWithPercent.map((opt: any) => (
-          <div
-            key={opt.optionId}
-            className="bg-white/5 border border-white/10 rounded-xl p-3"
+      {/* OPTIONS */}
+      <div className="flex-1">
+        {visibleOptions.map(renderOptionCard)}
+
+        {/* 옵션 더보기 / 접기 버튼 */}
+        {optionsWithPercent.length > 2 && (
+          <button
+            className="w-full text-center py-2 text-sm text-purple-300 hover:text-purple-400"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAllOptions((prev) => !prev);
+            }}
           >
-            {/* 옵션 제목 */}
-            <div className="text-white font-semibold text-sm mb-2">
-              {opt.title}
-            </div>
-
-            {/* YES / NO 막대 */}
-            <div className="w-full h-3 rounded-full overflow-hidden flex">
-              {/* YES */}
-              <div
-                className="h-full bg-green-500"
-                style={{ width: `${opt.percent}%` }}
-              />
-              {/* NO */}
-              <div
-                className="h-full bg-red-500"
-                style={{ width: `${100 - opt.percent}%` }}
-              />
-            </div>
-
-            <div className="flex justify-between mt-1 text-xs font-semibold">
-              <span className="text-green-400">YES {opt.percent}%</span>
-              <span className="text-red-400">
-                NO {100 - opt.percent}%
-              </span>
-            </div>
-          </div>
-        ))}
+            {showAllOptions
+              ? "접기 ▲"
+              : `옵션 더보기 (${optionsWithPercent.length - 2}개) ▼`}
+          </button>
+        )}
       </div>
 
-      {/* ======================================================
-          🔽 하단 정보
-      ====================================================== */}
-      <div className="mt-4 flex justify-between items-center text-gray-300 text-xs border-t border-white/10 pt-3">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1">
-            <Coins className="w-3 h-3" />
-            {(vote.totalPoints / 1000).toFixed(1)}k Vol.
-          </span>
-          <span className="flex items-center gap-1">
-            <User className="w-3 h-3" />
-            {vote.totalParticipants}
-          </span>
-        </div>
-        <span>마감: {vote.endAt.substring(0, 10)}</span>
+      {/* FOOTER */}
+      <div className="flex justify-between items-center text-gray-300 text-xs border-t border-white/10 pt-2 mt-3">
+        <span className="flex items-center gap-1">
+          <User className="w-3 h-3" />
+          {vote.totalParticipants ?? 0} 참가자
+        </span>
+
+        <span>마감: {vote.endAt?.substring(0, 10) ?? "미정"}</span>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onMarketClick(vote.id);
+          }}
+          className="
+            bg-gradient-to-r from-purple-500 to-pink-500
+            text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-lg
+            hover:opacity-90 transform hover:scale-[1.03] transition
+          "
+        >
+          투표하러가기
+        </button>
       </div>
     </div>
   );
