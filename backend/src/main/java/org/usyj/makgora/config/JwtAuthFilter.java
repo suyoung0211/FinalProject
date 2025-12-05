@@ -48,7 +48,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                 || (path.startsWith("/api/votes/") && !path.startsWith("/api/votes/my"))
                         )
                 ) ||
-                (method.equals("GET") && path.startsWith("/api/community/posts"));
+                (method.equals("GET") && path.startsWith("/api/community/posts"))||
+                (method.equals("GET") && path.startsWith("/api/normal-votes"));
 
         if (skip) {
             chain.doFilter(req, res);

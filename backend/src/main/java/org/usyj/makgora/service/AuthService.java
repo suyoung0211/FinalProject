@@ -92,11 +92,9 @@ public class AuthService {
                 user.getNickname(),
                 user.getLevel(),
                 user.getPoints(),
-
                 user.getAvatarIcon(),     // 수정됨
                 user.getProfileFrame(),   // 수정됨
                 user.getProfileBadge(),   // 수정됨
-
                 user.getRole().name()   
         );
 

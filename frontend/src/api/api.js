@@ -1,5 +1,3 @@
-// src/api/api.js
-
 import axios from "axios";
 
 // ------------------------------------------------------------
@@ -70,7 +68,7 @@ api.interceptors.response.use(
         // Refresh Token 만료 또는 검증 실패 → 자동 로그아웃
         localStorage.removeItem("accessToken");
         window.location.href = "/login";
-        return Promise.reject(refreshError);
+        return Promise.reject(e);
       }
     }
 
