@@ -77,7 +77,7 @@ public class AuthService {
         String refreshToken = jwt.createRefreshToken(user.getId());
 
         // 4. 기존 Refresh Token 제거 후 재발급
-        tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete);
+        tokenRepo.findByUserId(user.getId()).ifPresent(tokenRepo::delete); // UserId로 Refresh Token 검색하는 구조임
 
         tokenRepo.save(
                 RefreshTokenEntity.builder()
@@ -132,9 +132,14 @@ public class AuthService {
     }
 
     /**
-     * 로그아웃
+     * 로그아웃 : useid -> refreshToken 기준으로 무효화(DB에서 삭제)
      */
-    public void logout(Integer userId) {
-        tokenRepo.deleteByUserId(userId);
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return; // 쿠키가 이미 없거나 하면 그냥 무시
+        }
+
+        // DB에서 해당 RT 삭제 → 이 브라우저 세션 종료
+        tokenRepo.deleteByToken(refreshToken);
     }
 }
