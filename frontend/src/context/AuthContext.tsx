@@ -14,6 +14,8 @@ import { jwtDecode } from "jwt-decode"; // 액세스 토큰 디코딩용
 // 🔹 유저 정보 타입
 // --------------------------------------------------
 export interface UserType {
+  // ✅ Access Token에서 가져옴
+  id?: number;                // ✅추가 Access Token의 "id"
   loginId?: string;           // 토큰에 있을 경우
   nickname: string;
   level: number;
@@ -56,6 +58,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // --------------------------------------------------
   // ⭐ 초기 로드: localStorage Access Token 기반 유저 세팅
+  // 앱이 새로 켜질 때는 localStorage에 있는 accessToken만 믿을 수 있다.
+  // 그래서 토큰을 먼저 디코딩해서 최소한의 id/nickname/role만 세팅한다.
+  // 나머지 상세 정보는 /api/users/me 같은 API로 가져와서 user에 덮어쓴다.
   // --------------------------------------------------
   useEffect(() => {
   const savedAccess = localStorage.getItem("accessToken");

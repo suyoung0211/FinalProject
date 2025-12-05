@@ -18,9 +18,13 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
 
     boolean existsByUserAndChoice(UserEntity user, VoteOptionChoiceEntity choice);
 
+    boolean existsByUserIdAndOptionId(Integer userId, Long optionId);
+
+    boolean existsByUserIdAndChoiceId(Integer userId, Long choiceId);
+
     List<VoteUserEntity> findByChoiceId(Long choiceId);
 
     List<VoteUserEntity> findByVoteId(Integer voteId);
-    
+
     List<VoteUserEntity> findByUserId(Integer userId);
 }
