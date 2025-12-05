@@ -707,15 +707,15 @@ def worker():
                     r.set(f"cp:{post_id}:triggered", "1")
 
             # ISSUE APPROVE → VOTE
-            elif raw.startswith("issueApprove:"):
-                issue_id = int(raw.split(":")[1])
-                print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
+            # elif raw.startswith("issueApprove:"):
+            #     issue_id = int(raw.split(":")[1])
+            #     print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
 
-                result = run_vote_for_issue(session, issue_id)
-                print("📝 Result:", result)
+            #     result = run_vote_for_issue(session, issue_id)
+            #     print("📝 Result:", result)
 
-                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
-                    r.set(f"issue:{issue_id}:voteCreated", "1")
+            #     if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+            #         r.set(f"issue:{issue_id}:voteCreated", "1")
 
             session.close()
 
@@ -724,6 +724,37 @@ def worker():
             traceback.print_exc()
             time.sleep(1)
 
-if __name__ == "__main__":
-    worker()
+from threading import Thread
+from flask import Flask, request, jsonify
 
+app = Flask(__name__)
+
+@app.post("/trigger/vote")
+def trigger_vote():
+    try:
+        data = request.get_json()
+        issue_id = data.get("issueId")
+
+        if not issue_id:
+            return jsonify({"error": "issueId is required"}), 400
+
+        session = Session()
+        result = run_vote_for_issue(session, issue_id)
+        session.close()
+
+        return jsonify(result)
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+if __name__ == "__main__":
+    print("🚀 Starting Makgora Unified Python Server (Flask + Worker)...")
+
+    # 🔥 Redis Worker 스레드 실행
+    worker_thread = Thread(target=worker, daemon=True)
+    worker_thread.start()
+
+    # 🔥 Flask 서버 실행
+    app.run(host="0.0.0.0", port=5001)

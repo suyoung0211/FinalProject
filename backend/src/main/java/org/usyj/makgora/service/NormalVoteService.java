@@ -84,35 +84,61 @@ public NormalVoteResponse updateVote(Long voteId, NormalVoteFullUpdateRequest re
         throw new RuntimeException("본인이 생성한 투표만 수정 가능합니다.");
     }
 
+    // 1) 기본 정보 수정
     vote.setTitle(req.getTitle());
     vote.setDescription(req.getDescription());
     vote.setEndAt(req.getEndAt());
     vote.setCategory(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()));
 
-    // 기존 옵션 전부 삭제 후 새로 생성
-    optionRepository.deleteAll(vote.getOptions());
+    // 2) 삭제할 옵션들 처리
+    if (req.getDeletedOptionIds() != null) {
+        req.getDeletedOptionIds().forEach(optionRepository::deleteById);
+    }
 
-    List<NormalVoteOptionEntity> newOptions = req.getOptions().stream()
-            .map(o -> {
-                NormalVoteOptionEntity option = NormalVoteOptionEntity.builder()
-                        .normalVote(vote)
-                        .optionTitle(o.getOptionTitle())
+    // 3) 삭제할 choice들 처리
+    if (req.getDeletedChoiceIds() != null) {
+        req.getDeletedChoiceIds().forEach(choiceRepository::deleteById);
+    }
+
+    // 4) 옵션 업데이트 (기존 + 신규)
+    for (NormalVoteFullUpdateRequest.OptionUpdateDto dto : req.getOptions()) {
+
+        NormalVoteOptionEntity option;
+
+        // 기존 옵션 수정
+        if (dto.getOptionId() != null) {
+            option = optionRepository.findById(dto.getOptionId())
+                    .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
+            option.setOptionTitle(dto.getOptionTitle());
+
+        } else {
+            // 새 옵션 추가
+            option = NormalVoteOptionEntity.builder()
+                    .normalVote(vote)
+                    .optionTitle(dto.getOptionTitle())
+                    .build();
+            optionRepository.save(option);
+        }
+
+        // 선택지 업데이트
+        for (NormalVoteFullUpdateRequest.ChoiceUpdateDto c : dto.getChoices()) {
+
+            if (c.getChoiceId() != null) {
+                // 기존 choice 수정
+                NormalVoteChoiceEntity choice = choiceRepository.findById(c.getChoiceId())
+                        .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+                choice.setChoiceText(c.getChoiceText());
+
+            } else {
+                // 새 choice 추가
+                NormalVoteChoiceEntity choice = NormalVoteChoiceEntity.builder()
+                        .normalOption(option)
+                        .choiceText(c.getChoiceText())
                         .build();
-                optionRepository.save(option);
-
-                List<NormalVoteChoiceEntity> choices = o.getChoices().stream()
-                        .map(c -> NormalVoteChoiceEntity.builder()
-                                .normalOption(option)
-                                .choiceText(c.getChoiceText())
-                                .build())
-                        .toList();
-
-                choiceRepository.saveAll(choices);
-                option.setChoices(choices);
-                return option;
-            }).toList();
-
-    vote.setOptions(newOptions);
+                choiceRepository.save(choice);
+            }
+        }
+    }
 
     return toResponse(vote);
 }
