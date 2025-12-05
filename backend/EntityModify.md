@@ -276,3 +276,11 @@ ArticleAiTitleRepogitory 겹치는거 삭제(rssfeed쪽 살림)
 category관련 백엔드 아예 빼버려서 따로 ArticleCategory로 살림
 => 기사 카테고리별로 부를 수 있도록 api설정
 카테고리 전체 / 카테고리 별 기사 수 / list형식 반환 / page형식 반환
+
+------------------------------
+노멀 투표 추가(배당률, 포인트 등 다 빠짐)
+!!!python작동 2개 돌려야함!!!
+1. python worker 내에 있는 generate_ai_titles_api
+2. python worker/generateIssueCard내부에 generateIssueCard.py실행
+3. python 쪽 flask 패키지 추가 안될 경우 pip install flask 실행
+

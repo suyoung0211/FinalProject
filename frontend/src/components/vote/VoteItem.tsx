@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { User, Coins } from "lucide-react";
-import { Button } from "../ui/button";
 import { fetchVoteDetail, fetchVoteOdds } from "../../api/voteApi";
 
 export function VoteItem({
@@ -25,17 +24,14 @@ export function VoteItem({
 
         // 선택지에 odds 매핑
         const mergedOptions = detail.options.map((opt: any) => ({
-  ...opt,
-  choices: opt.choices.map((c: any) => ({
-    ...c,
-    percentage:
-      odds.choices?.find((o: any) => o.choiceId === c.choiceId)?.odds ?? 0,
-  })),
-}));
-        console.log("🔥 [FRONT] voteId=", voteId);
-console.log("🔥 [FRONT] fetchVoteDetail 응답:", detail);
-console.log("🔥 [FRONT] fetchVoteOdds 응답:", odds);
-console.log("🔥 [FRONT] 선택지 매핑 결과:", mergedOptions);
+          ...opt,
+          choices: opt.choices.map((c: any) => ({
+            ...c,
+            percentage:
+              odds.choices?.find((o: any) => o.choiceId === c.choiceId)?.odds ??
+              0,
+          })),
+        }));
 
         setVote({ ...detail, options: mergedOptions });
       } catch (err) {
@@ -53,22 +49,48 @@ console.log("🔥 [FRONT] 선택지 매핑 결과:", mergedOptions);
     );
   }
 
-  /** 🔢 확률 계산 (Yes/No only) */
-  const yesChoice = vote.options[0]?.choices.find((c: any) => c.text === "YES");
-  const noChoice  = vote.options[0]?.choices.find((c: any) => c.text === "NO");
+  /* ===========================================================================
+      🔢 전체 YES/NO 비율 (도넛)
+    =========================================================================== */
+  let totalYes = 0;
+  let totalNo = 0;
 
-  const yes = yesChoice?.percentage ?? 0;
-  const no  = noChoice?.percentage ?? 0;
+  vote.options.forEach((opt: any) => {
+    opt.choices.forEach((c: any) => {
+      if (c.text === "YES") totalYes += c.participantsCount ?? 0;
+      if (c.text === "NO") totalNo += c.participantsCount ?? 0;
+    });
+  });
 
-  const total = yes + no;
-  const yesPercent = total > 0 ? Math.round((yes / total) * 100) : 50;
-  const noPercent  = total > 0 ? 100 - yesPercent : 50;
-  const circleColor = yesPercent > noPercent ? "border-green-500 text-green-400" : "border-red-500 text-red-400";
+  const total = totalYes + totalNo;
+  const yesPercent = total > 0 ? Math.round((totalYes / total) * 100) : 50;
+  const noPercent = 100 - yesPercent;
+
+  /* ===========================================================================
+      🔢 옵션별 YES/NO 비율 계산
+    =========================================================================== */
+  const optionsWithPercent = vote.options.map((opt: any) => {
+    const yesChoice = opt.choices.find((c: any) => c.text === "YES");
+    const noChoice = opt.choices.find((c: any) => c.text === "NO");
+
+    const yes = yesChoice?.participantsCount ?? 0;
+    const no = noChoice?.participantsCount ?? 0;
+
+    const sum = yes + no;
+    const percent = sum > 0 ? Math.round((yes / sum) * 100) : 50;
+
+    return {
+      ...opt,
+      yes,
+      no,
+      percent, // yes 기준
+    };
+  });
 
   return (
-  <div
-    onClick={() => onMarketClick(vote.id)}
-    className="
+    <div
+      onClick={() => onMarketClick(vote.id)}
+      className="
       flex flex-col 
       rounded-2xl p-5 cursor-pointer transition-all
       bg-[#261b3a] 
@@ -76,65 +98,109 @@ console.log("🔥 [FRONT] 선택지 매핑 결과:", mergedOptions);
       hover:bg-[#381f5c] 
       hover:border-purple-400/50
     "
-    style={{ height: "340px" }}
-  >
-    {/* ====== 상단 헤더 ====== */}
-    <div className="flex items-start justify-between">
-      <div className="flex items-center gap-3">
-        {vote.thumbnail && (
-          <img
-            src={vote.thumbnail}
-            alt="thumbnail"
-            className="w-12 h-12 object-cover rounded-md"
-          />
-        )}
-        <div>
-          <h3 className="text-white font-bold text-lg leading-tight">{vote.title}</h3>
-          
+      style={{ minHeight: "360px" }}
+    >
+      {/* ======================================================
+          🔼 상단 제목 + 도넛 그래프
+      ====================================================== */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          {vote.thumbnail && (
+            <img
+              src={vote.thumbnail}
+              alt="thumbnail"
+              className="w-12 h-12 object-cover rounded-md"
+            />
+          )}
+          <div className="w-48">
+            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2">
+              {vote.title}
+            </h3>
+          </div>
+        </div>
+
+        {/* 🔥 도넛 */}
+        <div className="flex flex-col items-center">
+          <div className="relative w-16 h-16 flex items-center justify-center">
+
+            {/* 비율 색 */}
+            <div
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(
+              #22c55e ${yesPercent * 3.6}deg,
+              #ef4444 0deg
+            )`,
+              }}
+            />
+
+            {/* 안쪽 구멍 */}
+            <div className="absolute inset-2 bg-[#261b3a] rounded-full" />
+
+            <div className="relative text-white font-bold text-sm">
+              {yesPercent}%
+            </div>
+          </div>
+
+          <span className="text-xs text-gray-400 mt-1">chance</span>
+          <p className="text-gray-300 text-xs mt-1">{vote.category}</p>
         </div>
       </div>
 
-      {/* 확률 원 */}
-      <div className="flex flex-col items-center">
-        <div
-          className={`w-12 h-12 rounded-full border-4 flex items-center justify-center font-bold ${circleColor}`}
-        >
-          {yesPercent}%
+      {/* ======================================================
+          🔽 옵션 리스트 — 여러 개 가능
+      ====================================================== */}
+      <div className="mt-4 space-y-3">
+        {optionsWithPercent.map((opt: any) => (
+          <div
+            key={opt.optionId}
+            className="bg-white/5 border border-white/10 rounded-xl p-3"
+          >
+            {/* 옵션 제목 */}
+            <div className="text-white font-semibold text-sm mb-2">
+              {opt.title}
+            </div>
+
+            {/* YES / NO 막대 */}
+            <div className="w-full h-3 rounded-full overflow-hidden flex">
+              {/* YES */}
+              <div
+                className="h-full bg-green-500"
+                style={{ width: `${opt.percent}%` }}
+              />
+              {/* NO */}
+              <div
+                className="h-full bg-red-500"
+                style={{ width: `${100 - opt.percent}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between mt-1 text-xs font-semibold">
+              <span className="text-green-400">YES {opt.percent}%</span>
+              <span className="text-red-400">
+                NO {100 - opt.percent}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ======================================================
+          🔽 하단 정보
+      ====================================================== */}
+      <div className="mt-4 flex justify-between items-center text-gray-300 text-xs border-t border-white/10 pt-3">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <Coins className="w-3 h-3" />
+            {(vote.totalPoints / 1000).toFixed(1)}k Vol.
+          </span>
+          <span className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            {vote.totalParticipants}
+          </span>
         </div>
-        <span className="text-xs text-gray-400 mt-1">chance</span>
-        <p className="text-gray-300 text-xs mt-1">{vote.category}</p>
+        <span>마감: {vote.endAt.substring(0, 10)}</span>
       </div>
     </div>
-
-    {/* ====== 자동 여백 → YES/NO 바를 아래로 밀어냄 ====== */}
-    <div className="flex-1"></div>
-
-    {/* ====== YES / NO 바 (항상 아래 고정) ====== */}
-    <div className="mt-4">
-      <div className="flex w-full">
-        <div className="bg-green-600/20 text-green-400 px-4 py-2 w-1/2 rounded-l-xl font-semibold text-center">
-          Yes ({yesPercent}%)
-        </div>
-        <div className="bg-red-600/20 text-red-400 px-4 py-2 w-1/2 rounded-r-xl font-semibold text-center">
-          No ({noPercent}%)
-        </div>
-      </div>
-    </div>
-
-    {/* ====== 하단 정보 ====== */}
-    <div className="mt-3 flex justify-between items-center text-gray-300 text-xs border-t border-white/10 pt-3">
-      <div className="flex items-center gap-3">
-        <span className="flex items-center gap-1">
-          <Coins className="w-3 h-3" />
-          {(vote.totalPoints / 1000).toFixed(1)}k Vol.
-        </span>
-        <span className="flex items-center gap-1">
-          <User className="w-3 h-3" />
-          {vote.totalParticipants}
-        </span>
-      </div>
-      <span>마감: {vote.endAt.substring(0, 10)}</span>
-    </div>
-  </div>
-);
+  );
 }

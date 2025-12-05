@@ -64,6 +64,7 @@ public class SecurityConfig {
         // 투표 GET 허용
         .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
+        .requestMatchers(HttpMethod.POST, "/api/votes/ai-create").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/votes/**").authenticated()
         .requestMatchers(HttpMethod.PUT, "/api/votes/**").authenticated()
         .requestMatchers(HttpMethod.DELETE, "/api/votes/**").authenticated()

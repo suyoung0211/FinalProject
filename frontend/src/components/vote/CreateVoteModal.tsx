@@ -8,19 +8,20 @@ interface CreateVoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate?: (voteData: {
-    question: string;
+    title: string;
     description: string;
-    category: string;
-    endDate: string;
+    category: string;     // ENUM 형식 (POLITICS 등)
+    endAt: string;
   }) => void;
 }
 
 export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalProps) {
-  const [question, setQuestion] = useState('');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('politics');
   const [endDateTime, setEndDateTime] = useState('');
 
+  // 하드코딩 카테고리 유지
   const categories = [
     { value: 'politics', label: '정치', color: 'from-red-500 to-orange-500' },
     { value: 'business', label: '경제', color: 'from-blue-500 to-cyan-500' },
@@ -31,20 +32,21 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
   ];
 
   const handleSubmit = () => {
-    if (!question.trim() || !endDateTime) {
+    if (!title.trim() || !endDateTime) {
       alert('질문과 종료일시를 모두 입력해주세요.');
       return;
     }
 
+    // 🔥 백엔드 ENUM 규칙에 맞게 카테고리 변환
     onCreate?.({
-      question,
+      title,
       description,
-      category,
-      endDate: endDateTime,
+      category: category.toUpperCase(), // POLITICS, BUSINESS 등
+      endAt: endDateTime,
     });
 
-    // Reset form
-    setQuestion('');
+    // Reset
+    setTitle('');
     setDescription('');
     setCategory('politics');
     setEndDateTime('');
@@ -56,7 +58,7 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -77,15 +79,15 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Question */}
+          {/* Title */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-white font-medium">
               <FileText className="w-4 h-4 text-purple-400" />
               질문
             </label>
             <Input
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="예: 2025년 비트코인이 15만 달러를 돌파할까요?"
               className="bg-white/5 border-white/20 text-white placeholder:text-gray-500"
             />
@@ -132,7 +134,7 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
             </div>
           </div>
 
-          {/* End Date and Time */}
+          {/* End DateTime */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-white font-medium">
               <Calendar className="w-4 h-4 text-purple-400" />
@@ -143,35 +145,40 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
               value={endDateTime}
               onChange={(e) => setEndDateTime(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="bg-white/10 border-white/30 text-white placeholder:text-gray-400 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="bg-white/10 border-white/30 text-white placeholder:text-gray-400 
+              [&::-webkit-calendar-picker-indicator]:invert 
+              [&::-webkit-calendar-picker-indicator]:brightness-200 
+              [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
-            <p className="text-xs text-gray-400">
-              투표가 종료되는 날짜와 시간을 선택하세요
-            </p>
+            <p className="text-xs text-gray-400">투표가 종료되는 날짜와 시간을 선택하세요</p>
           </div>
 
-          {/* Preview Card */}
-          {question && (
+          {/* Preview */}
+          {title && (
             <div className="bg-white/5 border border-white/10 rounded-xl p-4">
               <p className="text-xs text-gray-400 mb-2">미리보기</p>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
-                    categories.find(c => c.value === category)?.color
-                  } text-white`}>
-                    {categories.find(c => c.value === category)?.label}
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${
+                      categories.find((c) => c.value === category)?.color
+                    } text-white`}
+                  >
+                    {categories.find((c) => c.value === category)?.label}
                   </span>
                   {endDateTime && (
                     <span className="flex items-center gap-1 text-xs text-gray-400">
                       <Clock className="w-3 h-3" />
-                      {new Date(endDateTime).toLocaleDateString('ko-KR')}
-                      {endDateTime && ` ${new Date(endDateTime).toLocaleTimeString('ko-KR')}`} 종료
+                      {new Date(endDateTime).toLocaleDateString('ko-KR')}{' '}
+                      {new Date(endDateTime).toLocaleTimeString('ko-KR')} 종료
                     </span>
                   )}
                 </div>
-                <h3 className="text-white font-medium">{question}</h3>
+                <h3 className="text-white font-medium">{title}</h3>
                 {description && (
-                  <p className="text-sm text-gray-400 line-clamp-2">{description}</p>
+                  <p className="text-sm text-gray-400 line-clamp-2">
+                    {description}
+                  </p>
                 )}
                 <div className="flex gap-3 mt-4">
                   <div className="flex-1 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-3 text-center">
