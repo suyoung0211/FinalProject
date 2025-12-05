@@ -7,8 +7,13 @@ import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
 import org.usyj.makgora.request.normalvote.NormalVoteFullUpdateRequest;
-import org.usyj.makgora.response.normalvote.*;
+import org.usyj.makgora.response.normalvote.NormalVoteChoiceResponse;
+import org.usyj.makgora.response.normalvote.NormalVoteListItemResponse;
+import org.usyj.makgora.response.normalvote.NormalVoteListResponse;
+import org.usyj.makgora.response.normalvote.NormalVoteOptionResponse;
+import org.usyj.makgora.response.normalvote.NormalVoteResponse;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -18,6 +23,7 @@ public class NormalVoteService {
     private final NormalVoteRepository normalVoteRepository;
     private final NormalVoteOptionRepository optionRepository;
     private final NormalVoteChoiceRepository choiceRepository;
+    private final NormalVoteStatusHistoryRepository normalVoteStatusHistoryRepository;
     private final UserRepository userRepository;
 
     /* ---------------------------------------------------
@@ -35,6 +41,7 @@ public NormalVoteResponse createVote(NormalVoteCreateRequest req, Integer userId
             .endAt(req.getEndAt())
             .user(user)
             .category(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()))
+            .status(NormalVoteEntity.Status.ONGOING)
             .build();
 
     normalVoteRepository.save(vote);
@@ -61,6 +68,15 @@ public NormalVoteResponse createVote(NormalVoteCreateRequest req, Integer userId
             }).toList();
 
     vote.setOptions(options);
+
+    /** 🔥 상태 이력 저장 */
+    NormalVoteStatusHistoryEntity history = NormalVoteStatusHistoryEntity.builder()
+            .normalVote(vote)
+            .status(NormalVoteStatusHistoryEntity.Status.ONGOING)
+            .statusDate(LocalDateTime.now())
+            .build();
+
+    normalVoteStatusHistoryRepository.save(history);
 
     return toResponse(vote);
 }
@@ -167,6 +183,7 @@ private NormalVoteResponse toResponse(NormalVoteEntity v) {
             .title(v.getTitle())
             .description(v.getDescription())
             .status(v.getStatus().name())
+            .totalParticipants(v.getTotalParticipants())
             .endAt(v.getEndAt())
             .createdAt(v.getCreatedAt())
             .options(options)
@@ -187,12 +204,29 @@ public NormalVoteListResponse getAllVotes() {
                     .status(v.getStatus().name())
                     .createdAt(v.getCreatedAt())
                     .endAt(v.getEndAt())
-                    .totalParticipants(
+                    .totalParticipants(v.getTotalParticipants())
+
+                    /* 🔥 옵션 + 선택지 매핑 */
+                    .options(
                             v.getOptions().stream()
-                                    .flatMap(o -> o.getChoices().stream())
-                                    .mapToInt(NormalVoteChoiceEntity::getParticipantsCount)
-                                    .sum()
+                                    .map(opt -> NormalVoteOptionResponse.builder()
+                                            .optionId(opt.getId())
+                                            .title(opt.getOptionTitle())
+                                            .choices(
+                                                    opt.getChoices().stream()
+                                                            .map(c -> NormalVoteChoiceResponse.builder()
+                                                                    .choiceId(c.getId())
+                                                                    .text(c.getChoiceText())
+                                                                    .participantsCount(c.getParticipantsCount())
+                                                                    .build()
+                                                            )
+                                                            .toList()
+                                            )
+                                            .build()
+                                    )
+                                    .toList()
                     )
+
                     .build()
             )
             .toList();
@@ -201,6 +235,41 @@ public NormalVoteListResponse getAllVotes() {
             .votes(items)
             .totalCount(items.size())
             .build();
+}
+
+@Transactional
+public NormalVoteResponse participate(Long voteId, Integer userId, Long choiceId) {
+
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
+
+    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+    // -----------------------------
+    // 🔥 선택지 찾기
+    // -----------------------------
+    NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
+            .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+
+    // -----------------------------
+    // 🔥 중복 참여 방지 (필요 시 테이블 만들 수 있음)
+    // -----------------------------
+    // 나중에 NormalVoteUserHistory 테이블 만들면 여기서 체크 가능
+
+    // -----------------------------
+    // 🔥 개별 choice 참여 카운트 증가
+    // -----------------------------
+    choice.setParticipantsCount(choice.getParticipantsCount() + 1);
+    choiceRepository.save(choice);
+
+    // -----------------------------
+    // 🔥 전체 투표 참여자 수 증가
+    // -----------------------------
+    vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+    normalVoteRepository.save(vote);
+
+    return toResponse(vote);
 }
 // 6) 삭제(Soft Delete: 상태만 CANCELLED 로 변경)
 @Transactional
