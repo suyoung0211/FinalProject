@@ -27,9 +27,9 @@ public class StoreDataInitializer {
                 .category(StoreItemEntity.Category.FRAME)
                 .price(1000)
                 .stock(999)
-                .image("https://i.imgur.com/7Ph0XNs.png")
+                .image("uploads/frame/b1879215-b101-431a-be07-71b6587e5079.png")
                 .build());
-
+        
         storeItemRepository.save(StoreItemEntity.builder()
                 .name("블루 글로우 테두리")
                 .type(StoreItemEntity.ItemType.POINT)
