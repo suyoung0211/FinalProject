@@ -1,6 +1,6 @@
 // RssFeeds.tsx
 import React, { useState, useEffect } from 'react';
-import { Clock, Plus, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, ChevronDown, ChevronRight, Download } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { getAllAdminRssFeeds } from '../../../api/adminAPI';
 import EditRssFeedModal from './EditRssFeedModal';
@@ -149,12 +149,21 @@ export const RssFeeds: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-center">{getStatusBadge(feed.status)}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex justify-center items-center gap-2">
+
+                            {/* 체크 버튼 */}
+                            <button className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors">
+                              <Download className="w-4 h-4" />
+                            </button>
+
+                            {/* 수정 버튼 */}
                             <button
                               className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors"
                               onClick={() => setSelectedFeed(feed)}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
+
+                            {/* 삭제 버튼 */}
                             <button className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>

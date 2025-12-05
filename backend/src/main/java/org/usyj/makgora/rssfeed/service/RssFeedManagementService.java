@@ -2,6 +2,7 @@ package org.usyj.makgora.rssfeed.service;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -93,6 +94,12 @@ public class RssFeedManagementService {
         // 캐시에 저장
         feedCache.put(feedUrl, feed);
         return feed;
+    }
+
+    /** 활성화된 모든 피드 조회 */
+    @Transactional(readOnly = true)
+    public List<RssFeedEntity> getAllActiveFeeds() {
+        return feedRepo.findAllActiveFeeds();
     }
 
     /**
