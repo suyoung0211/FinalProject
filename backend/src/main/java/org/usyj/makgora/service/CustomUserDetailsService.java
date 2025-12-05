@@ -11,13 +11,26 @@ import org.usyj.makgora.security.CustomUserDetails;
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-  private final UserRepository repo;
+    private final UserRepository repo;
 
-  @Override
-  public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
-    UserEntity user = repo.findByLoginId(loginId)
-        .orElseThrow(() -> new UsernameNotFoundException("사용자 없음: " + loginId));
+    // -----------------------------
+    // 기존 로그인 ID 기반 조회
+    // -----------------------------
+    @Override
+    public UserDetails loadUserByUsername(String loginId) throws UsernameNotFoundException {
+        UserEntity user = repo.findByLoginId(loginId)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자 없음: " + loginId));
 
-    return new CustomUserDetails(user);
-  }
+        return new CustomUserDetails(user);
+    }
+
+    // -----------------------------
+    // 유저 ID 기반 조회
+    // -----------------------------
+    public UserDetails loadUserById(Integer userId) throws UsernameNotFoundException {
+        UserEntity user = repo.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자 없음 ID: " + userId));
+
+        return new CustomUserDetails(user);
+    }
 }

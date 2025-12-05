@@ -123,7 +123,7 @@ public class ArticleReactionService {
         long comment = getCount(id, "comment");
 
         // 너네가 쓰는 공식 그대로 유지
-        return (int) (view * 0.1 + like * 2 + comment * 3);
+        return (int) (view * 0.1 + like * 2 + dislike * 0.5 + comment * 3);
     }
 
     /* ======================= 음수 방지 ======================== */

@@ -19,20 +19,21 @@ public class UserInfoService {
     private final UserRepository repo;
 
     // 🔹 일반 사용자용: 로그인한 사용자의 정보 조회
-    public UserInfoResponse getMyInfo(String loginId) {
-    UserEntity user = repo.findByLoginId(loginId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    public UserInfoResponse getMyInfoById(Integer userId) {
+        UserEntity user = repo.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-    return UserInfoResponse.builder()
-            .nickname(user.getNickname())
-            .level(user.getLevel())
-            .points(user.getPoints())
-            .avatarIcon(user.getAvatarIcon())
-            .profileFrame(user.getProfileFrame())
-            .profileBadge(user.getProfileBadge())
-            .role(user.getRole().name())
-            .build();
-}
+        return UserInfoResponse.builder()
+                .loginId(user.getLoginId())
+                .nickname(user.getNickname())
+                .level(user.getLevel())
+                .points(user.getPoints())
+                .avatarIcon(user.getAvatarIcon())
+                .profileFrame(user.getProfileFrame())
+                .profileBadge(user.getProfileBadge())
+                .role(user.getRole().name())
+                .build();
+    }
 
     // 🔹 관리자용: 모든 사용자 정보 조회
     public List<AdminUserInfoResponse> getAllUsers(UserEntity currentUser) {

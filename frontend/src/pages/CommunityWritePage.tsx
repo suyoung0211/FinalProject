@@ -1,5 +1,5 @@
 import { ArrowLeft, Globe, TrendingUp, Award, Users, Briefcase, DollarSign, Zap, Flame, MessageSquare, Plus, Bold, Italic, Underline, Strikethrough, Link as LinkIcon, Image as ImageIcon, List, ListOrdered, Quote, Code, Type, Palette, AlignLeft, AlignCenter, AlignRight, Upload } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
@@ -34,6 +34,16 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
     initialPost ? mapPostTypeToCategory(initialPost.postType) : 'free'
   );
   const [newPostTags, setNewPostTags] = useState(initialPost?.tags?.join(', ') || '');
+
+  // initialPost가 로드되면 state 업데이트 (수정 모드용)
+  useEffect(() => {
+    if (initialPost && mode === 'edit') {
+      setNewPostTitle(initialPost.title || '');
+      setNewPostContent(initialPost.content || '');
+      setNewPostCategory(mapPostTypeToCategory(initialPost.postType || '일반'));
+      setNewPostTags(initialPost.tags?.join(', ') || '');
+    }
+  }, [initialPost, mode]);
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
