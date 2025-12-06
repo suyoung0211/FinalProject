@@ -708,15 +708,15 @@ def worker():
                     r.set(f"cp:{post_id}:triggered", "1")
 
             # ISSUE APPROVE → VOTE
-            # elif raw.startswith("issueApprove:"):
-            #     issue_id = int(raw.split(":")[1])
-            #     print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
+            elif raw.startswith("issueApprove:"):
+                issue_id = int(raw.split(":")[1])
+                print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
 
-            #     result = run_vote_for_issue(session, issue_id)
-            #     print("📝 Result:", result)
+                result = run_vote_for_issue(session, issue_id)
+                print("📝 Result:", result)
 
-            #     if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
-            #         r.set(f"issue:{issue_id}:voteCreated", "1")
+                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+                    r.set(f"issue:{issue_id}:voteCreated", "1")
 
             session.close()
 

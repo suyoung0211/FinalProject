@@ -553,14 +553,14 @@ export function NewsDetailModal() {
               <Share2 className="w-4 h-4" /> 뉴스 공유
             </button>
              {/* 🔥 투표하러가기 버튼 (ONGOING일 때만) */}
-  {article.connectedVoteId && article.connectedVoteStatus === "ONGOING" && (
-    <button
-      onClick={() => window.location.href = `/vote/${article.connectedVoteId}`}
-      className="flex items-center gap-2 px-4 py-2 border border-green-500 text-green-300 rounded-full hover:bg-green-900/40 transition"
-    >
-      🟢 투표하러 가기
-    </button>
-  )}
+{article.connectedVoteId && article.connectedVoteStatus === "ONGOING" && (
+  <button
+    onClick={() => window.open(`/vote/${article.connectedVoteId}`, "_blank")}
+    className="flex items-center gap-2 px-4 py-2 border border-green-500 text-green-300 rounded-full hover:bg-green-900/40 transition"
+  >
+    🟢 투표하러 가기
+  </button>
+)}
           </div>
 
           {/* 댓글 작성/수정 입력 */}
