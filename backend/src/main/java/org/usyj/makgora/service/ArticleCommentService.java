@@ -160,13 +160,9 @@ public class ArticleCommentService {
 
     Long commentId = entity.getId();
 
-    // 👍 좋아요 개수
     long likeCnt = reactionRepo.countByComment_IdAndReaction(commentId, 1);
-
-    // 👎 싫어요 개수
     long dislikeCnt = reactionRepo.countByComment_IdAndReaction(commentId, -1);
 
-    // 내가 좋아요 눌렀는지
     boolean likedByMe = false;
     boolean dislikedByMe = false;
 
@@ -191,13 +187,10 @@ public class ArticleCommentService {
             .content(entity.getContent())
             .createdAt(entity.getCreatedAt())
             .updatedAt(entity.getUpdatedAt())
-
-            // 🔥 DB 기반 좋아요/싫어요 적용
             .likeCount(likeCnt)
             .dislikeCount(dislikeCnt)
             .liked(likedByMe)
             .disliked(dislikedByMe)
-
             .mine(currentUserId != null && entity.getUser().getId().equals(currentUserId))
             .replies(new ArrayList<>())
             .build();

@@ -74,8 +74,10 @@ export const deleteArticleComment = async (commentId) => {
   return res.data;
 };
 // 댓글 반응 (LIKE / DISLIKE / RESET)
-export const reactComment = async (commentId, type) => {
-  const res = await api.post(`/articles/comments/${commentId}/reaction`, { type });
+export const reactComment = async (commentId, reaction) => {
+  const res = await api.post(`/articles/comments/${commentId}/reactions`, {
+    reaction,
+  });
   return res.data;
 };
 

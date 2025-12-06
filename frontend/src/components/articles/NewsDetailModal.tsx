@@ -1,6 +1,6 @@
 // ======================================================================
 // src/components/modal/NewsDetailModal.tsx
-// 대댓글 + 좋아요/싫어요 + 정렬/더보기 + 공유 + 뉴스공유 + 수정 모드 통합
+// 대댓글 + 좋아요/싫어요 + 정렬/더보기 + 공유 + JWT 인증 통합 최종본
 // ======================================================================
 
 import {
@@ -10,9 +10,6 @@ import {
   Share2,
   ThumbsUp,
   ThumbsDown,
-  Reply,
-  Edit3,
-  Trash2,
   X,
   User as UserIcon,
 } from "lucide-react";
@@ -32,6 +29,31 @@ import { useArticleModal } from "../../context/ArticleModalContext";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import clsx from "clsx";
+
+// ======================================================================
+// JWT 인증 유틸
+// ======================================================================
+const isTokenExpired = (token: string) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return Date.now() > payload.exp * 1000;
+  } catch (e) {
+    return true;
+  }
+};
+
+const requireAuth = () => {
+  const token = localStorage.getItem("accessToken");
+
+  if (!token || isTokenExpired(token)) {
+    alert("로그인이 필요합니다.");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    window.location.href = "/login";
+    return null;
+  }
+  return token;
+};
 
 // ======================================================================
 // 🔥 타입 정의
@@ -66,11 +88,11 @@ interface CommentType {
   liked: boolean;
   disliked: boolean;
 
-  isMine: boolean;
+  mine: boolean;
   replies: CommentType[];
 }
 
-// Raw → Tree 변환
+// Raw → 트리 변환
 function normalizeComments(raw: RawComment[]): CommentType[] {
   return raw.map((c) => ({
     commentId: c.commentId,
@@ -83,7 +105,7 @@ function normalizeComments(raw: RawComment[]): CommentType[] {
     dislikeCount: c.dislikeCount,
     liked: c.liked,
     disliked: c.disliked,
-    isMine: c.mine,
+    mine: c.mine,
     replies: normalizeComments(c.replies ?? []),
   }));
 }
@@ -124,6 +146,11 @@ function CommentItem(props: CommentItemProps) {
 
   const indent = depth * 20;
 
+  const dateText =
+    comment.createdAt && comment.createdAt.length >= 10
+      ? comment.createdAt.slice(0, 10)
+      : comment.createdAt;
+
   return (
     <div className="py-4 border-b border-gray-700" style={{ marginLeft: indent }}>
       {/* 프로필 + 정보 */}
@@ -139,23 +166,27 @@ function CommentItem(props: CommentItemProps) {
 
           <div>
             <div className="text-gray-200 font-semibold text-sm">{comment.nickname}</div>
-            <div className="text-xs text-gray-500">
-              {new Date(comment.createdAt).toISOString().substring(0, 10)}
-            </div>
+            <div className="text-xs text-gray-500">{dateText}</div>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-gray-400">
-          <button onClick={() => onReply(comment.commentId, comment.nickname)} className="hover:text-gray-200">
+          <button
+            onClick={() => onReply(comment.commentId, comment.nickname)}
+            className="hover:text-gray-200"
+          >
             답글
           </button>
 
-          {comment.isMine && (
+          {comment.mine && (
             <>
               <button onClick={() => onEdit(comment)} className="hover:text-gray-200">
                 수정
               </button>
-              <button onClick={() => onDelete(comment.commentId)} className="hover:text-red-400">
+              <button
+                onClick={() => onDelete(comment.commentId)}
+                className="hover:text-red-400"
+              >
                 삭제
               </button>
             </>
@@ -233,18 +264,16 @@ export function NewsDetailModal() {
   const [article, setArticle] = useState<any>(null);
   const [comments, setComments] = useState<CommentType[]>([]);
 
-  // 입력/수정 상태
   const [commentText, setCommentText] = useState("");
   const [replyTarget, setReplyTarget] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
 
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // 정렬/더보기
   const [sortType, setSortType] = useState<"latest" | "popular">("latest");
   const [visibleCount, setVisibleCount] = useState(5);
 
-  // 데이터 로딩
+  // 로딩
   useEffect(() => {
     if (!open || !articleId) return;
 
@@ -262,20 +291,30 @@ export function NewsDetailModal() {
   if (!open || !article) return null;
 
   // ======================================================================
-  // 🔥 좋아요/싫어요
+  // 🔥 기사 좋아요/싫어요 (JWT 인증 적용)
   // ======================================================================
   const handleArticleReact = async (reaction: number) => {
-    const res = await reactArticle(article.articleId, reaction);
+    const token = requireAuth();
+    if (!token) return;
 
-    setArticle((prev: any) => ({
-      ...prev,
-      likeCount: res.likeCount,
-      dislikeCount: res.dislikeCount,
-      liked: res.liked,
-      disliked: res.disliked,
-    }));
+    try {
+      const res = await reactArticle(article.articleId, reaction);
+
+      setArticle((prev: any) => ({
+        ...prev,
+        likeCount: res.likeCount,
+        dislikeCount: res.dislikeCount,
+        liked: res.liked,
+        disliked: res.disliked,
+      }));
+    } catch (e) {
+      alert("오류가 발생했습니다.");
+    }
   };
 
+  // ======================================================================
+  // 🔥 댓글 좋아요/싫어요 (JWT 인증 적용)
+  // ======================================================================
   const updateCommentReaction = (commentId: number, res: any) => {
     const recurse = (list: CommentType[]): CommentType[] =>
       list.map((item) =>
@@ -284,85 +323,112 @@ export function NewsDetailModal() {
           : { ...item, replies: recurse(item.replies) }
       );
 
-    setComments(recurse);
+    setComments((prev) => recurse(prev));
   };
 
   const handleReact = async (commentId: number, reaction: number) => {
-    const res = await reactComment(commentId, reaction);
+  const token = requireAuth();
+  if (!token) return;
+
+  try {
+    const res = await reactComment(commentId, reaction); // 여기서 res는 res.data임
+
     updateCommentReaction(commentId, {
       likeCount: res.likeCount,
       dislikeCount: res.dislikeCount,
       liked: res.liked,
       disliked: res.disliked,
     });
-  };
+  } catch (e) {
+    alert("오류가 발생했습니다.");
+  }
+};
 
   // ======================================================================
-  // 🔥 댓글 작성 & 수정 (통합됨)
+  // 🔥 댓글 작성 & 수정
   // ======================================================================
   const submitComment = async () => {
+    const token = requireAuth();
+    if (!token) return;
+
     if (!commentText.trim()) return;
 
-    // 수정 모드
-    if (editingId) {
-      await updateArticleComment(editingId, { content: commentText });
+    try {
+      if (editingId) {
+        await updateArticleComment(editingId, { content: commentText });
+
+        const updated = await fetchArticleComments(articleId!);
+        setComments(normalizeComments(updated));
+
+        setEditingId(null);
+        setCommentText("");
+        return;
+      }
+
+      await postArticleComment(articleId!, {
+        content: commentText,
+        parentCommentId: null,
+      });
 
       const updated = await fetchArticleComments(articleId!);
       setComments(normalizeComments(updated));
-
-      setEditingId(null);
       setCommentText("");
-      return;
+    } catch (e) {
+      alert("오류가 발생했습니다.");
     }
-
-    // 작성 모드
-    await postArticleComment(articleId!, {
-      content: commentText,
-      parentCommentId: null,
-    });
-
-    const updated = await fetchArticleComments(articleId!);
-    setComments(normalizeComments(updated));
-    setCommentText("");
   };
 
   // ======================================================================
   // 🔥 대댓글 작성
   // ======================================================================
   const handleReplySubmit = async (parentId: number) => {
+    const token = requireAuth();
+    if (!token) return;
+
     if (!replyText.trim()) return;
 
-    await postArticleComment(articleId!, {
-      content: replyText,
-      parentCommentId: parentId,
-    });
+    try {
+      await postArticleComment(articleId!, {
+        content: replyText,
+        parentCommentId: parentId,
+      });
 
-    const updated = await fetchArticleComments(articleId!);
-    setComments(normalizeComments(updated));
+      const updated = await fetchArticleComments(articleId!);
+      setComments(normalizeComments(updated));
 
-    setReplyText("");
-    setReplyTarget(null);
+      setReplyText("");
+      setReplyTarget(null);
+    } catch (e) {
+      alert("오류가 발생했습니다.");
+    }
   };
 
   // ======================================================================
   // 🔥 댓글 삭제
   // ======================================================================
   const handleDelete = async (id: number) => {
+    const token = requireAuth();
+    if (!token) return;
+
     if (!window.confirm("삭제하시겠습니까?")) return;
 
-    await deleteArticleComment(id);
+    try {
+      await deleteArticleComment(id);
 
-    const updated = await fetchArticleComments(articleId!);
-    setComments(normalizeComments(updated));
+      const updated = await fetchArticleComments(articleId!);
+      setComments(normalizeComments(updated));
+    } catch (e) {
+      alert("삭제 중 오류 발생");
+    }
   };
 
   // ======================================================================
-  // 🔥 공유 기능
+  // 🔥 공유
   // ======================================================================
   const copyAppUrl = async () => {
-    const url = `${window.location.origin}/article/${articleId}`;
-    await navigator.clipboard.writeText(url);
-    alert("페이지 링크가 복사되었습니다!");
+    const modalUrl = `${window.location.origin}/?articleId=${article.articleId}`;
+    await navigator.clipboard.writeText(modalUrl);
+    alert("모달 링크 복사 완료!");
   };
 
   const copyNewsUrl = async () => {
@@ -371,7 +437,7 @@ export function NewsDetailModal() {
   };
 
   // ======================================================================
-  // 🔥 댓글 정렬 + 더보기
+  // 🔥 정렬 + 더보기
   // ======================================================================
   const sorted = useMemo(() => {
     const arr = [...comments];
@@ -379,8 +445,7 @@ export function NewsDetailModal() {
     if (sortType === "latest") {
       return arr.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() -
-          new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     }
 
@@ -389,6 +454,11 @@ export function NewsDetailModal() {
 
   const visibleComments = sorted.slice(0, visibleCount);
 
+  const publishedDate =
+    article.publishedAt && article.publishedAt.length >= 10
+      ? article.publishedAt.slice(0, 10)
+      : article.publishedAt;
+
   // ======================================================================
   // 🔥 렌더링
   // ======================================================================
@@ -396,22 +466,19 @@ export function NewsDetailModal() {
   return (
     <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur flex justify-center items-start overflow-y-auto py-10">
       <div className="w-[900px] bg-[#1a1a1a] rounded-2xl shadow-xl text-white overflow-hidden">
-
         {/* HEADER */}
         <div className="sticky top-0 bg-[#1a1a1a] border-b border-gray-700 px-6 py-4 flex items-center justify-between">
           <ArrowLeft className="cursor-pointer" onClick={closeModal} />
-          <h2 className="font-semibold">{article.title}</h2>
+          <h2 className="font-semibold line-clamp-1">{article.title}</h2>
           <X className="cursor-pointer" onClick={closeModal} />
         </div>
 
         {/* BODY */}
         <div className="p-6 max-h-[80vh] overflow-y-auto">
-
           {/* 제목 */}
           <h1 className="text-2xl font-bold mb-2">{article.title}</h1>
 
-          {/* 링크 안내 */}
-          <a href={article.link} target="_blank" className="text-blue-400 underline text-lg">
+          <a href={article.link} target="_blank" rel="noreferrer" className="text-blue-400 underline text-lg">
             🔗 원본 기사 보기
           </a>
 
@@ -432,7 +499,7 @@ export function NewsDetailModal() {
           <div className="flex gap-3 text-gray-400 mb-4 text-sm">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              {article.publishedAt.substring(0, 10)}
+              {publishedDate}
             </span>
             •
             <span className="flex items-center gap-1">
@@ -444,13 +511,14 @@ export function NewsDetailModal() {
 
           {/* 좋아요 / 싫어요 / 공유 */}
           <div className="flex items-center gap-3 mb-6">
-
             {/* 좋아요 */}
             <button
               onClick={() => handleArticleReact(article.liked ? 0 : 1)}
               className={clsx(
                 "flex items-center gap-2 px-4 py-2 rounded-full border",
-                article.liked ? "bg-purple-600 border-purple-600" : "border-gray-600 hover:bg-gray-800"
+                article.liked
+                  ? "bg-purple-600 border-purple-600"
+                  : "border-gray-600 hover:bg-gray-800"
               )}
             >
               <ThumbsUp className="w-4 h-4" /> {article.likeCount}
@@ -461,7 +529,9 @@ export function NewsDetailModal() {
               onClick={() => handleArticleReact(article.disliked ? 0 : -1)}
               className={clsx(
                 "flex items-center gap-2 px-4 py-2 rounded-full border",
-                article.disliked ? "bg-red-600 border-red-600" : "border-gray-600 hover:bg-gray-800"
+                article.disliked
+                  ? "bg-red-600 border-red-600"
+                  : "border-gray-600 hover:bg-gray-800"
               )}
             >
               <ThumbsDown className="w-4 h-4" /> {article.dislikeCount}
@@ -484,7 +554,7 @@ export function NewsDetailModal() {
             </button>
           </div>
 
-          {/* 댓글 입력 / 수정 통합 박스 */}
+          {/* 댓글 작성/수정 입력 */}
           <div className="p-4 bg-[#222] rounded-xl mb-6 border border-gray-700">
             <Textarea
               value={commentText}
@@ -493,7 +563,6 @@ export function NewsDetailModal() {
               className="bg-[#333] border-gray-600 text-white"
             />
 
-            {/* 버튼 영역 */}
             <div className="flex gap-3 mt-3">
               <Button className="bg-purple-600" onClick={submitComment}>
                 {editingId ? "수정 완료" : "댓글 작성"}
@@ -522,7 +591,9 @@ export function NewsDetailModal() {
                 onClick={() => setSortType("latest")}
                 className={clsx(
                   "px-2 py-1 rounded-full border text-xs",
-                  sortType === "latest" ? "bg-purple-600 border-purple-600" : "border-gray-600"
+                  sortType === "latest"
+                    ? "bg-purple-600 border-purple-600"
+                    : "border-gray-600"
                 )}
               >
                 최신순
@@ -532,7 +603,9 @@ export function NewsDetailModal() {
                 onClick={() => setSortType("popular")}
                 className={clsx(
                   "px-2 py-1 rounded-full border text-xs",
-                  sortType === "popular" ? "bg-purple-600 border-purple-600" : "border-gray-600"
+                  sortType === "popular"
+                    ? "bg-purple-600 border-purple-600"
+                    : "border-gray-600"
                 )}
               >
                 인기순
@@ -540,7 +613,7 @@ export function NewsDetailModal() {
             </div>
           </div>
 
-          {/* 댓글 리스트 */}
+          {/* 댓글 목록 */}
           <div>
             {visibleComments.map((c) => (
               <CommentItem
@@ -568,7 +641,10 @@ export function NewsDetailModal() {
           {/* 더보기 */}
           {visibleCount < comments.length && (
             <div className="text-center mt-4">
-              <button className="text-purple-300" onClick={() => setVisibleCount((v) => v + 10)}>
+              <button
+                className="text-purple-300"
+                onClick={() => setVisibleCount((v) => v + 10)}
+              >
                 더보기 ↓
               </button>
             </div>
@@ -577,7 +653,10 @@ export function NewsDetailModal() {
           {/* 접기 */}
           {visibleCount > 5 && (
             <div className="text-center mt-2">
-              <button className="text-gray-400" onClick={() => setVisibleCount(5)}>
+              <button
+                className="text-gray-400"
+                onClick={() => setVisibleCount(5)}
+              >
                 접기 ↑
               </button>
             </div>

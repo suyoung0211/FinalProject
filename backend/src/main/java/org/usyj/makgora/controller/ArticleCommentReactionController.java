@@ -1,34 +1,35 @@
+// src/main/java/org/usyj/makgora/controller/ArticleCommentReactionController.java
 package org.usyj.makgora.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.usyj.makgora.security.CustomUserDetails;
-import org.usyj.makgora.service.ArticleCommentReactionService;
 import org.usyj.makgora.request.article.ReactionRequest;
 import org.usyj.makgora.response.article.ArticleCommentReactionResponse;
+import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.service.ArticleCommentReactionService;
 
 @RestController
-@RequestMapping("/api/articles/comments")
 @RequiredArgsConstructor
+@RequestMapping("/api/articles/comments")
 public class ArticleCommentReactionController {
 
-    private final ArticleCommentReactionService service;
+    private final ArticleCommentReactionService reactionService;
 
-    /** 🔥 댓글 반응(LIKE / DISLIKE / RESET) */
-    @PostMapping("/{commentId}/reaction")
+    @PostMapping("/{commentId}/reactions")
     public ResponseEntity<?> react(
             @PathVariable Long commentId,
-            @RequestBody ReactionRequest req,
+            @RequestBody ReactionRequest request,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        if (user == null) return ResponseEntity.status(401).body("로그인 필요");
+        if (user == null) {
+            return ResponseEntity.status(401).body("로그인이 필요합니다.");
+        }
 
         ArticleCommentReactionResponse resp =
-                service.react(commentId, user.getId().longValue(), req.getReaction());
+                reactionService.react(commentId, user.getId(), request.getReaction());
 
         return ResponseEntity.ok(resp);
     }
 }
-

@@ -1,9 +1,7 @@
+// src/main/java/org/usyj/makgora/service/ArticleCommentReactionService.java
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
-
-import java.util.Optional;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.ArticleCommentEntity;
@@ -11,7 +9,10 @@ import org.usyj.makgora.entity.ArticleCommentReactionEntity;
 import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.repository.ArticleCommentReactionRepository;
 import org.usyj.makgora.repository.ArticleCommentRepository;
+import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.response.article.ArticleCommentReactionResponse;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,163 +21,72 @@ public class ArticleCommentReactionService {
 
     private final ArticleCommentRepository commentRepo;
     private final ArticleCommentReactionRepository reactionRepo;
+    private final UserRepository userRepo;
 
-    
+    /**
+     * reactionValue:
+     *  1  = 좋아요
+     * -1  = 싫어요
+     *  0  = 내 반응 취소
+     */
+    public ArticleCommentReactionResponse react(Long commentId, Integer userId, int reactionValue) {
 
-    /** 👍 좋아요 */
-    public ArticleCommentReactionResponse like(Long commentId, Integer userId) {
-
-        ArticleCommentEntity comment = commentRepo.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글 없음"));
-
-        // 유저의 이전 기록 조회
-        Optional<ArticleCommentReactionEntity> existing =
-                reactionRepo.findByComment_IdAndUser_Id(commentId, userId);
-
-        if (existing.isPresent()) {
-            ArticleCommentReactionEntity r = existing.get();
-
-            // 이미 좋아요 상태면 → 좋아요 취소
-            if (r.getReaction() == 1) {
-                reactionRepo.delete(r);
-            } else {
-                // 싫어요 → 좋아요로 변경
-                r.setReaction(1);
-                reactionRepo.save(r);
-            }
-
-        } else {
-            // 처음 누르는 경우
-            ArticleCommentReactionEntity newR = ArticleCommentReactionEntity.builder()
-                    .comment(comment)
-                    .user(UserEntity.builder().id(userId).build())
-                    .reaction(1)
-                    .build();
-            reactionRepo.save(newR);
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
         }
 
-        return buildResponse(commentId, userId);
-    }
-
-
-    /** 👎 싫어요 */
-    public ArticleCommentReactionResponse dislike(Long commentId, Integer userId) {
-
         ArticleCommentEntity comment = commentRepo.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글 없음"));
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
 
-        Optional<ArticleCommentReactionEntity> existing =
+        UserEntity user = userRepo.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. id=" + userId));
+
+        Optional<ArticleCommentReactionEntity> existingOpt =
                 reactionRepo.findByComment_IdAndUser_Id(commentId, userId);
 
-        if (existing.isPresent()) {
-            ArticleCommentReactionEntity r = existing.get();
-
-            if (r.getReaction() == -1) {
-                // 이미 싫어요 → 취소
-                reactionRepo.delete(r);
-            } else {
-                // 좋아요 → 싫어요로 변경
-                r.setReaction(-1);
-                reactionRepo.save(r);
-            }
-
-        } else {
-            // 처음 누르는 경우
-            ArticleCommentReactionEntity newR = ArticleCommentReactionEntity.builder()
+        if (reactionValue == 0) {
+            // 단순 취소
+            existingOpt.ifPresent(reactionRepo::delete);
+        } else if (existingOpt.isEmpty()) {
+            // 처음 반응
+            ArticleCommentReactionEntity newReaction = ArticleCommentReactionEntity.builder()
                     .comment(comment)
-                    .user(UserEntity.builder().id(userId).build())
-                    .reaction(-1)
+                    .user(user)
+                    .reaction(reactionValue)
                     .build();
-            reactionRepo.save(newR);
+            reactionRepo.save(newReaction);
+        } else {
+            // 이미 반응한 상태 → 토글 or 변경
+            ArticleCommentReactionEntity existing = existingOpt.get();
+            if (existing.getReaction() == reactionValue) {
+                // 같은 버튼 한 번 더 누르면 취소
+                reactionRepo.delete(existing);
+            } else {
+                // 좋아요 → 싫어요, 또는 싫어요 → 좋아요
+                existing.setReaction(reactionValue);
+                // JPA dirty checking으로 자동 update
+            }
         }
-
-        return buildResponse(commentId, userId);
-    }
-
-
-    /** JSON Response 만들기 */
-    private ArticleCommentReactionResponse buildResponse(Long commentId, Integer userId) {
 
         long likeCnt = reactionRepo.countByComment_IdAndReaction(commentId, 1);
         long dislikeCnt = reactionRepo.countByComment_IdAndReaction(commentId, -1);
 
-        boolean liked = reactionRepo.findByComment_IdAndUser_Id(commentId, userId)
-                .map(r -> r.getReaction() == 1)
-                .orElse(false);
+        boolean liked = false;
+        boolean disliked = false;
 
-        boolean disliked = reactionRepo.findByComment_IdAndUser_Id(commentId, userId)
-                .map(r -> r.getReaction() == -1)
-                .orElse(false);
+        Optional<ArticleCommentReactionEntity> myReactionOpt =
+                reactionRepo.findByComment_IdAndUser_Id(commentId, userId);
 
-        return ArticleCommentReactionResponse.builder()
-        .commentId(commentId)
-        .likeCount(likeCnt)
-        .dislikeCount(dislikeCnt)
-        .liked(liked)
-        .disliked(disliked)
-        .build();
-    }
-
-     /**
-     * 🔥 단일 엔드포인트: LIKE / DISLIKE / RESET 처리
-     */
-    public ArticleCommentReactionResponse react(Long commentId, Long userId, int reactionValue) {
-
-        ArticleCommentEntity comment = commentRepo.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글 없음"));
-
-        Optional<ArticleCommentReactionEntity> existingOpt =
-                reactionRepo.findByComment_IdAndUser_Id(commentId, userId.intValue());
-
-        if (reactionValue == 0) {
-            // RESET
-            existingOpt.ifPresent(reactionRepo::delete);
+        if (myReactionOpt.isPresent()) {
+            int r = myReactionOpt.get().getReaction();
+            liked = (r == 1);
+            disliked = (r == -1);
         }
-        else {
-            if (existingOpt.isPresent()) {
-                ArticleCommentReactionEntity r = existingOpt.get();
-
-                if (r.getReaction() == reactionValue) {
-                    // 같은 버튼 다시 누르면 → 취소
-                    reactionRepo.delete(r);
-                } else {
-                    // 좋아요 ↔ 싫어요 변경
-                    r.setReaction(reactionValue);
-                    reactionRepo.save(r);
-                }
-            } else {
-                // 첫 반응
-                ArticleCommentReactionEntity newR = ArticleCommentReactionEntity.builder()
-                        .comment(comment)
-                        .user(UserEntity.builder().id(userId.intValue()).build())
-                        .reaction(reactionValue)
-                        .build();
-
-                reactionRepo.save(newR);
-            }
-        }
-
-        // 최신 count 계산
-        long likeCount = reactionRepo.countByComment_IdAndReaction(commentId, 1);
-        long dislikeCount = reactionRepo.countByComment_IdAndReaction(commentId, -1);
-
-        boolean liked = reactionRepo.findByComment_IdAndUser_Id(commentId, userId.intValue())
-                .map(r -> r.getReaction() == 1)
-                .orElse(false);
-
-        boolean disliked = reactionRepo.findByComment_IdAndUser_Id(commentId, userId.intValue())
-                .map(r -> r.getReaction() == -1)
-                .orElse(false);
-
-        // 댓글 count 저장(캐싱 가능)
-        comment.setLikeCount((int) likeCount);
-        comment.setDislikeCount((int) dislikeCount);
-        commentRepo.save(comment);
 
         return ArticleCommentReactionResponse.builder()
                 .commentId(commentId)
-                .likeCount(likeCount)
-                .dislikeCount(dislikeCount)
+                .likeCount(likeCnt)
+                .dislikeCount(dislikeCnt)
                 .liked(liked)
                 .disliked(disliked)
                 .build();
