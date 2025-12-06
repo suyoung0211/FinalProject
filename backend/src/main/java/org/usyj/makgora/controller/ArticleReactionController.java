@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.ArticleReactionService;
+import org.usyj.makgora.request.article.ReactionRequest;
 import org.usyj.makgora.response.article.ArticleReactionResponse;
 
 @RestController
@@ -67,6 +68,20 @@ public ResponseEntity<ArticleReactionResponse> resetReaction(
 
     ArticleReactionResponse resp =
             reactionService.react(id, user.getId(), 0);
+
+    return ResponseEntity.ok(resp);
+}
+
+@PostMapping("/{id}/reaction")
+public ResponseEntity<ArticleReactionResponse> react(
+        @PathVariable Integer id,
+        @RequestBody ReactionRequest request,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    if (user == null) return ResponseEntity.status(401).build();
+
+    ArticleReactionResponse resp =
+            reactionService.react(id, user.getId(), request.getReaction());
 
     return ResponseEntity.ok(resp);
 }

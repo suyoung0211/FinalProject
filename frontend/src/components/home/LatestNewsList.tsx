@@ -10,16 +10,16 @@ interface NewsItem {
 interface LatestNewsListProps {
   items: NewsItem[];
 }
-
+import { useArticleModal } from "../../context/ArticleModalContext";
 export default function LatestNewsList({ items }: LatestNewsListProps) {
-  if (!items || items.length === 0)
-    return <div className="text-gray-400">표시할 이슈가 없습니다.</div>;
+  const { openModal } = useArticleModal();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
       {items.map((news: NewsItem) => (
         <div
           key={news.articleId}
+          onClick={() => openModal(news.articleId)} // ← 추가!
           className="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur hover:bg-white/10 transition cursor-pointer"
         >
           <div className="flex gap-4">
@@ -41,16 +41,15 @@ export default function LatestNewsList({ items }: LatestNewsListProps) {
           </div>
 
           <div className="flex gap-2 mt-3 flex-wrap">
-  {news.categories?.map((c: string) => (
-    <span
-      key={c}
-      onClick={() => window.location.href = `/article?category=${c}`}
-      className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full cursor-pointer hover:bg-purple-500/40"
-    >
-      {c}
-    </span>
-  ))}
-</div>
+            {news.categories?.map((c: string) => (
+              <span
+                key={c}
+                className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
         </div>
       ))}
     </div>

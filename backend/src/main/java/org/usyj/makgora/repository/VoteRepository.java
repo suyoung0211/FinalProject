@@ -16,7 +16,7 @@ public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
     // 특정 이슈와 연관된 투표 조회
     List<VoteEntity> findByIssue(IssueEntity issue);
 
-    
+    Optional<VoteEntity> findByIssue_Id(Integer issueId);
 
     // 상태별 투표 조회
     List<VoteEntity> findByStatus(VoteEntity.Status status);

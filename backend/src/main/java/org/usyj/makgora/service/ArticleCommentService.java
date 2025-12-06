@@ -1,13 +1,17 @@
+// src/main/java/org/usyj/makgora/service/ArticleCommentService.java
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.request.article.ArticleCommentRequest;
 import org.usyj.makgora.response.article.ArticleCommentResponse;
 import org.usyj.makgora.entity.ArticleCommentEntity;
+import org.usyj.makgora.entity.ArticleCommentReactionEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.repository.ArticleCommentReactionRepository;
 import org.usyj.makgora.repository.ArticleCommentRepository;
 import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
@@ -22,10 +26,12 @@ public class ArticleCommentService {
     private final ArticleCommentRepository articleCommentRepository;
     private final RssArticleRepository rssArticleRepository;
     private final UserRepository userRepository;
+    private final StringRedisTemplate redis;   // ✅ 추가
+    private final ArticleReactionService reactionService;
+    private final ArticleCommentReactionRepository reactionRepo;
 
     /* ============================================================
        📌 1) 특정 기사 댓글 전체 조회 (Tree 구조)
-       Controller에서 사용하는 공식 메서드
      ============================================================ */
     @Transactional(readOnly = true)
     public List<ArticleCommentResponse> getComments(Integer articleId, Integer currentUserId) {
@@ -39,6 +45,7 @@ public class ArticleCommentService {
         return buildCommentTree(entities, currentUserId);
     }
 
+    
 
     /* ============================================================
        📌 2) 댓글 작성
@@ -74,13 +81,16 @@ public class ArticleCommentService {
 
         ArticleCommentEntity saved = articleCommentRepository.save(entity);
 
-        // 전체 댓글 수 증가
-        article.setCommentCount(article.getCommentCount() + 1);
-        rssArticleRepository.save(article);
+        // 🔥 Redis 댓글 카운트 증가
+    reactionService.addComment(articleId);
+
+    // DB 카운트도 즉시 증가 (프론트 표시용)
+    article.setCommentCount(article.getCommentCount() + 1);
+    rssArticleRepository.save(article);
+
 
         return toResponse(saved, userId);
     }
-
 
     /* ============================================================
        📌 3) 댓글 수정
@@ -103,90 +113,138 @@ public class ArticleCommentService {
         return toResponse(updated, userId);
     }
 
-
     /* ============================================================
        📌 4) 댓글 삭제
      ============================================================ */
     public void deleteComment(Long commentId, Integer userId) {
-        ArticleCommentEntity comment = articleCommentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+    ArticleCommentEntity comment = articleCommentRepository.findById(commentId)
+            .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
 
-        if (!comment.getUser().getId().equals(userId)) {
-            throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
-        }
-
-        // 전체 댓글 수 감소
-        RssArticleEntity article = comment.getArticle();
-        article.setCommentCount(Math.max(0, article.getCommentCount() - 1));
-        rssArticleRepository.save(article);
-
-        articleCommentRepository.delete(comment);
+    if (!comment.getUser().getId().equals(userId)) {
+        throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
     }
 
+    RssArticleEntity article = comment.getArticle();
+    Integer articleId = article.getId();
+
+    /* ============================================================
+       🔥 1) Redis 댓글수 감소 처리 (음수 방지)
+     ============================================================ */
+    String redisKey = "article:" + articleId + ":comment";
+
+    String val = redis.opsForValue().get(redisKey);
+    long current = (val == null ? 0 : Long.parseLong(val));
+
+    if (current > 0) {
+        redis.opsForValue().increment(redisKey, -1);
+    } else {
+        redis.opsForValue().set(redisKey, "0");
+    }
+
+    /* ============================================================
+       🔥 2) DB 댓글수 감소 (백업용)
+     ============================================================ */
+    article.setCommentCount(Math.max(0, article.getCommentCount() - 1));
+    rssArticleRepository.save(article);
+
+    /* ============================================================
+       🔥 3) 댓글 본문 삭제(DB)
+     ============================================================ */
+    articleCommentRepository.delete(comment);
+}
 
     /* ============================================================
        📌 공통: Entity → Response 변환
      ============================================================ */
     private ArticleCommentResponse toResponse(ArticleCommentEntity entity, Integer currentUserId) {
 
-        boolean mine = (currentUserId != null)
-                && entity.getUser().getId().equals(currentUserId);
+    Long commentId = entity.getId();
 
-        return ArticleCommentResponse.builder()
-                .commentId(entity.getId())
-                .articleId(entity.getArticle().getId())
-                .parentCommentId(entity.getParent() != null ? entity.getParent().getId() : null)
-                .userId(entity.getUser().getId())
-                .nickname(entity.getUser().getNickname())
-                .content(entity.getContent())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .likeCount(entity.getLikeCount() != null ? entity.getLikeCount() : 0)
-                .dislikeCount(entity.getDislikeCount() != null ? entity.getDislikeCount() : 0)
-                .mine(mine)
-                .replies(new ArrayList<>())
-                .build();
+    // 👍 좋아요 개수
+    long likeCnt = reactionRepo.countByComment_IdAndReaction(commentId, 1);
+
+    // 👎 싫어요 개수
+    long dislikeCnt = reactionRepo.countByComment_IdAndReaction(commentId, -1);
+
+    // 내가 좋아요 눌렀는지
+    boolean likedByMe = false;
+    boolean dislikedByMe = false;
+
+    if (currentUserId != null) {
+        Optional<ArticleCommentReactionEntity> myReaction =
+                reactionRepo.findByComment_IdAndUser_Id(commentId, currentUserId);
+
+        if (myReaction.isPresent()) {
+            likedByMe = myReaction.get().getReaction() == 1;
+            dislikedByMe = myReaction.get().getReaction() == -1;
+        }
     }
+
+    return ArticleCommentResponse.builder()
+            .commentId(commentId)
+            .articleId(entity.getArticle().getId())
+            .parentCommentId(entity.getParent() != null ? entity.getParent().getId() : null)
+            .userId(entity.getUser().getId())
+            .nickname(entity.getUser().getNickname())
+            .avatarIcon(entity.getUser().getAvatarIcon())
+            .profileFrame(entity.getUser().getProfileFrame())
+            .content(entity.getContent())
+            .createdAt(entity.getCreatedAt())
+            .updatedAt(entity.getUpdatedAt())
+
+            // 🔥 DB 기반 좋아요/싫어요 적용
+            .likeCount(likeCnt)
+            .dislikeCount(dislikeCnt)
+            .liked(likedByMe)
+            .disliked(dislikedByMe)
+
+            .mine(currentUserId != null && entity.getUser().getId().equals(currentUserId))
+            .replies(new ArrayList<>())
+            .build();
+}
+
 
 
     /* ============================================================
        📌 댓글 트리 구조 생성 (대댓글 포함)
      ============================================================ */
     private List<ArticleCommentResponse> buildCommentTree(
-            List<ArticleCommentEntity> entities,
-            Integer currentUserId
-    ) {
-        Map<Long, ArticleCommentResponse> dtoMap = new LinkedHashMap<>();
+        List<ArticleCommentEntity> entities,
+        Integer currentUserId
+) {
 
-        // 1) Entity → DTO 1차 변환
-        for (ArticleCommentEntity entity : entities) {
-            ArticleCommentResponse dto = toResponse(entity, currentUserId);
-            dtoMap.put(dto.getCommentId(), dto);
-        }
+    Map<Long, ArticleCommentResponse> dtoMap = new LinkedHashMap<>();
 
-        // 2) 트리 구조 생성
-        List<ArticleCommentResponse> roots = new ArrayList<>();
+    // 1) 모든 댓글을 DTO로 변환하여 map에 저장
+    for (ArticleCommentEntity entity : entities) {
+        dtoMap.put(entity.getId(), toResponse(entity, currentUserId));
+    }
 
-        for (ArticleCommentEntity entity : entities) {
-            Long commentId = entity.getId();
-            Long parentId = (entity.getParent() != null)
-                    ? entity.getParent().getId()
-                    : null;
+    // 2) 트리 만들기
+    List<ArticleCommentResponse> roots = new ArrayList<>();
 
-            ArticleCommentResponse current = dtoMap.get(commentId);
+    for (ArticleCommentEntity entity : entities) {
 
-            if (parentId == null) {
-                roots.add(current);
+        Long id = entity.getId();
+        Long parentId = (entity.getParent() != null)
+                ? entity.getParent().getId()
+                : null;
+
+        ArticleCommentResponse dto = dtoMap.get(id);
+
+        if (parentId == null) {
+            roots.add(dto); // 루트 댓글
+        } else {
+            ArticleCommentResponse parent = dtoMap.get(parentId);
+            if (parent != null) {
+                parent.getReplies().add(dto); // 부모에 자식 추가
             } else {
-                ArticleCommentResponse parent = dtoMap.get(parentId);
-                if (parent != null) {
-                    parent.getReplies().add(current);
-                } else {
-                    roots.add(current);
-                }
+                roots.add(dto); // 부모가 사라진 edge-case
             }
         }
-
-        return roots;
     }
+
+    return roots;
+}
+
 }

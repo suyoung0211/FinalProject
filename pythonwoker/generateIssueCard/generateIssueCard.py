@@ -245,7 +245,7 @@ def generate_issue_card(title, content):
     resp = client.chat.completions.create(
         model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
+        temperature=1.5,
     )
 
     raw = resp.choices[0].message.content.strip()

@@ -17,7 +17,7 @@ import { useAuth } from "../hooks/useAuth";
 import { fetchHomeData } from "../api/homeApi";
 import { fetchRecommendedIssues, fetchLatestIssues } from "../api/issueApi";
 import { fetchCategories } from "../api/categoryApi";
-
+import { useArticleModal } from "../context/ArticleModalContext";
 import NewsSlider from "../components/home/NewsSlider";
 import LatestNewsSidebar from "../components/home/LatestNewsSidebar";
 import LatestNewsList from "../components/home/LatestNewsList";
@@ -54,7 +54,7 @@ export function MainPage() {
   const [siteLatestIssues, setSiteLatestIssues] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-
+  const { openModal } = useArticleModal();
   const [loading, setLoading] = useState(false);
 
   // -------------------------------------------------------
