@@ -10,5 +10,5 @@ public class ArticleReactionResponse {
     private Integer articleId;
     private Long likeCount;
     private Long dislikeCount;
-    private Integer myReaction;  // 1 = 좋아요, -1 = 싫어요, 0 = 없음
+    private Integer Reaction;  // 1 = 좋아요, -1 = 싫어요, 0 = 없음
 }

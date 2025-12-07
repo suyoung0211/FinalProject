@@ -1,130 +1,94 @@
+// src/main/java/org/usyj/makgora/service/ArticleCommentReactionService.java
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.ArticleCommentEntity;
+import org.usyj.makgora.entity.ArticleCommentReactionEntity;
+import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.repository.ArticleCommentReactionRepository;
 import org.usyj.makgora.repository.ArticleCommentRepository;
+import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.response.article.ArticleCommentReactionResponse;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ArticleCommentReactionService {
 
-    private final StringRedisTemplate redis;
     private final ArticleCommentRepository commentRepo;
+    private final ArticleCommentReactionRepository reactionRepo;
+    private final UserRepository userRepo;
 
-    private String likeSetKey(Long id) {
-        return "article:comment:" + id + ":like:users";
-    }
+    /**
+     * reactionValue:
+     *  1  = 좋아요
+     * -1  = 싫어요
+     *  0  = 내 반응 취소
+     */
+    public ArticleCommentReactionResponse react(Long commentId, Integer userId, int reactionValue) {
 
-    private String dislikeSetKey(Long id) {
-        return "article:comment:" + id + ":dislike:users";
-    }
-
-    private String likeCountKey(Long id) {
-        return "article:comment:" + id + ":like:count";
-    }
-
-    private String dislikeCountKey(Long id) {
-        return "article:comment:" + id + ":dislike:count";
-    }
-
-    /** 댓글 좋아요 */
-    @Transactional
-    public String like(Long commentId, Long userId) {
+        if (userId == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
 
         ArticleCommentEntity comment = commentRepo.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
 
-        String likeSet = likeSetKey(commentId);
-        String dislikeSet = dislikeSetKey(commentId);
+        UserEntity user = userRepo.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. id=" + userId));
 
-        boolean alreadyLiked =
-                Boolean.TRUE.equals(redis.opsForSet().isMember(likeSet, userId.toString()));
+        Optional<ArticleCommentReactionEntity> existingOpt =
+                reactionRepo.findByComment_IdAndUser_Id(commentId, userId);
 
-        if (alreadyLiked) {
-            // 좋아요 취소
-            comment.setLikeCount(comment.getLikeCount() - 1);
-            commentRepo.save(comment);
-
-            redis.opsForSet().remove(likeSet, userId.toString());
-            redis.opsForValue().set(likeCountKey(commentId),
-                    String.valueOf(comment.getLikeCount()));
-
-            return "like_removed";
+        if (reactionValue == 0) {
+            // 단순 취소
+            existingOpt.ifPresent(reactionRepo::delete);
+        } else if (existingOpt.isEmpty()) {
+            // 처음 반응
+            ArticleCommentReactionEntity newReaction = ArticleCommentReactionEntity.builder()
+                    .comment(comment)
+                    .user(user)
+                    .reaction(reactionValue)
+                    .build();
+            reactionRepo.save(newReaction);
+        } else {
+            // 이미 반응한 상태 → 토글 or 변경
+            ArticleCommentReactionEntity existing = existingOpt.get();
+            if (existing.getReaction() == reactionValue) {
+                // 같은 버튼 한 번 더 누르면 취소
+                reactionRepo.delete(existing);
+            } else {
+                // 좋아요 → 싫어요, 또는 싫어요 → 좋아요
+                existing.setReaction(reactionValue);
+                // JPA dirty checking으로 자동 update
+            }
         }
 
-        // 싫어요 눌렀던 상태면 제거 (음수 방지)
-        boolean alreadyDisliked =
-                Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeSet, userId.toString()));
+        long likeCnt = reactionRepo.countByComment_IdAndReaction(commentId, 1);
+        long dislikeCnt = reactionRepo.countByComment_IdAndReaction(commentId, -1);
 
-        if (alreadyDisliked) {
-            comment.setDislikeCount(Math.max(0, comment.getDislikeCount() - 1));
-            commentRepo.save(comment);
+        boolean liked = false;
+        boolean disliked = false;
 
-            redis.opsForSet().remove(dislikeSet, userId.toString());
-            redis.opsForValue().set(dislikeCountKey(commentId),
-                    String.valueOf(comment.getDislikeCount()));
+        Optional<ArticleCommentReactionEntity> myReactionOpt =
+                reactionRepo.findByComment_IdAndUser_Id(commentId, userId);
+
+        if (myReactionOpt.isPresent()) {
+            int r = myReactionOpt.get().getReaction();
+            liked = (r == 1);
+            disliked = (r == -1);
         }
 
-        // 좋아요 추가
-        comment.setLikeCount(comment.getLikeCount() + 1);
-        commentRepo.save(comment);
-
-        redis.opsForSet().add(likeSet, userId.toString());
-        redis.opsForValue().set(likeCountKey(commentId),
-                String.valueOf(comment.getLikeCount()));
-
-        return "like_added";
-    }
-
-    /** 댓글 싫어요 */
-    @Transactional
-    public String dislike(Long commentId, Long userId) {
-
-        ArticleCommentEntity comment = commentRepo.findById(commentId)
-                .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
-
-        String likeSet = likeSetKey(commentId);
-        String dislikeSet = dislikeSetKey(commentId);
-
-        boolean alreadyDisliked =
-                Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeSet, userId.toString()));
-
-        if (alreadyDisliked) {
-            // 싫어요 취소
-            comment.setDislikeCount(comment.getDislikeCount() - 1);
-            commentRepo.save(comment);
-
-            redis.opsForSet().remove(dislikeSet, userId.toString());
-            redis.opsForValue().set(dislikeCountKey(commentId),
-                    String.valueOf(comment.getDislikeCount()));
-
-            return "dislike_removed";
-        }
-
-         // 좋아요 눌렀던 상태면 제거 (음수 방지)
-        boolean alreadyLiked =
-                Boolean.TRUE.equals(redis.opsForSet().isMember(likeSet, userId.toString()));
-
-        if (alreadyLiked) {
-            comment.setLikeCount(Math.max(0, comment.getLikeCount() - 1));
-            commentRepo.save(comment);
-
-            redis.opsForSet().remove(likeSet, userId.toString());
-            redis.opsForValue().set(likeCountKey(commentId),
-                    String.valueOf(comment.getLikeCount()));
-        }
-
-        // 싫어요 추가
-        comment.setDislikeCount(comment.getDislikeCount() + 1);
-        commentRepo.save(comment);
-
-        redis.opsForSet().add(dislikeSet, userId.toString());
-        redis.opsForValue().set(dislikeCountKey(commentId),
-                String.valueOf(comment.getDislikeCount()));
-
-        return "dislike_added";
+        return ArticleCommentReactionResponse.builder()
+                .commentId(commentId)
+                .likeCount(likeCnt)
+                .dislikeCount(dislikeCnt)
+                .liked(liked)
+                .disliked(disliked)
+                .build();
     }
 }

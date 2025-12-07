@@ -29,12 +29,6 @@ public interface ArticleCommentRepository extends JpaRepository<ArticleCommentEn
     @Query("SELECT c FROM ArticleCommentEntity c WHERE c.user.id = :userId ORDER BY c.createdAt DESC")
     List<ArticleCommentEntity> findByUserId(@Param("userId") Integer userId);
 
-    /**
-     * 특정 기사 댓글 수
-     */
-    @Query("SELECT COUNT(c) FROM ArticleCommentEntity c WHERE c.article.id = :articleId")
-    long countByArticleId(@Param("articleId") Integer articleId);
-
     // 기사 기준 전체 댓글/대댓글 조회 (작성 시간 순)
     List<ArticleCommentEntity> findByArticle_IdOrderByCreatedAtAsc(Integer articleId);
 

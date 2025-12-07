@@ -3,7 +3,7 @@
 // ------------------------------------------------------------
 import { useEffect, useRef, useState } from "react";
 import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useArticleModal } from "../../context/ArticleModalContext";
 import type { Article } from "../../pages/ArticleListPage";
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function LiveSlider({ articles }: Props) {
-  const navigate = useNavigate();
+  const { openModal } = useArticleModal();
 
   // 최근 40개 + 이미지 있는 기사만
   const sliderArticles = articles.slice(0, 39).filter((a) => !!a.image);
@@ -106,12 +106,14 @@ export default function LiveSlider({ articles }: Props) {
                   }}
                 >
                   {pageArticles.map((news) => (
-                    <div
-                      key={news.id}
-                      className="bg-white/5 backdrop-blur-xl border border-white/20 
-                               rounded-xl overflow-hidden cursor-pointer hover:bg-white/10 transition"
-                      onClick={() => navigate(`/article/${news.id}`)}
-                    >
+                   <div
+  key={news.id}
+  onClick={() => openModal(news.id)}   // ← 모달 열기
+  className="
+    bg-white/5 backdrop-blur-xl border border-white/20 
+    rounded-xl overflow-hidden cursor-pointer hover:bg-white/10 transition
+  "
+>
                       <div className="relative">
                         <div className="aspect-video overflow-hidden">
                           <img
@@ -137,11 +139,10 @@ export default function LiveSlider({ articles }: Props) {
                       </div>
 
                       <div className="p-4">
-                        <h3 className="text-white font-bold text-sm mb-2 line-clamp-2 hover:text-purple-300 transition">
+                        <h3 className="text-white font-bold text-sm line-clamp-2 hover:text-purple-300 transition">
                           {news.title}
                         </h3>
                         <p className="text-gray-400 text-xs mb-3 line-clamp-2">
-                          {news.summary}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                           <Clock className="w-3 h-3" />

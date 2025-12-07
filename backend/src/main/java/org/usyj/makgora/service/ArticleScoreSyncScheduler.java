@@ -51,7 +51,7 @@ public class ArticleScoreSyncScheduler {
             articleRepo.save(article);
 
             // Redis Queue 에 푸시 판단
-            triggerPushService.checkAndPush(articleId, score);
+            // triggerPushService.checkAndPush(articleId, score);
         }
     }
 

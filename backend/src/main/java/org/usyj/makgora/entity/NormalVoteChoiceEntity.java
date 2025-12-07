@@ -27,7 +27,7 @@ public class NormalVoteChoiceEntity {
     @Column(name = "choice_text", nullable = false)
     private String choiceText;
 
-    @Column(name = "participants_count")
+    @Column(name = "participants_count", nullable = false)
     @Builder.Default
     private Integer participantsCount = 0;
 

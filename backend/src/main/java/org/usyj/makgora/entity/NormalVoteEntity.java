@@ -35,6 +35,11 @@ public class NormalVoteEntity {
     @Lob
     private String description;
 
+    /** 👥 참여자 수 */
+    @Column(name = "total_participants", nullable = false)
+    @Builder.Default
+    private Integer totalParticipants = 0;
+
     /** 종료 시각 */
     @Column(name = "end_at", nullable = false)
     private LocalDateTime endAt;

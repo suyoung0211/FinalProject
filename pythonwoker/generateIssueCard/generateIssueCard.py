@@ -245,7 +245,7 @@ def generate_issue_card(title, content):
     resp = client.chat.completions.create(
         model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
+        temperature=1.5,
     )
 
     raw = resp.choices[0].message.content.strip()
@@ -321,6 +321,7 @@ def generate_vote_question(issue_title, summary):
 - 무승부 개념이 **실제로 의미 있을 때만** (스포츠 경기/지표 동률/선거 동률 등)
   → result_type 을 "YES_NO_DRAW" 로 설정할 수 있다.
 - 그 외 대부분의 정책·이슈·사건 예측은 기본적으로 YES_NO 를 우선 사용한다.
+- 누구나 돈을 걸고 싶을 정도로 재밋고 흥미로운 질문형식으로 작성할 것.
 
 ⚠ 필수 JSON 구조:
 {{
@@ -346,7 +347,7 @@ def generate_vote_question(issue_title, summary):
     resp = client.chat.completions.create(
         model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.7,
+        temperature=1.5,
     )
 
     raw = resp.choices[0].message.content.strip()
@@ -707,15 +708,15 @@ def worker():
                     r.set(f"cp:{post_id}:triggered", "1")
 
             # ISSUE APPROVE → VOTE
-            # elif raw.startswith("issueApprove:"):
-            #     issue_id = int(raw.split(":")[1])
-            #     print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
+            elif raw.startswith("issueApprove:"):
+                issue_id = int(raw.split(":")[1])
+                print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")
 
-            #     result = run_vote_for_issue(session, issue_id)
-            #     print("📝 Result:", result)
+                result = run_vote_for_issue(session, issue_id)
+                print("📝 Result:", result)
 
-            #     if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
-            #         r.set(f"issue:{issue_id}:voteCreated", "1")
+                if result.get("status") in ["success", "ignored_vote_exists", "ignored"]:
+                    r.set(f"issue:{issue_id}:voteCreated", "1")
 
             session.close()
 

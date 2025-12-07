@@ -123,7 +123,7 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
         </div>
 
         {/* CONTENT */}
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
 
           {/* 📌 질문 입력 */}
           <div className="space-y-2">

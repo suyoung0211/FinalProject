@@ -7,7 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useArticleModal } from "../../context/ArticleModalContext";
 import { useEffect, useState, useRef } from "react";
 import type { Article } from "../../pages/ArticleListPage";
 
@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function RankingNews({ articles }: Props) {
-  const navigate = useNavigate();
+  const { openModal } = useArticleModal();
 
   // 상위 21개만 사용
   const limitedArticles = articles.slice(0, 30);
@@ -110,15 +110,15 @@ export default function RankingNews({ articles }: Props) {
 
                   return (
                     <div
-                      key={`rank-${news.id}`}
-                      onClick={() => navigate(`/article/${news.id}`)}
-                      className="
-                        group cursor-pointer rounded-xl p-3 mb-4
-                        bg-white/5 hover:bg-purple-600/20
-                        border border-transparent hover:border-purple-500/40
-                        transition-all
-                      "
-                    >
+  key={`rank-${news.id}`}
+  onClick={() => openModal(news.id)}   // ← 모달 열기
+  className="
+    group cursor-pointer rounded-xl p-3 mb-4
+    bg-white/5 hover:bg-purple-600/20
+    border border-transparent hover:border-purple-500/40
+    transition-all
+  "
+>
                       <div className="flex gap-3">
                         <span
                           className="
