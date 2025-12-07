@@ -300,3 +300,8 @@ DB 다시 한번 업데이트해야함
 2. python worker/generateIssueCard내부에 generateIssueCard.py실행
 3. python 쪽 flask 패키지 추가 안될 경우 pip install flask 실행
 -------------------------------
+
+CommentReactionEntity 추가
+JwtAuthFilter 안에
+(method.equals("GET") && path.startsWith("/api/articles")) 주석처리
+기사 상세 모달추가 + APP.tsx에 전역모달 추가

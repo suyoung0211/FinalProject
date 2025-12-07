@@ -13,7 +13,7 @@ export const loginApi = (body) => api.post("/auth/login", body);
 export const getMyInfoApi = () => api.get("/user/me");
 
 // 로그아웃 — baseURL 자동 적용
-export const logoutApi = (userId) => api.post(`/auth/logout/${userId}`);
+export const logoutApi = () => api.post("/auth/logout"); // ✅ 백엔드에 맞춰서 수정함
 
 // refreshToken 수동 갱신 - 앱 초기화에서 액세스 토큰 유효 확인
 export const refreshTokenApi = () => api.post("/auth/refresh", {}, {

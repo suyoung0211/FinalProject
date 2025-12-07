@@ -1,6 +1,7 @@
 // src/components/home/NewsSlider.tsx
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useArticleModal } from "../../context/ArticleModalContext";
 
 export interface SlideNews {
   articleId: number;
@@ -15,6 +16,7 @@ interface Props {
 
 export default function NewsSlider({ slides }: Props) {
   const [index, setIndex] = useState(0);
+  const { openModal } = useArticleModal();
 
   useEffect(() => {
     if (!slides || slides.length === 0) return;
@@ -48,9 +50,9 @@ export default function NewsSlider({ slides }: Props) {
     <div className="relative w-full h-[380px] md:h-[525px] rounded-2xl overflow-hidden">
       {/* 이미지 */}
       <img
+        onClick={() => openModal(current.articleId)}     // ← 추가!
         src={current.thumbnail || "/no_img.png"}
-        className="w-full h-full object-cover"
-        alt="news thumbnail"
+        className="w-full h-full object-cover cursor-pointer"
       />
 
       {/* 왼쪽 버튼 */}

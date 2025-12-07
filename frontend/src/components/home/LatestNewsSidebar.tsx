@@ -1,6 +1,7 @@
 // src/components/home/LatestNewsSidebar.tsx
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useArticleModal } from "../../context/ArticleModalContext";
 
 interface HotIssue {
   articleId: number;
@@ -12,6 +13,7 @@ interface HotIssue {
 }
 
 export default function LatestNewsSidebar({ items }: { items: HotIssue[] }) {
+  const { openModal } = useArticleModal();
   const [page, setPage] = useState(0);
 
   const pageSize = 4;
@@ -44,21 +46,22 @@ export default function LatestNewsSidebar({ items }: { items: HotIssue[] }) {
       </div>
 
       <div className="flex flex-col gap-4">
-        {paginated.map((n) => (
-          <div
-            key={n.articleId}
-            className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10"
-          >
-            <img
-              src={n.thumbnail || "/no_img.png"}
-              className="w-20 h-16 object-cover rounded-lg"
-            />
-            <div>
-              <p className="text-white font-semibold line-clamp-2">
-                {n.aiTitle || n.title}
-              </p>
-              <p className="text-gray-400 text-sm mt-1">{n.publishedAt}</p>
-            </div>
+      {paginated.map((n) => (
+        <div
+          key={n.articleId}
+          onClick={() => openModal(n.articleId)}   // ← 추가!
+          className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer"
+        >
+          <img
+            src={n.thumbnail || "/no_img.png"}
+            className="w-20 h-16 object-cover rounded-lg"
+          />
+          <div>
+            <p className="text-white font-semibold line-clamp-2">
+              {n.aiTitle || n.title}
+            </p>
+            <p className="text-gray-400 text-sm mt-1">{n.publishedAt}</p>
+          </div>
           </div>
         ))}
       </div>

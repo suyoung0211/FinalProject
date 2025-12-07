@@ -1,9 +1,6 @@
-// ------------------------------------------------------------
-// src/components/articles/NewsList.tsx
-// ------------------------------------------------------------
 import { Clock } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import type { Article } from "../../pages/ArticleListPage";
+import { useArticleModal } from "../../context/ArticleModalContext";
 
 interface Props {
   articles: Article[];
@@ -18,7 +15,7 @@ export default function NewsList({
   setVisibleCount,
   totalCount,
 }: Props) {
-  const navigate = useNavigate();
+  const { openModal } = useArticleModal();
 
   if (!articles.length) return null;
 
@@ -27,7 +24,7 @@ export default function NewsList({
       {articles.map((news) => (
         <div
           key={news.id}
-          onClick={() => navigate(`/article/${news.id}`)}
+          onClick={() => openModal(news.id)}   // ← 모달 열기
           className="
             flex gap-4 p-4 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/20
             hover:bg-purple-600/10 hover:border-purple-500/40 cursor-pointer transition-all
@@ -61,11 +58,9 @@ export default function NewsList({
               </span>
             </div>
 
-            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 hover:text-purple-300 transition">
+            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 hover:text-purple-300 transition -mt-7">
               {news.title}
             </h3>
-
-            <p className="text-gray-400 text-sm line-clamp-2">{news.summary}</p>
 
             <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
               <Clock className="w-3 h-3" />

@@ -15,6 +15,7 @@ public class NormalVoteResponse {
     private String description;
     private LocalDateTime endAt;
     private String status;
+    private Integer totalParticipants;
 
     private LocalDateTime createdAt;
 

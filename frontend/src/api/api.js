@@ -6,7 +6,7 @@ import axios from "axios";
 // → 여기서는 Access Token을 자동으로 넣어줄 것
 const api = axios.create({
   baseURL: "/api",
-  withCredentials: true, // HttpOnly 쿠키(refreshToken) 자동 포함
+  withCredentials: true, // HttpOnly 쿠키(refreshToken) 자동 포함 🔥이거 꼭 있어야 쿠키가 실려감
 });
 
 // ------------------------------------------------------------
