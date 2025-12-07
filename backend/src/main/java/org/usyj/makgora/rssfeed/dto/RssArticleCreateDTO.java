@@ -56,23 +56,63 @@ public class RssArticleCreateDTO {
             content = entry.getDescription().getValue();
         }
 
-        // 4️⃣ 썸네일 처리 (Media RSS 확장)
+        // 4️⃣ 썸네일 처리 (Media RSS 확장 + fallback 처리)
         String thumbnailUrl = null;
         Module module = entry.getModule(MediaEntryModule.URI);
+
         if (module instanceof MediaEntryModule media) {
             MediaContent[] mediaContents = media.getMediaContents();
             if (mediaContents != null && mediaContents.length > 0) {
                 // width 최대값 선택
                 MediaContent largest = Arrays.stream(mediaContents)
-                        .max(Comparator.comparingInt(MediaContent::getWidth))
-                        .orElse(mediaContents[0]);
-                if (largest.getReference() != null) {
+                        .filter(mc -> mc.getReference() != null)
+                        .max(Comparator.comparingInt(mc -> mc.getWidth() == null ? 0 : mc.getWidth()))
+                        .orElse(null);
+
+                if (largest != null && largest.getReference() != null) {
                     thumbnailUrl = largest.getReference().toString();
+                }
+            }
+
+            // media:thumbnail 추출 (fallback)
+            if (thumbnailUrl == null && media.getMetadata() != null &&
+                    media.getMetadata().getThumbnail() != null &&
+                    media.getMetadata().getThumbnail().length > 0) {
+
+                thumbnailUrl = media.getMetadata().getThumbnail()[0].getUrl().toString();
+            }
+        }
+
+        // 5️⃣ description 내 img 태그 fallback 처리
+        if (thumbnailUrl == null && content != null) {
+            int imgStart = content.indexOf("<img");
+            if (imgStart != -1) {
+                int srcStart = content.indexOf("src=\"", imgStart) + 5;
+                int srcEnd = content.indexOf("\"", srcStart);
+                if (srcStart > 4 && srcEnd > srcStart) {
+                    thumbnailUrl = content.substring(srcStart, srcEnd);
                 }
             }
         }
 
-        // 5️⃣ DTO 빌드
+        // 6️⃣ guid를 썸네일로 사용 (Media RSS/description 모두 없을 때)
+        if (thumbnailUrl == null && entry.getUri() != null && entry.getUri().matches(".*\\.(jpg|jpeg|png|gif)$")) {
+            thumbnailUrl = entry.getUri();
+        }
+
+        // 7️⃣ description 내 img 태그 fallback 처리
+        if (thumbnailUrl == null && content != null) {
+            int imgStart = content.indexOf("<img");
+            if (imgStart != -1) {
+                int srcStart = content.indexOf("src=\"", imgStart) + 5;
+                int srcEnd = content.indexOf("\"", srcStart);
+                if (srcStart > 4 && srcEnd > srcStart) {
+                    thumbnailUrl = content.substring(srcStart, srcEnd);
+                }
+            }
+        }
+
+        // 8️⃣ DTO 빌드
         return RssArticleCreateDTO.builder()
                 .title(entry.getTitle())
                 .link(entry.getLink())

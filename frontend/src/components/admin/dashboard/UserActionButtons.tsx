@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit, Ban, Trash2 } from "lucide-react";
+import { Edit, Ban, Trash2, CheckCircle } from "lucide-react";
 import EditUserModal from "./EditUserModal";
 import { updateAdminUserApi } from "../../../api/adminAPI";
 
@@ -33,8 +33,15 @@ export default function UserActionButtons({
 
   const handleEditClick = () => setIsModalOpen(true);
 
-  const updateStatus = async (newStatus: "INACTIVE" | "DELETED") => {
-    if (!confirm(`사용자를 ${newStatus} 하시겠습니까?`)) return;
+  // 상태 코드 → 한글 매핑
+  const statusLabel = {
+    ACTIVE: "활성화",
+    INACTIVE: "비활성화",
+    DELETED: "삭제"
+  } as const;
+
+  const updateStatus = async (newStatus: "ACTIVE" | "INACTIVE" | "DELETED") => {
+    if (!confirm(`사용자를 ${statusLabel[newStatus]} 하시겠습니까?`)) return;
     setLoading(true);
 
     try {
@@ -50,13 +57,21 @@ export default function UserActionButtons({
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2">
         <button
           onClick={onEdit}
           disabled={loading}
           className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400"
         >
           <Edit className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => updateStatus("ACTIVE")}
+          disabled={loading}
+          className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400"
+        >
+          <CheckCircle className="w-4 h-4" />
         </button>
 
         <button

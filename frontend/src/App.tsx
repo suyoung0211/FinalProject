@@ -16,6 +16,7 @@ import { ArticleListPage } from "./pages/ArticleListPage";   // 뉴스 리스트
 import { ArticleDetailPage } from "./pages/ArticleDetailPage"; // 상세페이지(나중 개발)
 import { ProfilePageContainer } from "./pages/ProfilePageContainer";
 import { AdminProtectedRoute } from './components/admin/AdminProtectedRoute';
+import { Toaster } from "react-hot-toast";
 
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
@@ -63,6 +64,9 @@ export default function App() {
             />
             <Route path="/admin22" element={<AdminPage22 />} />
           </Routes>
+          
+          {/* 🔹 Toaster 추가 */}
+          <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         </div>
       </BrowserRouter>
     </AuthProvider>

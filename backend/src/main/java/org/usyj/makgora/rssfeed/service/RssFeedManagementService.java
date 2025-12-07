@@ -14,9 +14,11 @@ import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RssFeedManagementService {
 
     private final ArticleCategoryRepository categoryRepo; // 카테고리 저장/조회용 레포지토리
@@ -120,4 +122,19 @@ public class RssFeedManagementService {
         categoryCache.clear();
         feedCache.clear();
     }
+
+    /**
+     * 🔹 피드 하드 삭제
+     * @param feedId 삭제할 피드 ID
+     * @throws IllegalArgumentException 피드가 존재하지 않을 경우
+     */
+    @Transactional
+    public void deleteFeed(Integer feedId) {
+        RssFeedEntity feed = feedRepo.findById(feedId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 피드입니다. ID: " + feedId));
+
+        feedRepo.delete(feed);
+        log.info("🗑️ 피드 하드 삭제 완료 | ID: {} | 이름: {}", feed.getId(), feed.getSourceName());
+    }
+
 }

@@ -157,7 +157,7 @@ export function Dashboard() {
 
       {/* Users Table */}
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+        <div className="p-6 pr-14 border-b border-white/10 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-white text-lg md:text-xl">전체 사용자 목록</h3>
           </div>
@@ -178,13 +178,13 @@ export function Dashboard() {
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">사용자</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">인증 이메일</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">포인트</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">레벨</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">상태</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">가입일</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">관리</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">사용자</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">인증 이메일</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">포인트</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">레벨</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">상태</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">가입일</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">관리</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -210,11 +210,11 @@ export function Dashboard() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{user.verificationEmail}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-400 font-bold">{user.points?.toLocaleString()}P</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-purple-400 font-bold">Lv.{user.level}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(user.status)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">{new Date(user.createdAt).toISOString().split('T')[0]}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-300">{user.verificationEmail}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-yellow-400 font-bold">{user.points?.toLocaleString()}P</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-purple-400 font-bold">Lv.{user.level}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">{getStatusBadge(user.status)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-400">{new Date(user.createdAt).toISOString().split('T')[0]}</td>
                     <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <UserActionButtons
                         userId={user.id}        // user.id 반드시 있어야 함

@@ -2,7 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Plus, Edit, Trash2, ChevronDown, ChevronRight, Download } from 'lucide-react';
 import { Button } from '../../ui/button';
-import { getAllAdminRssFeeds } from '../../../api/adminAPI';
+import { getAllAdminRssFeeds,
+         collectSingleFeedApi,
+         deleteFeedApi,
+         updateAdminRssFeedApi,
+         collectFeedsBySourceNameApi,
+         collectAllFeedsApi } from '../../../api/adminAPI';
+import toast from "react-hot-toast";
 import EditRssFeedModal from './EditRssFeedModal';
 import CreateRssFeedModal from './CreateRssFeedModal';
 
@@ -25,6 +31,9 @@ export const RssFeeds: React.FC = () => {
   const [selectedFeed, setSelectedFeed] = useState<RssFeed | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  /**
+   * 📌 RSS 피드 목록 가져오기
+   */
   const fetchFeeds = async () => {
     try {
       const response = await getAllAdminRssFeeds();
@@ -42,6 +51,7 @@ export const RssFeeds: React.FC = () => {
       console.log(feeds)
       setRssFeeds(feeds);
 
+      // 출처 그룹 접힘 상태 유지
       setCollapsedSources(prev => {
         const newCollapsed = { ...prev };
         feeds.forEach(feed => {
@@ -52,6 +62,7 @@ export const RssFeeds: React.FC = () => {
 
     } catch (err) {
       console.error(err);
+      toast.error("RSS 피드 리스트 로딩 실패 😢");
     }
   };
 
@@ -59,6 +70,9 @@ export const RssFeeds: React.FC = () => {
     fetchFeeds();
   }, []);
 
+  /**
+   * 📌 출처 그룹 접기/펼치기
+   */
   const toggleCollapse = (source: string) => {
     setCollapsedSources(prev => ({
       ...prev,
@@ -66,29 +80,186 @@ export const RssFeeds: React.FC = () => {
     }));
   };
 
+  /**
+   * 📌 상태 표시 배지
+   */
   const getStatusBadge = (status: 'active' | 'inactive') =>
     status === 'active'
       ? <span className="px-2 py-1 rounded-md bg-green-500/20 text-green-400 text-xs font-medium">활성화</span>
-      : <span className="px-2 py-1 rounded-md bg-red-500/20 text-red-400 text-xs font-medium">비활성화</span>;
+      : <span className="px-2 py-1 rounded-md bg-gray-500/20 text-gray-400 text-xs font-medium">비활성화</span>;
 
+  /**
+   * 📌 출처별 Grouping
+   */
   const groupedFeeds = rssFeeds.reduce<Record<string, RssFeed[]>>((acc, feed) => {
     if (!acc[feed.sourceName]) acc[feed.sourceName] = [];
     acc[feed.sourceName].push(feed);
     return acc;
   }, {});
+  
+  /**
+   * 🔹 RSS 피드 수집 공통 함수
+   *
+   * 설명:
+   * - 단일 피드 또는 특정 출처(SourceName) 전체 피드를 수집할 때 사용
+   * - 수집 전 confirm 창 표시
+   * - 수집 진행/성공/실패 상태 toast 표시
+   * - 수집 완료 후 피드 목록 갱신
+   *
+   * @param label 수집 대상 표시 이름 (단일 피드: sourceName, 전체 피드: '전체')
+   * @param apiCall 호출할 API 함수 (단일 피드: collectSingleFeedApi, sourceName 전체: collectFeedsBySourceNameApi)
+   * @param isSingleFeed 단일 피드 수집 여부
+   */
+  const handleCollect = async (
+    label: string,
+    apiCall: () => Promise<any>,
+    isSingleFeed: boolean = true,
+    categories?: string[]
+  ) => {
+    // 단일 피드라면 카테고리 표시
+    const labelWithCategories = isSingleFeed && categories
+      ? `${label} [${categories.join(", ")}]`
+      : label;
+
+    // 1️⃣ 사용자 확인
+    const confirmCollect = window.confirm(`"${labelWithCategories}" ${isSingleFeed ? "피드를" : "소스의 활성화된 피드를 모두"} 수집하시겠습니까?`);
+    if (!confirmCollect) return;
+
+    // 2️⃣ Toast 로딩 표시
+    const toastId = toast.loading("수집 중...");
+
+    try {
+      // 3️⃣ API 호출
+      const response = await apiCall();
+      const result = response.data; // CollectResponse 또는 BatchResult
+
+      // 4️⃣ 메시지 결정
+      let message = "";
+
+      if ("message" in result) {
+        // 단일 Feed 수집: 백엔드 메시지 사용
+        message = result.message;
+        toast(message, { id: toastId });
+      } else {
+        // SourceName 전체 또는 전체 수집
+        if (result.fetched === 0 && result.saved === 0 && result.skipped === 0) {
+          message = `⚠️ "${label}" 소스에는 활성화된 피드가 없거나 URL 접근 오류`;
+          toast(message, { id: toastId });
+        } else {
+          message = `🔥 "${label}" 수집 완료 | 저장:${result.saved} | 스킵:${result.skipped} | 전체:${result.fetched}`;
+          toast.success(message, { id: toastId });
+        }
+      }
+
+      // 5️⃣ 피드 목록 갱신
+      fetchFeeds();
+
+    } catch (err: any) {
+      // 6️⃣ 예외 처리
+      toast.error(
+        "수집 실패: " + (err.response?.data || err.message),
+        { id: toastId }
+      );
+      console.error(err);
+    }
+  };
+
+  // 단일 피드 수집
+  const handleCollectFeed = (feed: RssFeed) =>
+    handleCollect(feed.sourceName, () => collectSingleFeedApi(feed.id), true, feed.categories);
+
+  // 특정 SourceName 전체 수집
+  const handleCollectSource = (source: string) =>
+    handleCollect(source, () => collectFeedsBySourceNameApi(source), false);
+
+  // 전체 Feed 수집
+  const handleCollectAllFeeds = () =>
+    handleCollect(
+      "전체",
+      () => collectAllFeedsApi(), // 전체 Feed 수집 API 호출
+      false // 전체 수집은 단일 피드가 아니므로 false
+    );
+
+
+  /**
+   * 📌 RSS 피드 삭제 호출
+   * - 활성화 상태인 피드는 먼저 비활성화 여부 확인
+   * - 비활성화 상태에서 삭제 진행
+   */
+  const handleDelete = async (feed: RssFeed) => {
+    try {
+      // 1️⃣ 활성화 상태 확인
+      if (feed.status === "active") {
+        const confirmDeactivate = window.confirm(
+          `"${feed.sourceName}" 피드는 활성화 상태입니다.\n삭제 전 비활성화하시겠습니까?`
+        );
+        if (!confirmDeactivate) return;
+
+        // 2️⃣ 상태를 즉시 UI에 반영 (setState 사용)
+        setRssFeeds(prevFeeds =>
+          prevFeeds.map(f =>
+            f.id === feed.id ? { ...f, status: 'inactive' } : f
+          )
+        );
+
+        // 3️⃣ Toast 표시
+        toast.success(`✅ "${feed.sourceName}" 피드를 비활성화했습니다.`, { duration: 3000 });
+
+        // 4️⃣ 서버에 상태 변경 요청
+        await updateAdminRssFeedApi(feed.id, { status: 'inactive' });
+
+        // 5️⃣ 서버 동기화를 위해 피드 목록 갱신
+        fetchFeeds();
+      }
+
+      // 6️⃣ 삭제 확인
+      const confirmDelete = window.confirm(`"${feed.sourceName}" 피드를 삭제하시겠습니까?`);
+      if (!confirmDelete) return;
+
+      // 7️⃣ 삭제 요청 진행
+      const toastId = toast.loading("삭제 중...");
+      await deleteFeedApi(feed.id); // DELETE 요청
+
+      // 8️⃣ 상태를 UI에서 바로 제거
+      setRssFeeds(prevFeeds => prevFeeds.filter(f => f.id !== feed.id));
+
+      // 9️⃣ toast 성공 메시지
+      toast.success(`피드 삭제 완료: ${feed.sourceName}`, { id: toastId });
+
+      // 🔟 서버 동기화 (필요 시 fetch)
+      fetchFeeds();
+
+    } catch (err: any) {
+      toast.error("삭제 실패: " + (err.response?.data || err.message), { duration: 3000 });
+      console.error(err);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
-
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
-          <h3 className="font-bold text-white">RSS 피드 목록</h3>
-          <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm"
-            onClick={() => setShowCreateModal(true)}
-          >
-            <Plus className="w-4 h-4 mr-2"/>
-            피드 추가
-          </Button>
+          {/* 좌측 제목 */}
+          <h3 className="font-bold text-white text-lg md:text-xl">RSS 피드 목록</h3>
+
+          {/* 우측 버튼 그룹 */}
+          <div className="flex gap-2"> {/* gap-2로 버튼 간격 조절 */}
+            {/* 전체 수집 버튼 */}
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white text-sm flex items-center"
+              onClick={handleCollectAllFeeds}
+            >
+              <Download className="w-4 h-4 mr-1" /> 전체 수집
+            </Button>
+
+            {/* 피드 추가 버튼 */}
+            <Button
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm flex items-center"
+              onClick={() => setShowCreateModal(true)}
+            >
+              <Plus className="w-4 h-4 mr-2"/> 피드 추가
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -115,16 +286,22 @@ export const RssFeeds: React.FC = () => {
                       className="bg-white/10 cursor-pointer hover:bg-white/20 transition-colors"
                       onClick={() => toggleCollapse(source)}
                     >
-                      <td className="px-6 py-2 text-lg font-semibold text-white flex justify-between items-center" colSpan={7}>
+                      <td className="px-6 py-2 text-lg font-semibold text-white text-center">
                         {source}
-                        {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </td>
+                      <td >{isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</td>
                       <td></td>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td></td>
-                      <td></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          className="p-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 transition-colors"
+                          onClick={(e) => { e.stopPropagation(); handleCollectSource(source); }}
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </td>
                     </tr>
 
                     {!isCollapsed && feeds.map(feed => (
@@ -150,8 +327,11 @@ export const RssFeeds: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex justify-center items-center gap-2">
 
-                            {/* 체크 버튼 */}
-                            <button className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors">
+                            {/* 다운로드 버튼 */}
+                            <button
+                              className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors"
+                              onClick={() => handleCollectFeed(feed)}
+                            >
                               <Download className="w-4 h-4" />
                             </button>
 
@@ -164,9 +344,13 @@ export const RssFeeds: React.FC = () => {
                             </button>
 
                             {/* 삭제 버튼 */}
-                            <button className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors">
+                            <button
+                              onClick={() => handleDelete(feed)} // feed 객체를 전달
+                              className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
+
                           </div>
                         </td>
                       </tr>
