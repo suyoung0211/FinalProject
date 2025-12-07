@@ -6,7 +6,7 @@ import { AdminPageProps } from '../types';
 import { NavLink, Routes, Route, useNavigate } from 'react-router-dom';
 import { Dashboard } from '../components/admin/dashboard/Dashboard';
 import { RssFeeds } from '../components/admin/rssFedds/RssFeeds';
-import { Issues } from '../components/admin/Issues';
+import { Issues } from '../components/admin/issues/IssuesPage';
 import { Votes } from '../components/admin/Votes';
 import { Community } from '../components/admin/Community';
 import { Store } from '../components/admin/Store';

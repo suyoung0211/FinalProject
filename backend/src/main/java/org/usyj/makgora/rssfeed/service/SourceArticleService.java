@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RssArticleManagementService {
+public class SourceArticleService {
 
     private final RssFeedManagementService feedService; // 피드/카테고리 관리 서비스
     private final RssArticleRepository articleRepo;    // 기사 저장/조회용 JPA 레포지토리

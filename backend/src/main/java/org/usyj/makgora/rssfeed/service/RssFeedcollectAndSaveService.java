@@ -31,7 +31,7 @@ public class RssFeedcollectAndSaveService {
 
     private final List<RssFeedSource> sources;
     private final RssFeedManagementService feedService;
-    private final RssArticleManagementService articleService;
+    private final SourceArticleService articleService;
     private final RssFeedRepository feedRepo;
 
     @Transactional

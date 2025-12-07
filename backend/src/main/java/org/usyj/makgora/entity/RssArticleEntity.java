@@ -90,4 +90,8 @@ public class RssArticleEntity {
 
     @Column(nullable = false)
     private int aiSystemScore;
+
+    // 🔹 기사와 연관된 AI 제목 1:1 매핑
+    @OneToOne(mappedBy = "article", cascade = CascadeType.ALL, orphanRemoval = true)
+    private ArticleAiTitleEntity aiTitle;
 }

@@ -99,6 +99,7 @@ public class SecurityConfig {
         .requestMatchers("/api/user/**").authenticated()
         .requestMatchers("/api/comment/**").authenticated()
         .requestMatchers("/api/store/**").authenticated()
+        .requestMatchers("/api/admin/**").authenticated()
         .anyRequest().permitAll()
 )
 
