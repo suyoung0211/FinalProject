@@ -28,6 +28,13 @@ public class VoteDetailCommentResponse {
     private String position;
     private String content;
 
+    private Integer likeCount;
+    private Integer linkedChoiceId;
+    private Integer linkedNormalChoiceId;
+    private Integer dislikeCount;
+    private Boolean myLike;    // 내가 좋아요 했는가
+    private Boolean myDislike;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

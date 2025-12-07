@@ -9,7 +9,7 @@ import org.usyj.makgora.request.voteDetails.VoteDetailResolveRequest;
 import org.usyj.makgora.response.voteDetails.VoteDetailMainResponse;
 import org.usyj.makgora.response.voteDetails.VoteDetailSettlementResponse;
 import org.usyj.makgora.security.CustomUserDetails;
-import org.usyj.makgora.service.VoteDetailService;
+import org.usyj.makgora.service.VoteListService;
 import org.usyj.makgora.service.VoteService;
 import org.usyj.makgora.service.VoteSettlementService;
 import org.usyj.makgora.request.vote.UserVoteCreateRequest;
@@ -22,7 +22,7 @@ import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 public class VoteController {
 
     private final VoteService voteService;
-    private final VoteDetailService voteDetailService;
+    private final VoteListService voteDetailService;
     private final VoteSettlementService voteSettlementService;
 
     /** 상세 조회 */

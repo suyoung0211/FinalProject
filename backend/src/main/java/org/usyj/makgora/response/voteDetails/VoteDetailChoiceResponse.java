@@ -19,4 +19,8 @@ public class VoteDetailChoiceResponse {
 
     private Double odds;                // 배당률
     private Double percent;             // 퍼센트(YES/NO 비율)
+    // 내가 이 선택지에 베팅했는지 여부
+    private Boolean isMyChoice;
+    // 실시간 퍼센티지 외에 “시장 점유율”
+    private Double marketShare;
 }

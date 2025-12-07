@@ -12,5 +12,12 @@ public interface VoteCommentRepository extends JpaRepository<VoteCommentEntity, 
 
     List<VoteCommentEntity> findByVoteIdAndParentIsNull(Integer voteId);
 
+    // NormalVote 댓글 (추가!)
+    List<VoteCommentEntity> findByNormalVote_IdAndParentIsNull(Long normalVoteId);
+
     List<VoteCommentEntity> findByParentCommentId(Long parentId);
+
+    int countByNormalVote_Id(Long normalVoteId);
+
+    List<VoteCommentEntity> findByVote_IdAndParentIsNull(Integer voteId);
 }

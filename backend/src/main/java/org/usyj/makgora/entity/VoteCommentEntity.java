@@ -52,6 +52,16 @@ public class VoteCommentEntity {
     @JoinColumn(name = "parent_id")
     private VoteCommentEntity parent;
 
+    @Column(name = "like_count")
+    private Integer likeCount;
+
+    @Column(name = "dislike_count")
+    private Integer dislikeCount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "choice_id")
+    private VoteOptionChoiceEntity choice;
+
     /** 자식 댓글(대댓글) 리스트 */
     @Builder.Default
     @OneToMany(mappedBy = "parent")

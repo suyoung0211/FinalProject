@@ -20,4 +20,5 @@ public class VoteDetailSettlementResponse {
 
     private Integer winnerCount;     // 이긴 사람 수
     private Integer distributedSum;  // 실제 지급된 포인트 총합
+    private String resultSummary;
 }

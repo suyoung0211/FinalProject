@@ -21,4 +21,7 @@ public class VoteDetailParticipationResponse {
 
     private Integer pointsBet;         // 내가 건 포인트
     private LocalDateTime votedAt;
+
+    private Double expectedOdds;
+    private Integer expectedReward;
 }

@@ -33,4 +33,17 @@ public class VoteDetailMainResponse {
 
     private VoteDetailParticipationResponse myParticipation; // 내 참여 정보
     private List<VoteDetailCommentResponse> comments;         // 댓글 부분
+    // 선택지별 참여자 목록
+    private List<VoteDetailBettorSummaryResponse> bettors;
+
+    // 정답 확정 여부 + 정답 선택지 ID
+    private Integer correctChoiceId;
+    private Boolean isResolved;
+    private Boolean isRewarded;
+    // 정산 요약
+    private VoteDetailSettlementSummaryResponse settlementSummary;
+    // 내 포지션 상태 + 예상 수익률
+    private Double expectedOdds; 
+    private Integer expectedReward; 
+    private List<VoteActivityLogResponse> activityLog;
 }

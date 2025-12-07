@@ -306,3 +306,22 @@ VoteTrendHistoryEntity 추가 (투표상세 차트)
 JwtAuthFilter 안에
 (method.equals("GET") && path.startsWith("/api/articles")) 주석처리
 기사 상세 모달추가 + APP.tsx에 전역모달 추가
+
+----------------------------
+12/07
+VoteUserEntity에 normalChoice 필드를 추가
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "normal_choice_id")
+private NormalVoteChoiceEntity normalChoice;
+
+VoteCommentEntity에 좋아요/싫어요/선택id 추가
+    @Column(name = "like_count")
+    private Integer likeCount;
+
+    @Column(name = "dislike_count")
+    private Integer dislikeCount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "choice_id")
+    private VoteOptionChoiceEntity choice;

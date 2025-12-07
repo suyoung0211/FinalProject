@@ -7,11 +7,9 @@ import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
 import org.usyj.makgora.request.normalvote.NormalVoteFullUpdateRequest;
-import org.usyj.makgora.response.normalvote.NormalVoteChoiceResponse;
-import org.usyj.makgora.response.normalvote.NormalVoteListItemResponse;
-import org.usyj.makgora.response.normalvote.NormalVoteListResponse;
-import org.usyj.makgora.response.normalvote.NormalVoteOptionResponse;
-import org.usyj.makgora.response.normalvote.NormalVoteResponse;
+import org.usyj.makgora.response.normalvote.*;
+import org.usyj.makgora.response.voteDetails.NormalVoteResultResponse;
+import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,142 +23,352 @@ public class NormalVoteService {
     private final NormalVoteChoiceRepository choiceRepository;
     private final NormalVoteStatusHistoryRepository normalVoteStatusHistoryRepository;
     private final UserRepository userRepository;
+    private final VoteUserRepository voteUserRepository;
+    private final VoteCommentRepository voteCommentRepository;
 
-    /* ---------------------------------------------------
-     * 투표 생성
-     * --------------------------------------------------- */
-    // 1) 생성
-@Transactional
-public NormalVoteResponse createVote(NormalVoteCreateRequest req, Integer userId) {
-    UserEntity user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("존재하지 않는 유저입니다."));
+    /* ============================================================
+       1) 일반투표 생성
+       ============================================================ */
+    @Transactional
+    public NormalVoteResponse createVote(NormalVoteCreateRequest req, Integer userId) {
 
-    NormalVoteEntity vote = NormalVoteEntity.builder()
-            .title(req.getTitle())
-            .description(req.getDescription())
-            .endAt(req.getEndAt())
-            .user(user)
-            .category(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()))
-            .status(NormalVoteEntity.Status.ONGOING)
-            .build();
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 유저입니다."));
 
-    normalVoteRepository.save(vote);
+        NormalVoteEntity vote = NormalVoteEntity.builder()
+                .title(req.getTitle())
+                .description(req.getDescription())
+                .endAt(req.getEndAt())
+                .user(user)
+                .category(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()))
+                .status(NormalVoteEntity.Status.ONGOING)
+                .build();
 
-    // 옵션 + 선택지 저장
-    List<NormalVoteOptionEntity> options = req.getOptions().stream()
-            .map(opt -> {
-                NormalVoteOptionEntity option = NormalVoteOptionEntity.builder()
+        normalVoteRepository.save(vote);
+
+        List<NormalVoteOptionEntity> options =
+                req.getOptions().stream().map(opt -> {
+
+                    NormalVoteOptionEntity option = NormalVoteOptionEntity.builder()
+                            .normalVote(vote)
+                            .optionTitle(opt.getOptionTitle())
+                            .build();
+
+                    optionRepository.save(option);
+
+                    List<NormalVoteChoiceEntity> choices =
+                            opt.getChoices().stream()
+                                    .map(text -> NormalVoteChoiceEntity.builder()
+                                            .normalOption(option)
+                                            .choiceText(text)
+                                            .build())
+                                    .toList();
+
+                    choiceRepository.saveAll(choices);
+                    option.setChoices(choices);
+
+                    return option;
+                }).toList();
+
+        vote.setOptions(options);
+
+        normalVoteStatusHistoryRepository.save(
+                NormalVoteStatusHistoryEntity.builder()
                         .normalVote(vote)
-                        .optionTitle(opt.getOptionTitle())
+                        .status(NormalVoteStatusHistoryEntity.Status.ONGOING)
+                        .statusDate(LocalDateTime.now())
+                        .build()
+        );
+
+        return toResponse(vote);
+    }
+
+    /* ============================================================
+       2) 상세 조회
+       ============================================================ */
+    @Transactional(readOnly = true)
+    public NormalVoteResponse getDetail(Long id) {
+        return toResponse(
+                normalVoteRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."))
+        );
+    }
+
+    /* ============================================================
+       3) 전체 수정
+       ============================================================ */
+    @Transactional
+    public NormalVoteResponse updateVote(Long voteId, NormalVoteFullUpdateRequest req, Integer userId) {
+
+        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (!vote.getUser().getId().equals(userId))
+            throw new RuntimeException("본인이 생성한 투표만 수정 가능합니다.");
+
+        vote.setTitle(req.getTitle());
+        vote.setDescription(req.getDescription());
+        vote.setEndAt(req.getEndAt());
+        vote.setCategory(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()));
+
+        // 삭제 옵션
+        if (req.getDeletedOptionIds() != null)
+            req.getDeletedOptionIds().forEach(optionRepository::deleteById);
+
+        // 삭제 선택지
+        if (req.getDeletedChoiceIds() != null)
+            req.getDeletedChoiceIds().forEach(choiceRepository::deleteById);
+
+        // 수정/추가 옵션
+        for (NormalVoteFullUpdateRequest.OptionUpdateDto dto : req.getOptions()) {
+
+            NormalVoteOptionEntity option;
+
+            if (dto.getOptionId() != null) {
+                option = optionRepository.findById(dto.getOptionId())
+                        .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
+                option.setOptionTitle(dto.getOptionTitle());
+            } else {
+                option = NormalVoteOptionEntity.builder()
+                        .normalVote(vote)
+                        .optionTitle(dto.getOptionTitle())
                         .build();
                 optionRepository.save(option);
+            }
 
-                List<NormalVoteChoiceEntity> choices = opt.getChoices().stream()
-                        .map(c -> NormalVoteChoiceEntity.builder()
-                                .normalOption(option)
-                                .choiceText(c)
-                                .build())
-                        .toList();
+            // 선택지 처리
+            for (NormalVoteFullUpdateRequest.ChoiceUpdateDto c : dto.getChoices()) {
 
-                choiceRepository.saveAll(choices);
-                option.setChoices(choices);
-                return option;
-            }).toList();
-
-    vote.setOptions(options);
-
-    /** 🔥 상태 이력 저장 */
-    NormalVoteStatusHistoryEntity history = NormalVoteStatusHistoryEntity.builder()
-            .normalVote(vote)
-            .status(NormalVoteStatusHistoryEntity.Status.ONGOING)
-            .statusDate(LocalDateTime.now())
-            .build();
-
-    normalVoteStatusHistoryRepository.save(history);
-
-    return toResponse(vote);
-}
-
-// 2) 상세 조회
-@Transactional(readOnly = true)
-public NormalVoteResponse getDetail(Long id) {
-    NormalVoteEntity vote = normalVoteRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
-    return toResponse(vote);
-}
-
-// 3) 업데이트 (리턴 타입도 NormalVoteResponse)
-@Transactional
-public NormalVoteResponse updateVote(Long voteId, NormalVoteFullUpdateRequest req, Integer userId) {
-
-    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
-
-    if (!vote.getUser().getId().equals(userId)) {
-        throw new RuntimeException("본인이 생성한 투표만 수정 가능합니다.");
-    }
-
-    // 1) 기본 정보 수정
-    vote.setTitle(req.getTitle());
-    vote.setDescription(req.getDescription());
-    vote.setEndAt(req.getEndAt());
-    vote.setCategory(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()));
-
-    // 2) 삭제할 옵션들 처리
-    if (req.getDeletedOptionIds() != null) {
-        req.getDeletedOptionIds().forEach(optionRepository::deleteById);
-    }
-
-    // 3) 삭제할 choice들 처리
-    if (req.getDeletedChoiceIds() != null) {
-        req.getDeletedChoiceIds().forEach(choiceRepository::deleteById);
-    }
-
-    // 4) 옵션 업데이트 (기존 + 신규)
-    for (NormalVoteFullUpdateRequest.OptionUpdateDto dto : req.getOptions()) {
-
-        NormalVoteOptionEntity option;
-
-        // 기존 옵션 수정
-        if (dto.getOptionId() != null) {
-            option = optionRepository.findById(dto.getOptionId())
-                    .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
-            option.setOptionTitle(dto.getOptionTitle());
-
-        } else {
-            // 새 옵션 추가
-            option = NormalVoteOptionEntity.builder()
-                    .normalVote(vote)
-                    .optionTitle(dto.getOptionTitle())
-                    .build();
-            optionRepository.save(option);
-        }
-
-        // 선택지 업데이트
-        for (NormalVoteFullUpdateRequest.ChoiceUpdateDto c : dto.getChoices()) {
-
-            if (c.getChoiceId() != null) {
-                // 기존 choice 수정
-                NormalVoteChoiceEntity choice = choiceRepository.findById(c.getChoiceId())
-                        .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
-                choice.setChoiceText(c.getChoiceText());
-
-            } else {
-                // 새 choice 추가
-                NormalVoteChoiceEntity choice = NormalVoteChoiceEntity.builder()
-                        .normalOption(option)
-                        .choiceText(c.getChoiceText())
-                        .build();
-                choiceRepository.save(choice);
+                if (c.getChoiceId() != null) {
+                    NormalVoteChoiceEntity choice = choiceRepository.findById(c.getChoiceId())
+                            .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+                    choice.setChoiceText(c.getChoiceText());
+                } else {
+                    choiceRepository.save(
+                            NormalVoteChoiceEntity.builder()
+                                    .normalOption(option)
+                                    .choiceText(c.getChoiceText())
+                                    .build()
+                    );
+                }
             }
         }
+
+        return toResponse(vote);
     }
 
-    return toResponse(vote);
-}
+    /* ============================================================
+       4) 투표 참여
+       ============================================================ */
+    @Transactional
+    public NormalVoteResponse participate(Long voteId, Integer userId, Long choiceId) {
 
-// 4) 매핑 메서드: Entity → NormalVoteResponse
-private NormalVoteResponse toResponse(NormalVoteEntity v) {
+        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (vote.getStatus() != NormalVoteEntity.Status.ONGOING)
+            throw new RuntimeException("이미 종료된 투표입니다.");
+
+        NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
+                .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+
+        // 중복 참가 방지
+        VoteUserEntity existing = voteUserRepository.findByNormalVote_IdAndUser_Id(voteId, userId);
+        if (existing != null)
+            throw new RuntimeException("이미 참여한 투표입니다.");
+
+        // 저장
+        voteUserRepository.save(
+                VoteUserEntity.builder()
+                        .normalVote(vote)
+                        .normalChoice(choice)
+                        .user(userRepository.getReferenceById(userId))
+                        .isCancelled(false)
+                        .build()
+        );
+
+        // count 증가
+        choice.setParticipantsCount(choice.getParticipantsCount() + 1);
+        vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+
+        return toResponse(vote);
+    }
+
+    /* ============================================================
+       5) 전체 조회
+       ============================================================ */
+    @Transactional(readOnly = true)
+    public NormalVoteListResponse getAllVotes() {
+
+        List<NormalVoteEntity> list = normalVoteRepository.findAll();
+
+        List<NormalVoteListItemResponse> items =
+                list.stream().map(v -> NormalVoteListItemResponse.builder()
+                        .id(v.getId())
+                        .title(v.getTitle())
+                        .description(v.getDescription())
+                        .status(v.getStatus().name())
+                        .createdAt(v.getCreatedAt())
+                        .endAt(v.getEndAt())
+                        .totalParticipants(v.getTotalParticipants())
+                        .options(
+                                v.getOptions().stream()
+                                        .map(opt -> NormalVoteOptionResponse.builder()
+                                                .optionId(opt.getId())
+                                                .title(opt.getOptionTitle())
+                                                .choices(
+                                                        opt.getChoices().stream()
+                                                                .map(c -> NormalVoteChoiceResponse.builder()
+                                                                        .choiceId(c.getId())
+                                                                        .text(c.getChoiceText())
+                                                                        .participantsCount(c.getParticipantsCount())
+                                                                        .build())
+                                                                .toList()
+                                                )
+                                                .build())
+                                        .toList()
+                        )
+                        .build()
+                ).toList();
+
+        return NormalVoteListResponse.builder()
+                .votes(items)
+                .totalCount(items.size())
+                .build();
+    }
+
+    /* ============================================================
+       6) 투표 삭제 (CANCELLED)
+       ============================================================ */
+    @Transactional
+    public void deleteVote(Long voteId, Integer userId) {
+
+        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (!vote.getUser().getId().equals(userId))
+            throw new RuntimeException("본인이 생성한 투표만 삭제할 수 있습니다.");
+
+        vote.setStatus(NormalVoteEntity.Status.CANCELLED);
+    }
+
+    /* ============================================================
+       7) 투표 마감
+       ============================================================ */
+    @Transactional
+    public String finishVote(Long voteId, Integer userId) {
+
+        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (!vote.getUser().getId().equals(userId))
+            throw new RuntimeException("본인이 생성한 투표만 마감할 수 있습니다.");
+
+        vote.setStatus(NormalVoteEntity.Status.FINISHED);
+
+        return "NORMAL_VOTE_FINISHED";
+    }
+
+    /* ============================================================
+       8) 투표 취소
+       ============================================================ */
+    @Transactional
+    public String cancelVote(Long voteId, Integer userId) {
+
+        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (!vote.getUser().getId().equals(userId))
+            throw new RuntimeException("본인이 생성한 투표만 취소할 수 있습니다.");
+
+        vote.setStatus(NormalVoteEntity.Status.CANCELLED);
+
+        return "NORMAL_VOTE_CANCELLED";
+    }
+
+    /* ============================================================
+       9) 내가 참여한 투표 조회
+       ============================================================ */
+    @Transactional(readOnly = true)
+    public List<NormalVoteListItemResponse> getMyParticipatedVotes(Integer userId) {
+
+        List<VoteUserEntity> participated =
+                voteUserRepository.findByUser_IdAndNormalVoteIsNotNull(userId);
+
+        return participated.stream()
+                .map(vu -> vu.getNormalVote())
+                .distinct()
+                .map(v -> NormalVoteListItemResponse.builder()
+                        .id(v.getId())
+                        .title(v.getTitle())
+                        .status(v.getStatus().name())
+                        .createdAt(v.getCreatedAt())
+                        .endAt(v.getEndAt())
+                        .totalParticipants(v.getTotalParticipants())
+                        .build())
+                .toList();
+    }
+
+    /* ============================================================
+       10) 일반투표 결과 조회
+       ============================================================ */
+    @Transactional(readOnly = true)
+    public NormalVoteResultResponse getResult(Long normalVoteId) {
+
+        NormalVoteEntity vote =
+                normalVoteRepository.findById(normalVoteId)
+                        .orElseThrow(() -> new RuntimeException("투표가 없습니다."));
+
+        List<NormalVoteOptionEntity> options =
+                optionRepository.findByNormalVote_Id(normalVoteId);
+
+        int totalParticipants =
+                voteUserRepository.countByNormalVote_Id(normalVoteId);
+
+        List<NormalVoteResultResponse.OptionResult> optionResults =
+                options.stream().map(opt -> {
+
+                    int count = voteUserRepository
+                            .countByNormalChoice_NormalOption_Id(opt.getId());
+
+                    double percent = totalParticipants == 0 ?
+                            0.0 :
+                            Math.round((count * 1000.0 / totalParticipants)) / 10.0;
+
+                    return NormalVoteResultResponse.OptionResult.builder()
+                            .optionId(opt.getId())
+                            .title(opt.getOptionTitle())
+                            .participants(count)
+                            .percent(percent)
+                            .build();
+                }).toList();
+
+        return NormalVoteResultResponse.builder()
+                .normalVoteId(normalVoteId)
+                .title(vote.getTitle())
+                .status(vote.getStatus().name())
+                .totalParticipants(totalParticipants)
+                .options(optionResults)
+                .build();
+    }
+
+    /* ============================================================
+       내부 공통 매핑
+       ============================================================ */
+    private NormalVoteResponse toResponse(NormalVoteEntity v) {
+
+    int commentCount = voteCommentRepository.countByNormalVote_Id(v.getId());
+
+    // 🔥 댓글 루트 목록 조회
+    List<VoteCommentEntity> roots = 
+            voteCommentRepository.findByNormalVote_IdAndParentIsNull(v.getId());
+
+    // 🔥 댓글 DTO 변환
+    List<VoteDetailCommentResponse> comments =
+            roots.stream()
+                    .map(this::convertComment)
+                    .toList();
+
     List<NormalVoteResponse.OptionResponse> options =
             v.getOptions().stream()
                     .map(o -> NormalVoteResponse.OptionResponse.builder()
@@ -182,106 +390,36 @@ private NormalVoteResponse toResponse(NormalVoteEntity v) {
             .id(v.getId())
             .title(v.getTitle())
             .description(v.getDescription())
+            .category(v.getCategory().name())
             .status(v.getStatus().name())
             .totalParticipants(v.getTotalParticipants())
+            .commentCount(commentCount)
+            .comments(comments)   // 🔥 이제 정상 작동
             .endAt(v.getEndAt())
             .createdAt(v.getCreatedAt())
             .options(options)
             .build();
 }
 
-// 5) 전체 조회
-@Transactional(readOnly = true)
-public NormalVoteListResponse getAllVotes() {
-
-    List<NormalVoteEntity> list = normalVoteRepository.findAll();
-
-    List<NormalVoteListItemResponse> items = list.stream()
-            .map(v -> NormalVoteListItemResponse.builder()
-                    .id(v.getId())
-                    .title(v.getTitle())
-                    .description(v.getDescription())
-                    .status(v.getStatus().name())
-                    .createdAt(v.getCreatedAt())
-                    .endAt(v.getEndAt())
-                    .totalParticipants(v.getTotalParticipants())
-
-                    /* 🔥 옵션 + 선택지 매핑 */
-                    .options(
-                            v.getOptions().stream()
-                                    .map(opt -> NormalVoteOptionResponse.builder()
-                                            .optionId(opt.getId())
-                                            .title(opt.getOptionTitle())
-                                            .choices(
-                                                    opt.getChoices().stream()
-                                                            .map(c -> NormalVoteChoiceResponse.builder()
-                                                                    .choiceId(c.getId())
-                                                                    .text(c.getChoiceText())
-                                                                    .participantsCount(c.getParticipantsCount())
-                                                                    .build()
-                                                            )
-                                                            .toList()
-                                            )
-                                            .build()
-                                    )
-                                    .toList()
-                    )
-
-                    .build()
+private VoteDetailCommentResponse convertComment(VoteCommentEntity e) {
+    return VoteDetailCommentResponse.builder()
+            .commentId(e.getCommentId().intValue())
+            .normalVoteId(e.getNormalVote() != null ? e.getNormalVote().getId().intValue() : null)
+            .userId(e.getUser().getId())
+            .username(e.getUser().getNickname())
+            .content(e.getContent())
+            .position(e.getPosition())
+            .likeCount(e.getLikeCount())
+            .dislikeCount(e.getDislikeCount())
+            .createdAt(e.getCreatedAt())
+            .updatedAt(e.getUpdatedAt())
+            .parentId(e.getParent() != null ? e.getParent().getCommentId().intValue() : null)
+            .children(
+                    e.getChildren().stream()
+                            .map(this::convertComment)
+                            .toList()
             )
-            .toList();
-
-    return NormalVoteListResponse.builder()
-            .votes(items)
-            .totalCount(items.size())
             .build();
 }
-
-@Transactional
-public NormalVoteResponse participate(Long voteId, Integer userId, Long choiceId) {
-
-    UserEntity user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
-
-    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
-
-    // -----------------------------
-    // 🔥 선택지 찾기
-    // -----------------------------
-    NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
-            .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
-
-    // -----------------------------
-    // 🔥 중복 참여 방지 (필요 시 테이블 만들 수 있음)
-    // -----------------------------
-    // 나중에 NormalVoteUserHistory 테이블 만들면 여기서 체크 가능
-
-    // -----------------------------
-    // 🔥 개별 choice 참여 카운트 증가
-    // -----------------------------
-    choice.setParticipantsCount(choice.getParticipantsCount() + 1);
-    choiceRepository.save(choice);
-
-    // -----------------------------
-    // 🔥 전체 투표 참여자 수 증가
-    // -----------------------------
-    vote.setTotalParticipants(vote.getTotalParticipants() + 1);
-    normalVoteRepository.save(vote);
-
-    return toResponse(vote);
-}
-// 6) 삭제(Soft Delete: 상태만 CANCELLED 로 변경)
-@Transactional
-public void deleteVote(Long voteId, Integer userId) {
-
-    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
-
-    if (!vote.getUser().getId().equals(userId)) {
-        throw new RuntimeException("본인이 생성한 투표만 삭제할 수 있습니다.");
-    }
-
-    vote.setStatus(NormalVoteEntity.Status.CANCELLED);
-}
+    
 }

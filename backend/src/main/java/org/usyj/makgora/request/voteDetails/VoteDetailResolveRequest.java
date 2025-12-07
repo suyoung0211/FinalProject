@@ -1,5 +1,7 @@
 package org.usyj.makgora.request.voteDetails;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,10 +12,17 @@ import lombok.Setter;
  */
 @Getter @Setter
 public class VoteDetailResolveRequest {
-
-    /** 정답으로 확정할 choiceId (VoteOptionChoiceEntity.choice_id) */
+    // 단일 정답 모드일 경우
     private Long correctChoiceId;
 
-    /** (선택) 이 작업을 수행하는 관리자 ID (로그 남기고 싶으면 사용) */
-    private Integer adminUserId;
+    // 옵션별 정답 모드일 경우
+    private List<CorrectAnswer> answers;
+
+    @Getter @Setter
+    public static class CorrectAnswer {
+        private Long optionId;
+        private Long choiceId;
+    }
+
+    private Integer adminUserId; // 선택사항
 }

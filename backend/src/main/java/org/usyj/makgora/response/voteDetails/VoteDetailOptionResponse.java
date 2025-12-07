@@ -2,6 +2,8 @@ package org.usyj.makgora.response.voteDetails;
 
 import java.util.List;
 
+import org.usyj.makgora.response.voteDetails.VoteDetailStatisticsResponse.OptionTrendItem;
+
 import lombok.Builder;
 import lombok.Data;
 
@@ -20,4 +22,5 @@ public class VoteDetailOptionResponse {
     private Long totalPoints;            // 옵션 단위 베팅 포인트 총합
 
     private List<VoteDetailChoiceResponse> choices;
+    private List<OptionTrendItem> trend;
 }

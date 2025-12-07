@@ -48,6 +48,10 @@ public class VoteUserEntity {
     @JoinColumn(name = "choice_id", nullable = false)
     private VoteOptionChoiceEntity choice;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "normal_choice_id")
+    private NormalVoteChoiceEntity normalChoice;
+
     @Column(name = "points_bet")
     @Builder.Default
     private Integer pointsBet = 0;

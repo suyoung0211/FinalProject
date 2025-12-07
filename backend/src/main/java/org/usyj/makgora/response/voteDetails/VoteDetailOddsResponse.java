@@ -16,6 +16,13 @@ public class VoteDetailOddsResponse {
     public static class OddsItem {
         private Integer choiceId;
         private String text;
-        private Double odds;        // 배당
+        private Double odds;        // 현재 배당
+        private List<OddsHistoryPoint> history;  // 🔥 배당 변화 기록 추가
+
+        @Data @Builder
+        public static class OddsHistoryPoint {
+            private String timestamp;  // 예: "2025-12-07T14:33:10"
+            private Double odds;       // 해당 시점 배당률
+        }
     }
 }

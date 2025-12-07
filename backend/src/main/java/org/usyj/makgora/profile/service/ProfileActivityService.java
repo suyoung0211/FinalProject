@@ -171,7 +171,7 @@ public List<RecentCommunityActivityResponse> getRecentCommunityActivities(Intege
 
             result.add(
                     RecentVoteActivityResponse.builder()
-                            .voteUserId(vu.getId())
+                            .voteUserId(vu.getId().intValue())
                             .voteId(vote.getId())
                             .voteTitle(vote.getTitle())
                             .issueTitle(issueTitle)
