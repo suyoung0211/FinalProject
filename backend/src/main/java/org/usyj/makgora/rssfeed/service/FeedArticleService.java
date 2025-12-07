@@ -68,11 +68,15 @@ public class FeedArticleService {
                 continue;
             }
 
-            // 카테고리 처리
-            Set<ArticleCategoryEntity> categories =
-                    (dto.getCategories() != null && !dto.getCategories().isEmpty())
-                            ? feedService.getOrCreateCategories(new HashSet<>(dto.getCategories()))
-                            : new HashSet<>(feed.getCategories());
+            // 🔹 자동 생성 없이, 존재하는 카테고리만 사용
+            Set<ArticleCategoryEntity> categories;
+
+            if (dto.getCategories() != null && !dto.getCategories().isEmpty()) {
+                // feedService에 자동 생성 로직 대신, 존재하는 카테고리만 가져오는 메서드 사용
+                categories = feedService.getExistingCategories(new HashSet<>(dto.getCategories()));
+            } else {
+                categories = new HashSet<>(feed.getCategories());
+            }
 
             // 엔티티 생성 후 저장
             RssArticleEntity article = RssArticleEntity.builder()

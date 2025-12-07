@@ -69,6 +69,21 @@ public class RssFeedManagementService {
     }
 
     /**
+     * 🔹 DB에 존재하는 카테고리만 조회
+     * - 입력: 카테고리 이름 Set
+     * - 출력: DB에 존재하는 ArticleCategoryEntity Set
+     * - 존재하지 않는 이름은 무시
+     */
+    @Transactional(readOnly = true)
+    public Set<ArticleCategoryEntity> getExistingCategories(Set<String> categoryNames) {
+        Set<ArticleCategoryEntity> result = new HashSet<>();
+        for (String name : categoryNames) {
+            categoryRepo.findByName(name).ifPresent(result::add);
+        }
+        return result;
+    }
+
+    /**
      * RSS Feed 조회/생성
      * - feed URL 기준 DB 조회
      * - 없으면 새 Feed 엔터티 생성 후 DB 저장
