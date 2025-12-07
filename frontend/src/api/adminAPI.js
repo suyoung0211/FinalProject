@@ -93,3 +93,17 @@ export const collectAllFeedsApi = () =>
  * - DELETE /api/admin/rss-feeds/{feedId}
  */
 export const deleteFeedApi = (feedId) => api.delete(`/admin/rss-feeds/${feedId}`);
+
+/**
+ * 🔹 모든 이슈 조회 (관리자 / 슈퍼 어드민 전용)
+ * - GET /api/issues
+ * - 반환: IssueResponse 배열
+ */
+export const getAllIssuesApi = () => api.get('/issues');
+
+/**
+ * 🔹 이슈 상태 변경 (승인/거절)
+ * - POST /api/issues/status
+ * - 요청 바디: { issueId: number, status: "APPROVED" | "REJECTED" }
+ */
+export const updateAdminIssueStatusApi = (body) => api.post('/issues/status', body);

@@ -18,8 +18,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # DB 세팅
 # ===============================
 engine = create_engine(DB_URL, echo=False, future=True)
-Session = sessionmaker(bind=engine)
-session = Session()
+SessionLocal = sessionmaker(bind=engine)    # 세션이 실행 시점으로 저장됨
 Base = declarative_base()
 
 # ===============================
@@ -108,6 +107,7 @@ MAX_TITLE_LENGTH = 50
 
 def run_generate_ai_titles():
     """RSS 기사 기반 AI 제목 생성 수행 및 결과 요약 반환"""
+    session = SessionLocal()  # 항상 새 세션으로 갱신
     articles = session.query(RssArticleEntity).filter(RssArticleEntity.is_deleted == False).all()
     
     summary = {"success_count": 0, "failed_count": 0, "skipped_count": 0}
