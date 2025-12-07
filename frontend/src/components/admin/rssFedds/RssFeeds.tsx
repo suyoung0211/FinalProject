@@ -105,10 +105,13 @@ export const RssFeeds: React.FC = () => {
    * - 수집 전 confirm 창 표시
    * - 수집 진행/성공/실패 상태 toast 표시
    * - 수집 완료 후 피드 목록 갱신
+   * - 백엔드가 messages: string[] 형태로 두 단계 메시지를 반환하면 각 단계별로 toast 표시
+   * - react-hot-toast v2 기준으로 toast.update 대신 toast.dismiss + toast.success 사용
    *
    * @param label 수집 대상 표시 이름 (단일 피드: sourceName, 전체 피드: '전체')
-   * @param apiCall 호출할 API 함수 (단일 피드: collectSingleFeedApi, sourceName 전체: collectFeedsBySourceNameApi)
-   * @param isSingleFeed 단일 피드 수집 여부
+   * @param apiCall 호출할 API 함수 (단일 피드: collectSingleFeedApi, SourceName 전체: collectFeedsBySourceNameApi, 전체 수집: collectAllFeedsApi)
+   * @param isSingleFeed 단일 피드 수집 여부 (true: 단일 피드, false: 전체 또는 SourceName 기준)
+   * @param categories 단일 피드일 경우 카테고리 표시용 (선택적)
    */
   const handleCollect = async (
     label: string,
@@ -116,13 +119,15 @@ export const RssFeeds: React.FC = () => {
     isSingleFeed: boolean = true,
     categories?: string[]
   ) => {
-    // 단일 피드라면 카테고리 표시
+    // 단일 피드라면 카테고리 포함 표시
     const labelWithCategories = isSingleFeed && categories
       ? `${label} [${categories.join(", ")}]`
       : label;
 
     // 1️⃣ 사용자 확인
-    const confirmCollect = window.confirm(`"${labelWithCategories}" ${isSingleFeed ? "피드를" : "소스의 활성화된 피드를 모두"} 수집하시겠습니까?`);
+    const confirmCollect = window.confirm(
+      `"${labelWithCategories}" ${isSingleFeed ? "피드를" : "소스의 활성화된 피드를 모두"} 수집하시겠습니까?`
+    );
     if (!confirmCollect) return;
 
     // 2️⃣ Toast 로딩 표시
@@ -131,23 +136,34 @@ export const RssFeeds: React.FC = () => {
     try {
       // 3️⃣ API 호출
       const response = await apiCall();
-      const result = response.data; // CollectResponse 또는 BatchResult
+      const result = response.data; // CollectResponse(messages) 또는 BatchResult
 
-      // 4️⃣ 메시지 결정
-      let message = "";
-
-      if ("message" in result) {
-        // 단일 Feed 수집: 백엔드 메시지 사용
-        message = result.message;
-        toast(message, { id: toastId });
+      // 4️⃣ 메시지 처리
+      if ("messages" in result && Array.isArray(result.messages)) {
+        // 🔹 messages 배열 존재 시 각 단계별 toast 표시
+        result.messages.forEach((msg: string, index: number) => {
+          if (index === 0) {
+            // 첫 번째 메시지: 로딩 toast 제거 후 성공 toast
+            toast.dismiss(toastId);
+            toast.success(msg, { duration: 3000 });
+          } else {
+            // 두 번째 이후 메시지: 새 toast로 표시
+            setTimeout(() => {
+              toast.success(msg, { duration: 3000 });
+            }, 3500 * index); // index=1이면 3.5초 후, index=2이면 7초 후 등
+          }
+        });
+      } else if ("message" in result) {
+        // 🔹 단일 메시지 처리 (하위 호환)
+        toast.dismiss(toastId);
+        toast.success(result.message, { duration: 3000 });
       } else {
-        // SourceName 전체 또는 전체 수집
+        // 🔹 BatchResult fallback 처리
+        toast.dismiss(toastId);
         if (result.fetched === 0 && result.saved === 0 && result.skipped === 0) {
-          message = `⚠️ "${label}" 소스에는 활성화된 피드가 없거나 URL 접근 오류`;
-          toast(message, { id: toastId });
+          toast.error(`⚠️ "${label}" 소스에는 활성화된 피드가 없거나 URL 접근 오류`, { duration: 3000 });
         } else {
-          message = `🔥 "${label}" 수집 완료 | 저장:${result.saved} | 스킵:${result.skipped} | 전체:${result.fetched}`;
-          toast.success(message, { id: toastId });
+          toast.success(`🔥 "${label}" 수집 완료 | 저장:${result.saved} | 스킵:${result.skipped} | 전체:${result.fetched}`, { duration: 3000 });
         }
       }
 
@@ -156,29 +172,35 @@ export const RssFeeds: React.FC = () => {
 
     } catch (err: any) {
       // 6️⃣ 예외 처리
-      toast.error(
-        "수집 실패: " + (err.response?.data || err.message),
-        { id: toastId }
-      );
+      toast.dismiss(toastId);
+      toast.error("수집 실패: " + (err.response?.data || err.message), { duration: 5000 });
       console.error(err);
     }
   };
 
-  // 단일 피드 수집
+  /**
+   * 단일 피드 수집
+   * - feed: 단일 피드 객체
+   * - categories 포함 메시지 표시
+   */
   const handleCollectFeed = (feed: RssFeed) =>
     handleCollect(feed.sourceName, () => collectSingleFeedApi(feed.id), true, feed.categories);
 
-  // 특정 SourceName 전체 수집
+  /**
+   * 특정 SourceName 기준 전체 수집
+   * - source: 수집할 SourceName
+   * - 단일 피드가 아니므로 isSingleFeed=false
+   */
   const handleCollectSource = (source: string) =>
     handleCollect(source, () => collectFeedsBySourceNameApi(source), false);
 
-  // 전체 Feed 수집
+  /**
+   * 전체 Feed 수집
+   * - 전체 활성화된 피드 수집
+   * - isSingleFeed=false
+   */
   const handleCollectAllFeeds = () =>
-    handleCollect(
-      "전체",
-      () => collectAllFeedsApi(), // 전체 Feed 수집 API 호출
-      false // 전체 수집은 단일 피드가 아니므로 false
-    );
+    handleCollect("전체", () => collectAllFeedsApi(), false);
 
 
   /**
