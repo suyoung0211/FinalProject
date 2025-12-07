@@ -42,17 +42,18 @@ public class RssFeedUpdateService {
 
         // 4️⃣ 카테고리 변경 (입력된 값으로 완전 대체)
         if (request.getCategoryNames() != null) {
-
-        Set<ArticleCategoryEntity> newCategories = request.getCategoryNames().stream()
-                .map(name -> categoryRepository.findByName(name)
-                        .orElseThrow(() ->
-                                new RuntimeException("카테고리명 [" + name + "] 를 찾을 수 없습니다.")
-                        )
-                )
-                .collect(Collectors.toSet());
-
-        // 완전 대체
-        feed.setCategories(newCategories);
+            // 1) 기존 카테고리 제거
+            feed.getCategories().clear();
+            // 2) 새 카테고리 조회
+            Set<ArticleCategoryEntity> newCategories = request.getCategoryNames().stream()
+                    .map(name -> categoryRepository.findByName(name)
+                            .orElseThrow(() ->
+                                    new RuntimeException("카테고리명 [" + name + "] 를 찾을 수 없습니다.")
+                            )
+                    )
+                    .collect(Collectors.toSet());
+            // 3) feed 컬렉션에 새 카테고리 추가
+            feed.getCategories().addAll(newCategories);
         }
 
         // 5️⃣ 상태 업데이트

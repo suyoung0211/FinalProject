@@ -59,7 +59,7 @@ public class SecurityConfig {
         // ⭐ 기사 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
         // ⭐ 기사 카테고리 허용
-.requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
         // 투표 GET 허용
         .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
@@ -90,6 +90,7 @@ public class SecurityConfig {
         .requestMatchers("/api/user/**").authenticated()
         .requestMatchers("/api/comment/**").authenticated()
         .requestMatchers("/api/store/**").authenticated()
+        .requestMatchers("/api/admin/**").authenticated()
         .anyRequest().permitAll()
 )
 

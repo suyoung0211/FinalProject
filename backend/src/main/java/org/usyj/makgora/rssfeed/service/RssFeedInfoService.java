@@ -11,38 +11,60 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 🔹 RssFeedInfoService
+ * - RSS Feed 목록 조회 + 기사 수 포함 응답
+ * - 단일 Feed 조회 기능
+ * - Feed 데이터 접근 로직을 담당하는 서비스
+ */
 @Service
 @RequiredArgsConstructor
 public class RssFeedInfoService {
 
+    // Repository는 DB 접근만 담당 (비즈니스 로직 없음)
     private final RssFeedRepository rssFeedRepository;
 
+    /**
+     * 🔹 전체 RSS 피드 목록 + 각 피드 기사 수 조회
+     * - RSS + Article JOIN 조회
+     * - 조회 결과(Object[]) → DTO 변환
+     */
     public List<RssFeedResponse> getAllFeedsWithArticleCount() {
-        // Repository에서 모든 Feed + ArticleCount를 가져오는 쿼리 사용
+
         List<Object[]> results = rssFeedRepository.findAllFeedsWithArticleCount();
 
-        // Object[] -> DTO 변환 후 반환
         return results.stream()
-                .map((Object[] r) -> {
-                    RssFeedEntity feed = (RssFeedEntity) r[0];
-                    Long count = (Long) r[1];
+                .map(row -> {
+                    RssFeedEntity feed = (RssFeedEntity) row[0];
+                    Long articleCount = (Long) row[1];
 
-                    // 카테고리 이름만 추출
+                    // 🔹 카테고리 엔티티 → 카테고리 이름(String) 변환
                     Set<String> categories = feed.getCategories().stream()
                             .map(ArticleCategoryEntity::getName)
                             .collect(Collectors.toSet());
 
-                    // DTO 빌드
                     return RssFeedResponse.builder()
                             .id(feed.getId())
                             .sourceName(feed.getSourceName())
                             .url(feed.getUrl())
                             .categories(categories)
-                            .articleCount(count.intValue())
+                            .articleCount(articleCount != null ? articleCount.intValue() : 0)
                             .lastFetched(feed.getLastFetched())
-                            .status(feed.getStatus().name().toLowerCase()) // "active"/"inactive"
+                            .status(feed.getStatus().name().toLowerCase())
                             .build();
                 })
-                .collect(Collectors.toList()); // 최종 결과 반환
+                .collect(Collectors.toList());
     }
-}   
+
+    /**
+     * 🔹 FeedEntity 단일 조회 (ID 기준)
+     * - 수정, 수집 요청 등 특정 Feed 대상 작업 시 필수
+     * - 없으면 예외 발생 → 안전성 확보
+     */
+    public RssFeedEntity getFeedEntity(Integer feedId) {
+        return rssFeedRepository.findById(feedId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Feed가 존재하지 않습니다. ID = " + feedId)
+                );
+    }
+}

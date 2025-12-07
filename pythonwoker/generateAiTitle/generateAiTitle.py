@@ -18,8 +18,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # DB 세팅
 # ===============================
 engine = create_engine(DB_URL, echo=False, future=True)
-Session = sessionmaker(bind=engine)
-session = Session()
+SessionLocal = sessionmaker(bind=engine)    # 세션이 실행 시점으로 저장됨
 Base = declarative_base()
 
 # ===============================
@@ -107,32 +106,30 @@ MAX_TITLE_LENGTH = 50
 
 
 def run_generate_ai_titles():
+    """RSS 기사 기반 AI 제목 생성 수행 및 결과 요약 반환"""
+    session = SessionLocal()  # 항상 새 세션으로 갱신
     articles = session.query(RssArticleEntity).filter(RssArticleEntity.is_deleted == False).all()
-    result_summary = []
-
+    
+    summary = {"success_count": 0, "failed_count": 0, "skipped_count": 0}
+    failed_summary = []  # 실패한 기사 요약
+    
     for article in articles:
-        article_result = {"article_id": article.article_id, "status": None, "error": None}
-
         try:
             existing = session.query(ArticleAiTitleEntity).filter_by(article_id=article.article_id).first()
 
-            # 🔥 existing None 체크 필수
-            if existing is not None:
-                # 최대 시도 초과
-                if existing.try_count >= MAX_TRY:
-                    article_result["status"] = "SKIPPED_MAX_TRY"
-                    result_summary.append(article_result)
-                    continue
+            # 최대 시도 초과 체크
+            if existing and existing.try_count >= MAX_TRY:
+                summary["skipped_count"] += 1
+                continue
 
-                # 이미 AI 제목 존재 (SUCCESS)
-                if existing.ai_title and existing.status == "SUCCESS":
-                    article_result["status"] = "ALREADY_EXISTS"
-                    result_summary.append(article_result)
-                    continue
+            # 이미 AI 제목 존재 체크
+            if existing and existing.ai_title and existing.status == "SUCCESS":
+                summary["skipped_count"] += 1
+                continue
 
             # AI 제목 생성 시도
+            content_for_prompt = article.content if article.content else article.title
             try:
-                content_for_prompt = article.content if article.content else article.title
                 ai_title_text = generate_ai_title(article.title, content_for_prompt)
 
                 if len(ai_title_text) > MAX_TITLE_LENGTH:
@@ -141,14 +138,18 @@ def run_generate_ai_titles():
                 status = "SUCCESS"
                 last_success_at = datetime.now()
                 last_error = None
+                summary["success_count"] += 1
 
             except Exception as e:
                 ai_title_text = None
                 status = "FAILED"
-                last_error = str(e)
                 last_success_at = None
+                last_error = str(e)
+                summary["failed_count"] += 1
+                failed_summary.append({"article_id": article.article_id, "error": last_error})
+                print(f"[AI FAILED] article_id={article.article_id} | error={last_error}")
 
-            # DB 저장 또는 업데이트
+            # DB 저장/업데이트
             if existing:
                 existing.ai_title = ai_title_text
                 existing.status = status
@@ -174,36 +175,27 @@ def run_generate_ai_titles():
                 session.commit()
             except Exception as db_e:
                 session.rollback()
-
-                error_msg = f"{last_error or ''} | DB ERROR: {db_e}"
-
+                db_error_msg = f"{last_error or ''} | DB ERROR: {db_e}"
+                print(f"[DB COMMIT FAILED] article_id={article.article_id} | error={db_error_msg}")
+                summary["failed_count"] += 1
+                failed_summary.append({"article_id": article.article_id, "error": db_error_msg})
                 if existing:
                     existing.status = "DB_COMMIT_FAILED"
-                    existing.last_error = error_msg
+                    existing.last_error = db_error_msg
                     existing.updated_at = datetime.now()
                     session.add(existing)
                 else:
                     new_ai_title.status = "DB_COMMIT_FAILED"
-                    new_ai_title.last_error = error_msg
+                    new_ai_title.last_error = db_error_msg
                     session.add(new_ai_title)
-
                 session.commit()
-                article_result["status"] = "DB_COMMIT_FAILED"
-                article_result["error"] = error_msg
-                result_summary.append(article_result)
-                continue
-
-            # 성공
-            article_result["status"] = status
-            article_result["error"] = last_error
-            result_summary.append(article_result)
 
         except Exception as outer_e:
             session.rollback()
-            article_result["status"] = "PROCESS_ERROR"
-            article_result["error"] = str(outer_e)
-            result_summary.append(article_result)
-            print(f"[PROCESS ERROR] article_id={article.article_id}: {outer_e}")
+            error_msg = str(outer_e)
+            summary["failed_count"] += 1
+            failed_summary.append({"article_id": article.article_id, "error": error_msg})
+            print(f"[PROCESS ERROR] article_id={article.article_id} | error={error_msg}")
 
     print("AI 제목 생성 완료")
-    return result_summary
+    return {"status": "completed", "summary": summary, "failed_articles": failed_summary}

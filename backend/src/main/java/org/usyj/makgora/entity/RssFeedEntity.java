@@ -38,6 +38,14 @@ public class RssFeedEntity {
     @Builder.Default
     private Set<ArticleCategoryEntity> categories = new HashSet<>();
 
+    @OneToMany(
+        mappedBy = "feed", // RssArticleEntity에서 feed 필드와 매핑
+        cascade = CascadeType.ALL, // 피드 삭제 시 기사도 삭제
+        orphanRemoval = true // 연관관계 끊긴 기사 삭제
+    )
+    @Builder.Default
+    private Set<RssArticleEntity> articles = new HashSet<>();
+
     private LocalDateTime lastFetched;
 
     @Enumerated(EnumType.STRING)

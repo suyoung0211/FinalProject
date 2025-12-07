@@ -24,7 +24,7 @@ public interface RssFeedRepository extends JpaRepository<RssFeedEntity, Integer>
     }
 
     // feed와 연결된 categories까지 한 번에 가져오기
-    @Query("SELECT f FROM RssFeedEntity f JOIN FETCH f.categories WHERE f.id = :id")
+    @Query("SELECT f FROM RssFeedEntity f LEFT JOIN FETCH f.categories WHERE f.id = :id")
     Optional<RssFeedEntity> findByIdWithCategories(@Param("id") Integer id);
 
     // 모든 Feed + 기사 수 조회 (엔티티 + COUNT)

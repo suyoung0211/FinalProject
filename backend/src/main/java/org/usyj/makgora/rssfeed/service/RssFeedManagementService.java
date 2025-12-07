@@ -2,6 +2,7 @@ package org.usyj.makgora.rssfeed.service;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,9 +14,11 @@ import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RssFeedManagementService {
 
     private final ArticleCategoryRepository categoryRepo; // 카테고리 저장/조회용 레포지토리
@@ -66,6 +69,21 @@ public class RssFeedManagementService {
     }
 
     /**
+     * 🔹 DB에 존재하는 카테고리만 조회
+     * - 입력: 카테고리 이름 Set
+     * - 출력: DB에 존재하는 ArticleCategoryEntity Set
+     * - 존재하지 않는 이름은 무시
+     */
+    @Transactional(readOnly = true)
+    public Set<ArticleCategoryEntity> getExistingCategories(Set<String> categoryNames) {
+        Set<ArticleCategoryEntity> result = new HashSet<>();
+        for (String name : categoryNames) {
+            categoryRepo.findByName(name).ifPresent(result::add);
+        }
+        return result;
+    }
+
+    /**
      * RSS Feed 조회/생성
      * - feed URL 기준 DB 조회
      * - 없으면 새 Feed 엔터티 생성 후 DB 저장
@@ -95,6 +113,12 @@ public class RssFeedManagementService {
         return feed;
     }
 
+    /** 활성화된 모든 피드 조회 */
+    @Transactional(readOnly = true)
+    public List<RssFeedEntity> getAllActiveFeeds() {
+        return feedRepo.findAllActiveFeeds();
+    }
+
     /**
      * RSS 피드 마지막 수집 시간 업데이트
      * - 기사 수집 후 호출하여 lastFetched 업데이트
@@ -113,4 +137,19 @@ public class RssFeedManagementService {
         categoryCache.clear();
         feedCache.clear();
     }
+
+    /**
+     * 🔹 피드 하드 삭제
+     * @param feedId 삭제할 피드 ID
+     * @throws IllegalArgumentException 피드가 존재하지 않을 경우
+     */
+    @Transactional
+    public void deleteFeed(Integer feedId) {
+        RssFeedEntity feed = feedRepo.findById(feedId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 피드입니다. ID: " + feedId));
+
+        feedRepo.delete(feed);
+        log.info("🗑️ 피드 하드 삭제 완료 | ID: {} | 이름: {}", feed.getId(), feed.getSourceName());
+    }
+
 }
