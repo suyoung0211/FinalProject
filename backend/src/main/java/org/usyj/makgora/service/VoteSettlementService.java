@@ -23,7 +23,7 @@ public class VoteSettlementService {
 
 
     /* ============================================================
-       1) 정답 확정 + 미리보기
+       1) 정답 확정 (FINISHED → RESOLVED)
        ============================================================ */
     @Transactional
     public VoteDetailSettlementResponse resolve(Integer voteId, VoteDetailResolveRequest req) {
@@ -37,108 +37,95 @@ public class VoteSettlementService {
 
         // 단일 정답 모드
         if (req.getAnswers() == null || req.getAnswers().isEmpty()) {
-            VoteOptionChoiceEntity correctChoice = choiceRepository
-                    .findById(req.getCorrectChoiceId())
-                    .orElseThrow(() -> new RuntimeException("Choice not found"));
-
-            vote.setCorrectChoice(correctChoice);
-            vote.setStatus(VoteEntity.Status.RESOLVED);
-            vote.setUpdatedAt(LocalDateTime.now());
-
-            return computePreview(vote, correctChoice);
+            throw new RuntimeException("정답 정보가 없습니다. correctChoiceId 또는 answers 필요.");
         }
 
-        // 옵션별 정답 모드
+        // 대표 정답 1개 저장
+        VoteDetailResolveRequest.CorrectAnswer first = req.getAnswers().get(0);
+
+        VoteOptionChoiceEntity correct = choiceRepository.findById(first.getChoiceId())
+                .orElseThrow(() -> new RuntimeException("Choice not found"));
+
+        vote.setCorrectChoice(correct);
         vote.setStatus(VoteEntity.Status.RESOLVED);
         vote.setUpdatedAt(LocalDateTime.now());
 
-        return computePreviewMultiple(vote, req);
+        return computePreview(vote, correct);
     }
 
 
     /* ============================================================
-       2) 정답 확정 + 즉시 정산
+       2) 정답 확정 + 정산 동시에
        ============================================================ */
     @Transactional
     public VoteDetailSettlementResponse resolveAndSettle(Integer voteId, VoteDetailResolveRequest req) {
 
+        VoteDetailSettlementResponse preview = resolve(voteId, req); // 먼저 대표 정답 저장
+
         VoteEntity vote = voteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("Vote not found"));
 
-        if (vote.getStatus() != VoteEntity.Status.FINISHED) {
-            throw new RuntimeException("FINISHED 상태에서만 정답 확정 가능합니다.");
-        }
-
-        vote.setStatus(VoteEntity.Status.RESOLVED);
-        vote.setUpdatedAt(LocalDateTime.now());
-
-        // 단일 정답 모드
-        if (req.getAnswers() == null || req.getAnswers().isEmpty()) {
-
-            VoteOptionChoiceEntity correctChoice = choiceRepository
-                    .findById(req.getCorrectChoiceId())
-                    .orElseThrow(() -> new RuntimeException("Choice not found"));
-
-            vote.setCorrectChoice(correctChoice);
-            return settleSingle(vote, correctChoice);
-        }
-
-        // 옵션별 정답 모드
+        // 옵션별 정산
         return settleMultiple(vote, req);
     }
 
-    /* ============================================================
-   🔍 단일 정답 미리보기 계산
-   ============================================================ */
-private VoteDetailSettlementResponse computePreview(
-        VoteEntity vote,
-        VoteOptionChoiceEntity correctChoice
-) {
-
-    int totalPool = vote.getOptions().stream()
-            .flatMap(o -> o.getChoices().stream())
-            .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
-            .sum();
-
-    int winnerPool = correctChoice.getPointsTotal() == null
-            ? 0 : correctChoice.getPointsTotal();
-
-    return VoteDetailSettlementResponse.builder()
-            .voteId(vote.getId())
-            .correctChoiceId(correctChoice.getId().intValue())
-            .totalPool(totalPool)
-            .winnerPool(winnerPool)
-            .build();
-}
-
-        /* ============================================================
-   🎯 API가 호출하는 단독 정산 함수 (RESOLVED → REWARDED)
-   ============================================================ */
-@Transactional
-public VoteDetailSettlementResponse settle(Integer voteId) {
-
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("Vote not found"));
-
-    if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
-        throw new RuntimeException("RESOLVED 상태에서만 정산 가능합니다.");
-    }
-
-    VoteOptionChoiceEntity correctChoice = vote.getCorrectChoice();
-    if (correctChoice == null) {
-        throw new RuntimeException("정답이 설정되지 않았습니다.");
-    }
-
-    return settleSingle(vote, correctChoice); // 🔥 단일 정산만 지원
-}
 
     /* ============================================================
-       3) 단일 정답 정산
+       3) 미리보기 (단일 정답)
+       ============================================================ */
+    private VoteDetailSettlementResponse computePreview(
+            VoteEntity vote,
+            VoteOptionChoiceEntity correctChoice
+    ) {
+
+        int totalPool = vote.getOptions().stream()
+                .flatMap(o -> o.getChoices().stream())
+                .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
+                .sum();
+
+        int winnerPool = correctChoice.getPointsTotal() == null
+                ? 0 : correctChoice.getPointsTotal();
+
+        return VoteDetailSettlementResponse.builder()
+                .voteId(vote.getId())
+                .correctChoiceId(correctChoice.getId().intValue())
+                .totalPool(totalPool)
+                .winnerPool(winnerPool)
+                .resultSummary("미리보기: 단일 정답 = " + correctChoice.getId())
+                .build();
+    }
+
+
+    /* ============================================================
+       4) 단독 정산 API (RESOLVED → REWARDED)
+       ============================================================ */
+    @Transactional
+    public VoteDetailSettlementResponse settle(Integer voteId) {
+
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("Vote not found"));
+
+        if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
+            throw new RuntimeException("RESOLVED 상태에서만 정산 가능합니다.");
+        }
+
+        VoteOptionChoiceEntity correct = vote.getCorrectChoice();
+        if (correct == null) {
+            throw new RuntimeException("정답이 설정되지 않았습니다.");
+        }
+
+        return settleSingle(vote, correct);
+    }
+
+
+    /* ============================================================
+       5) 단일 정답 정산
        ============================================================ */
     private VoteDetailSettlementResponse settleSingle(
             VoteEntity vote,
             VoteOptionChoiceEntity correctChoice
     ) {
+
         List<VoteOptionChoiceEntity> allChoices = vote.getOptions().stream()
                 .flatMap(o -> o.getChoices().stream())
                 .toList();
@@ -147,37 +134,33 @@ public VoteDetailSettlementResponse settle(Integer voteId) {
                 .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
                 .sum();
 
-        int winnerPool = correctChoice.getPointsTotal() == null
-                ? 0 : correctChoice.getPointsTotal();
+        int winnerPool = correctChoice.getPointsTotal() == null ? 0 : correctChoice.getPointsTotal();
 
+
+        // 배당 계산
         double feeRate = vote.getFeeRate();
-
-        /* 배당 계산 */
         for (VoteOptionChoiceEntity c : allChoices) {
 
-            int pt = (c.getPointsTotal() == null ? 0 : c.getPointsTotal());
-
+            int pt = c.getPointsTotal() == null ? 0 : c.getPointsTotal();
             if (pt <= 0 || totalPool <= 0) {
                 c.setOdds(0.0);
                 continue;
             }
 
-            double odds = (1.0 - feeRate) / ((double) pt / totalPool);
+            double odds = (1 - feeRate) / ((double) pt / totalPool);
             c.setOdds(odds);
         }
         choiceRepository.saveAll(allChoices);
 
 
-        /* 유저 정산 */
-        List<VoteUserEntity> winners =
-                voteUserRepository.findByChoiceId(correctChoice.getId());
+        // 유저 정산
+        List<VoteUserEntity> winners = voteUserRepository.findByChoiceId(correctChoice.getId());
 
         int distributedSum = 0;
-        double winnerOdds = correctChoice.getOdds();
-
         for (VoteUserEntity vu : winners) {
+
             int bet = vu.getPointsBet() == null ? 0 : vu.getPointsBet();
-            int reward = (int) Math.floor(bet * winnerOdds);
+            int reward = (int) Math.floor(bet * correctChoice.getOdds());
 
             distributedSum += reward;
 
@@ -196,15 +179,16 @@ public VoteDetailSettlementResponse settle(Integer voteId) {
                 .correctChoiceId(correctChoice.getId().intValue())
                 .totalPool(totalPool)
                 .winnerPool(winnerPool)
-                .winnerOdds(winnerOdds)
+                .winnerOdds(correctChoice.getOdds())
                 .winnerCount(winners.size())
                 .distributedSum(distributedSum)
+                .resultSummary("단일 정답 정산 완료")
                 .build();
     }
 
 
     /* ============================================================
-       4) 옵션별 정답 정산 (YES/NO/DRAW 구조에서도 유연하게 대응)
+       6) 옵션별 정산 (YES/NO/DRAW 전부 지원)
        ============================================================ */
     private VoteDetailSettlementResponse settleMultiple(
             VoteEntity vote,
@@ -212,51 +196,37 @@ public VoteDetailSettlementResponse settle(Integer voteId) {
     ) {
 
         StringBuilder summary = new StringBuilder();
-        int totalDistributed = 0;
-        int totalWinners = 0;
+        int distributed = 0;
+        int winnerCount = 0;
 
         for (VoteDetailResolveRequest.CorrectAnswer ans : req.getAnswers()) {
 
             VoteOptionEntity option = optionRepository.findById(ans.getOptionId())
                     .orElseThrow(() -> new RuntimeException("Option not found"));
 
-            VoteOptionChoiceEntity correctChoice = choiceRepository.findById(ans.getChoiceId())
+            VoteOptionChoiceEntity correct = choiceRepository.findById(ans.getChoiceId())
                     .orElseThrow(() -> new RuntimeException("Choice not found"));
 
             int optionPool = option.getChoices().stream()
                     .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
                     .sum();
 
-            int winnerPool = correctChoice.getPointsTotal() == null
-                    ? 0 : correctChoice.getPointsTotal();
+            int winnerPool = correct.getPointsTotal() == null ? 0 : correct.getPointsTotal();
+            double odds = (winnerPool == 0 ? 0 : (double) optionPool / winnerPool);
 
-            if (winnerPool == 0) {
-                summary.append("Option ").append(option.getId()).append(": 승자 없음\n");
-                continue;
-            }
-
-            double odds = (double) optionPool / winnerPool;
-
-            List<VoteUserEntity> winners =
-                    voteUserRepository.findByChoiceId(correctChoice.getId());
-
-            totalWinners += winners.size();
+            List<VoteUserEntity> winners = voteUserRepository.findByChoiceId(correct.getId());
+            winnerCount += winners.size();
 
             for (VoteUserEntity vu : winners) {
-                int bet = vu.getPointsBet() == null ? 0 : vu.getPointsBet();
-                int reward = (int) Math.floor(bet * odds);
-
-                UserEntity user = vu.getUser();
-                user.setPoints(user.getPoints() + reward);
-                userRepository.save(user);
-
-                totalDistributed += reward;
-                vu.setUpdatedAt(LocalDateTime.now());
+                int reward = (int) Math.floor((vu.getPointsBet() == null ? 0 : vu.getPointsBet()) * odds);
+                vu.getUser().setPoints(vu.getUser().getPoints() + reward);
+                userRepository.save(vu.getUser());
+                distributed += reward;
             }
 
             summary.append(
-                    String.format("Option %d → 정답 %d / Odds %.2f / Winners %d\n",
-                            option.getId(), correctChoice.getId(), odds, winners.size())
+                    String.format("Option %d → Choice %d / Odds %.2f / Winners %d\n",
+                            option.getId(), correct.getId(), odds, winners.size())
             );
         }
 
@@ -265,50 +235,8 @@ public VoteDetailSettlementResponse settle(Integer voteId) {
 
         return VoteDetailSettlementResponse.builder()
                 .voteId(vote.getId())
-                .correctChoiceId(null)  // 옵션별 구조에서는 단일 정답 없음
-                .winnerCount(totalWinners)
-                .distributedSum(totalDistributed)
-                .resultSummary(summary.toString())
-                .build();
-    }
-
-
-    /* ============================================================
-       5) 미리보기(옵션별)
-       ============================================================ */
-    private VoteDetailSettlementResponse computePreviewMultiple(
-            VoteEntity vote,
-            VoteDetailResolveRequest req
-    ) {
-
-        StringBuilder summary = new StringBuilder();
-
-        for (VoteDetailResolveRequest.CorrectAnswer ans : req.getAnswers()) {
-
-            VoteOptionEntity option = optionRepository.findById(ans.getOptionId())
-                    .orElseThrow(() -> new RuntimeException("Option not found"));
-
-            VoteOptionChoiceEntity correctChoice = choiceRepository.findById(ans.getChoiceId())
-                    .orElseThrow(() -> new RuntimeException("Choice not found"));
-
-            int optionPool = option.getChoices().stream()
-                    .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
-                    .sum();
-
-            int winnerPool = correctChoice.getPointsTotal() == null
-                    ? 0 : correctChoice.getPointsTotal();
-
-            double odds =
-                    (winnerPool == 0 ? 0 : (double) optionPool / winnerPool);
-
-            summary.append(
-                    String.format("Option %d → Preview Odds: %.2f\n",
-                            option.getId(), odds)
-            );
-        }
-
-        return VoteDetailSettlementResponse.builder()
-                .voteId(vote.getId())
+                .winnerCount(winnerCount)
+                .distributedSum(distributed)
                 .resultSummary(summary.toString())
                 .build();
     }
