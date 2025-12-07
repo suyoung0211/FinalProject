@@ -25,3 +25,21 @@ export const updateNormalVote = (voteId, data) =>
 // 🔹 투표 삭제 (DELETE /api/normal-votes/{id})
 export const deleteNormalVote = (voteId) =>
   api.delete(`/normal-votes/${voteId}`);
+
+// 🔹 일반투표 참여
+export const participateNormalVote = (voteId, choiceId) =>
+  api.post(`/normal-votes/${voteId}/participate`, null, {
+    params: { choiceId },
+  });
+
+export const finishNormalVote = (voteId) =>
+  api.patch(`/normal-votes/${voteId}/finish`);
+
+export const cancelNormalVote = (voteId) =>
+  api.patch(`/normal-votes/${voteId}/cancel`);
+
+export const fetchMyNormalVotes = () =>
+  api.get(`/normal-votes/my`);
+
+export const fetchNormalVoteResult = (voteId) =>
+  api.get(`/normal-votes/${voteId}/result`);

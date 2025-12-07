@@ -325,3 +325,18 @@ VoteCommentEntity에 좋아요/싫어요/선택id 추가
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "choice_id")
     private VoteOptionChoiceEntity choice;
+
+관리자 투표관리쪽 추가
+// 🔥 관리자: 정답 선택만
+export const adminResolveVote = (voteId, body) =>
+  api.post(`/admin/votes/${voteId}/resolve`, body);
+
+// 🔥 관리자: 정답 선택 + 즉시 정산
+export const adminResolveAndSettleVote = (voteId, body) =>
+  api.post(`/admin/votes/${voteId}/resolve-and-settle`, body);
+
+// 🔥 관리자: 이미 정답 선택된 투표 다시 정산
+export const adminSettleVote = (voteId) =>
+  api.post(`/admin/votes/${voteId}/settle`);
+
+  

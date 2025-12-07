@@ -87,3 +87,14 @@ export const createVoteByAI = (data) =>
 // 🔹 유저가 직접 투표 생성 (POST /api/votes/create)
 export const createVoteByUser = (data) =>
   api.post(`/votes/create`, data);
+
+export const fetchVoteDetailFull = (voteId) =>
+  api.get(`/votes/${voteId}/detail`);
+
+// 🔹 정답 선택 + 정산
+export const resolveAndSettleVoteV2 = (voteId, body) =>
+  api.post(`/votes/${voteId}/resolve`, body);
+
+// 🔹 이미 정답 선택된 투표 정산만
+export const settleVoteV2 = (voteId) =>
+  api.post(`/votes/${voteId}/settle`);
