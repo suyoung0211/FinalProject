@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.repository.ArticleListRepository;
+import org.usyj.makgora.repository.ArticleRepository;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
 import org.usyj.makgora.response.article.ArticleResponse;
@@ -23,7 +23,7 @@ import java.util.Map;
 public class ArticleCategoryService {
 
     private final ArticleCategoryRepository categoryRepo;
-    private final ArticleListRepository listRepo;
+    private final ArticleRepository listRepo;
     private final ArticleAiTitleRepository aiTitleRepo;
 
     /** 전체 카테고리 목록 */

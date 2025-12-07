@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.entity.RssFeedEntity;
 
@@ -21,6 +22,8 @@ public interface RssArticleRepository extends JpaRepository<RssArticleEntity, In
     boolean existsByLink(String link);
 
     Optional<RssArticleEntity> findByLink(String link);
+
+    Optional<RssArticleEntity> findById(Integer id);
 
     @Transactional
     @Modifying

@@ -301,7 +301,8 @@ DB 다시 한번 업데이트해야함
 3. python 쪽 flask 패키지 추가 안될 경우 pip install flask 실행
 -------------------------------
 
-CommentReactionEntity 추가
+CommentReactionEntity 추가 (기사댓글추천/비추천)
+VoteTrendHistoryEntity 추가 (투표상세 차트)
 JwtAuthFilter 안에
 (method.equals("GET") && path.startsWith("/api/articles")) 주석처리
 기사 상세 모달추가 + APP.tsx에 전역모달 추가

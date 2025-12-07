@@ -5,8 +5,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.request.vote.VoteParticipateRequest;
+import org.usyj.makgora.request.voteDetails.VoteDetailResolveRequest;
+import org.usyj.makgora.response.voteDetails.VoteDetailMainResponse;
+import org.usyj.makgora.response.voteDetails.VoteDetailSettlementResponse;
 import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.service.VoteDetailService;
 import org.usyj.makgora.service.VoteService;
+import org.usyj.makgora.service.VoteSettlementService;
 import org.usyj.makgora.request.vote.UserVoteCreateRequest;
 import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 
@@ -17,6 +22,8 @@ import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 public class VoteController {
 
     private final VoteService voteService;
+    private final VoteDetailService voteDetailService;
+    private final VoteSettlementService voteSettlementService;
 
     /** 상세 조회 */
     @GetMapping("/{voteId}")
@@ -117,4 +124,50 @@ public ResponseEntity<?> getMyVotes(@AuthenticationPrincipal CustomUserDetails u
     return ResponseEntity.ok(voteService.getMyVotes(user.getId()));
 }
 
+/** 투표 상세 정보 전체 조회 */
+    @GetMapping("/{voteId}/detail")
+    public ResponseEntity<VoteDetailMainResponse> getVoteDetail(
+            @PathVariable Integer voteId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Integer userId = (user != null) ? user.getId() : null;
+
+        VoteDetailMainResponse response = voteDetailService.getVoteDetail(voteId, userId);
+
+        return ResponseEntity.ok(response);
+    }
+
+     /**
+     * 🎯 정답 선택 + 정산 한 번에 수행
+     * - METHOD: POST
+     * - URL: /api/votes/{voteId}/resolve
+     * - BODY: { "correctChoiceId": 123 }
+     */
+    @PostMapping("/{voteId}/resolve")
+    public ResponseEntity<VoteDetailSettlementResponse> resolveAndSettle(
+            @PathVariable Integer voteId,
+            @RequestBody VoteDetailResolveRequest request,
+            @AuthenticationPrincipal(expression = "id") Integer adminUserId
+    ) {
+        // 로그인된 유저를 adminUserId 로 세팅 (선택)
+        request.setAdminUserId(adminUserId);
+
+        VoteDetailSettlementResponse result =
+                voteSettlementService.resolveAndSettle(voteId, request);
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 🎯 이미 correctChoice 가 설정된 투표를 다시 정산만 하고 싶을 때
+     * - (필요 없으면 안 써도 됨)
+     */
+    @PostMapping("/{voteId}/settle")
+    public ResponseEntity<VoteDetailSettlementResponse> settle(
+            @PathVariable Integer voteId
+    ) {
+        VoteDetailSettlementResponse result =
+                voteSettlementService.settle(voteId);
+        return ResponseEntity.ok(result);
+    }
 }

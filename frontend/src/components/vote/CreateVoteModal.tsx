@@ -32,10 +32,14 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
     { value: "tech", label: "기술", color: "from-indigo-500 to-purple-500" },
   ];
 
-  // 🔥 옵션 그룹 추가
-  const addOptionGroup = () => {
-    setOptions([...options, { optionTitle: "", type: "YESNO" }]);
-  };
+  // 🔥 옵션 그룹 추가 (최대 5개)
+const addOptionGroup = () => {
+  if (options.length >= 5) {
+    alert("옵션은 최대 5개까지만 추가할 수 있습니다.");
+    return;
+  }
+  setOptions([...options, { optionTitle: "", type: "YESNO" }]);
+};
 
   // 🔥 옵션 그룹 삭제
   const removeOptionGroup = (index: number) => {
@@ -194,14 +198,17 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
           {/* 📌 옵션 그룹들 */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-white font-medium">옵션 그룹</h3>
-              <Button
-                onClick={addOptionGroup}
-                className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> 옵션 추가
-              </Button>
-            </div>
+  <h3 className="text-white font-medium">
+    옵션 그룹 <span className="text-purple-300 text-sm ml-1">({options.length}/5)</span>
+  </h3>
+
+  <Button
+    onClick={addOptionGroup}
+    className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+  >
+    <Plus className="w-4 h-4" /> 옵션 추가
+  </Button>
+</div>
 
             {options.map((opt, index) => (
               <div key={index} className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">

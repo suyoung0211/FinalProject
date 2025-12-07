@@ -9,7 +9,11 @@ import java.time.LocalDateTime;
     name = "Vote_Users",
     uniqueConstraints = {
         // 옵션별 중복 투표 방지: 하나의 사용자가 하나의 옵션에 대해 1회만 투표 가능
-        @UniqueConstraint(name = "unique_vote_user_option", columnNames = {"vote_id", "user_id", "option_id"})
+        @UniqueConstraint(name = "unique_ai_vote_user_option",
+                  columnNames = {"vote_id", "user_id", "option_id"}),
+
+@UniqueConstraint(name = "unique_normal_vote_user_option",
+                  columnNames = {"normal_vote_id", "user_id"})
     }
 )
 @Getter
@@ -25,11 +29,11 @@ public class VoteUserEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vote_id", nullable = false)
+    @JoinColumn(name = "vote_id", nullable = true)
     private VoteEntity vote;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "normal_vote_id", nullable = false)
+    @JoinColumn(name = "normal_vote_id", nullable = true)
     private NormalVoteEntity normalVote;
 
     @ManyToOne(fetch = FetchType.LAZY)
