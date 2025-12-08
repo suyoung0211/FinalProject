@@ -63,51 +63,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 나머지 상세 정보는 /api/users/me 같은 API로 가져와서 user에 덮어쓴다.
   // --------------------------------------------------
   useEffect(() => {
-  const savedAccess = localStorage.getItem("accessToken");
+    const savedAccess = localStorage.getItem("accessToken");
 
-  if (savedAccess) {
+    if (!savedAccess) return;
+
     setToken(savedAccess);
 
     try {
-      const decoded: any = jwtDecode(savedAccess);
+      // 1) 토큰 디코딩해서 유저 정보 세팅
+      const decoded: any = jwtDecode(savedAccess); // JWT payload 디코딩
 
-      const newUser = {
+      // 1차: 토큰 기반 최소 정보 (id, nickname, role)
+      const baseUser: UserType = {
+        id: decoded.id,                       // ✅ 토큰에 있는 id
         loginId: decoded.loginId,
-        nickname: decoded.nickname,
-        level: decoded.level || 1,
-        points: decoded.points || 0,
+        nickname: decoded.nickname || "",
+        role: decoded.role || "USER",
+        level: decoded.level || 1,   // 임시값
+        points: decoded.points || 0,  // 임시값
         avatarIcon: decoded.avatarIcon,
         profileFrame: decoded.profileFrame,
         profileBadge: decoded.profileBadge,
-        role: decoded.role,
       };
 
-      console.log("Initial user from token:", newUser);
+      setUser(baseUser);
 
-      // 🔹 1) 일단 토큰 기반으로 기본 정보 넣고
-      setUser(newUser);
-
-      // 🔹 2) 서버에서 최신 프로필 정보를 가져와서 갱신
+      // 2차: 서버에서 상세 프로필 가져와 덮어쓰기 (id는 토큰 것 유지)
       getMyInfoApi()
         .then((res: any) => {
           console.log("서버 최신 프로필:", res.data);
-          setUser(res.data);
+          setUser({
+            ...res.data,        // loginId, level, points, avatarIcon, ...
+            id: decoded.id,     // ✅ id는 여전히 토큰 것 유지
+          });
         })
-        .catch(() => console.error("초기 프로필 불러오기 실패"));
+        .catch(() => {
+          console.error("초기 프로필 불러오기 실패");
+          // 실패해도 토큰 기반 정보는 유지
+        });
 
     } catch (err) {
       console.error("AccessToken decode 실패 → 서버에서 유저 정보 요청", err);
 
       getMyInfoApi()
-        .then((res: any) => setUser(res.data))
+        .then((res: any) => {
+          // 토큰 디코딩 실패 시에도 토큰에서 id 추출 시도
+          try {
+            const decoded: any = jwtDecode(savedAccess);
+            setUser({
+              ...res.data,
+              id: decoded.id,  // ✅ 토큰에서 id 가져오기
+            });
+          } catch {
+            setUser(res.data); // id 추출 실패 시 그냥 서버 데이터만
+          }
+        })
         .catch(() => {
           setUser(null);
           setToken(null);
           localStorage.removeItem("accessToken");
         });
     }
-  }
-}, []);
+  }, []);
 
   // --------------------------------------------------
   // ⭐ 로그인 처리
@@ -135,35 +152,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ⭐ 토큰 재발급 + 유저 정보 갱신
   // --------------------------------------------------
   const refreshUser = async () => {
-  try {
-    const res = await refreshTokenApi();
-    const newAccessToken = res.data.accessToken;
+    try {
+      const res = await refreshTokenApi();
+      const newAccessToken = res.data.accessToken;
 
-    localStorage.setItem("accessToken", newAccessToken);
-    setToken(newAccessToken);
+      localStorage.setItem("accessToken", newAccessToken);
+      setToken(newAccessToken);
 
-    const decoded: any = jwtDecode(newAccessToken);
+      const decoded: any = jwtDecode(newAccessToken);
 
-    setUser({
-      loginId: decoded.loginId,
-      nickname: decoded.nickname,
-      level: decoded.level || 1,
-      points: decoded.points || 0,
-      avatarIcon: decoded.avatarIcon,
-      profileFrame: decoded.profileFrame,
-      profileBadge: decoded.profileBadge,
-      role: decoded.role,
-    });
+      // 서버에서 최신 유저 정보 가져오기
+      const userRes = await getMyInfoApi();
 
-    // ⭐ 프레임/뱃지/포인트 등 최신 정보 DB에서 다시 가져오기
-    const profile = await getMyInfoApi();
-    setUser(profile.data);
+      setUser({
+        ...userRes.data,   // 서버에서 온 모든 정보
+        id: decoded.id,    // ✅ 토큰에서 가져온 id만 합쳐줌
+      });
 
-  } catch (err) {
-    console.error("토큰 갱신 실패", err);
-    logout();
-  }
-};
+    } catch (err) {
+      console.error("토큰 갱신 실패", err);
+      logout();
+    }
+  };
   // --------------------------------------------------
   // 🔹 Context 제공
   // --------------------------------------------------
