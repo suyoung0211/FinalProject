@@ -123,17 +123,18 @@ export function ProfileEditorModal({
           </div>
 
           {/* 닉네임 + 뱃지 */}
-          <div className="flex items-center gap-3">
-            <span className="text-3xl font-bold text-white">
-              {user.nickname}
-            </span>
-            {previewBadgeSrc && (
-              <img
-                src={resolveImage(previewBadgeSrc)}
-                className="w-8 h-8 object-contain"
-              />
-            )}
-          </div>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl font-bold text-white">
+                {user.nickname}
+              </span>
+                      
+              {/* BADGE는 무조건 이모지 출력 */}
+              {selectedBadge ? (
+                <span className="text-4xl">{selectedBadge.image || selectedBadge.name}</span>
+              ) : previewBadgeSrc ? (
+                <span className="text-4xl">{previewBadgeSrc}</span>
+              ) : null}
+            </div>
 
           <p className="text-sm text-gray-400">
             적용될 프로필 미리보기
@@ -180,16 +181,17 @@ export function ProfileEditorModal({
                     type="button"
                     key={b.userStoreId}
                     onClick={() => setSelectedBadge(b)}
-                    className={`p-1 border rounded-xl cursor-pointer bg-black/40 transition-all ${
-                      selectedBadge?.userStoreId === b.userStoreId
-                        ? "border-yellow-400 shadow-lg shadow-yellow-400/30"
-                        : "border-white/20 hover:border-yellow-300"
-                    }`}
+                    className={`flex items-center justify-center 
+                      w-20 h-19  /* 🔥 버튼 크기 커짐 */
+                      text-6xl   /* 🔥 이모지 크기 커짐 */
+                      border rounded-xl cursor-pointer bg-black/40 transition-all ${
+                        selectedBadge?.userStoreId === b.userStoreId
+                          ? "border-yellow-400 shadow-lg shadow-yellow-400/30"
+                          : "border-white/20 hover:border-yellow-300"
+                }`}
                   >
-                    <img
-                      src={resolveImage(b.image)}
-                      className="w-10 h-10 object-contain"
-                    />
+                    {/* 뱃지는 이모지로 렌더링 */}
+                    <span className="text-4xl">{b.image || b.name}</span>
                   </button>
                 ))}
               </div>

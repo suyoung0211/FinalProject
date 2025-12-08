@@ -202,21 +202,43 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
 
   {/* ===================== 보기 모드 ===================== */}
   {!isEditingProfile && (
-    <div className="flex items-start gap-6">
+    <div className="flex items-start gap-6 translate-x-[20px]">
+
 
       {/* 프로필 이미지 */}
+      <div className="relative mt-4">
       <ProfileAvatar
         avatarUrl={resolveImage(user.avatarIcon)}
         frameUrl={resolveImage(user.profileFrame)}
         size={100}
       />
-
+      </div>
       {/* 텍스트 정보 */}
-      <div className="flex-1">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          {user.nickname}
-        </h1>
+        <div className="flex-1 translate-x-5">
+          
+          {/* 닉네임 + 뱃지 */}
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              {user.nickname}
+            </h1>
 
+          {/* 프로필 뱃지 표시 */}
+          {user.profileBadge && (
+            user.profileBadge.startsWith("http") ? (
+              <img
+                src={resolveImage(user.profileBadge)}
+                alt="badge"
+                className="w-8 h-8 object-contain"
+              />
+            ) : (
+              <span className="text-5xl leading-none -translate-y-[4px] inline-block">{user.profileBadge}</span>
+            )
+          )}
+
+          
+        </div>
+        
+        {/* 이메일 */}
         {user.email && (
           <div className="flex items-center gap-2 text-gray-400 mb-4">
             <Mail className="w-4 h-4" />
@@ -224,6 +246,7 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
+        {/* 포인트 */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
             <Coins className="w-5 h-5 text-white" />
