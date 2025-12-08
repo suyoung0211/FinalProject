@@ -4,6 +4,18 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Textarea } from '../components/ui/textarea';
 import api from '../api/api';
+import DOMPurify from "dompurify";
+
+interface FileUploadResponse {
+  fileId: number;
+  postId: number;
+  fileType: 'IMAGE' | 'VIDEO';
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+}
 
 interface CommunityWritePageProps {
   onBack: () => void;
@@ -42,6 +54,18 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
       setNewPostContent(initialPost.content || '');
       setNewPostCategory(mapPostTypeToCategory(initialPost.postType || '일반'));
       setNewPostTags(initialPost.tags?.join(', ') || '');
+      setCurrentPostId(initialPost.postId);  // ⭐ 추가
+
+      // ⭐ 추가: 파일 목록 로드
+      const loadFiles = async () => {
+        try {
+          const res = await api.get(`/community/posts/${initialPost.postId}/files`);
+          setUploadedFiles(res.data);
+        } catch (error) {
+          console.error('파일 목록 로드 실패:', error);
+        }
+      };
+      loadFiles();
     }
   }, [initialPost, mode]);
   const [showLinkModal, setShowLinkModal] = useState(false);
@@ -58,6 +82,10 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [currentPostId, setCurrentPostId] = useState<number | null>(initialPost?.postId || null);
+  const [uploadedFiles, setUploadedFiles] = useState<FileUploadResponse[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const categories = [
     { id: 'prediction', label: '예측 분석', icon: TrendingUp },
@@ -99,19 +127,81 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
     }
   };
 
-  const insertImage = () => {
-    if (imageUploadTab === 'url' && imageUrl) {
-      const imageMarkdown = `![이미지](${imageUrl})`;
-      insertAtCursor(imageMarkdown);
-      setShowImageModal(false);
-      setImageUrl('');
-    } else if (imageUploadTab === 'file' && imagePreview) {
-      // Use base64 data URL for file upload
-      const imageMarkdown = `![${selectedImageFile?.name || '이미지'}](${imagePreview})`;
-      insertAtCursor(imageMarkdown);
-      setShowImageModal(false);
-      setSelectedImageFile(null);
-      setImagePreview('');
+  const insertImage = async () => {
+  if (imageUploadTab === 'url' && imageUrl) {
+    const imageHtml = `<img src="${imageUrl}" alt="이미지" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" />`;
+    insertAtCursor(imageHtml);
+    setShowImageModal(false);
+    setImageUrl('');
+  } else if (imageUploadTab === 'file' && selectedImageFile) {
+    // 🔥 이제 여기서 currentPostId 검사 안 함
+    await handleFileUpload(selectedImageFile);
+    setShowImageModal(false);
+    setSelectedImageFile(null);
+    setImagePreview('');
+  }
+};
+
+
+  // 파일 업로드 함수
+  const handleFileUpload = async (file: File) => {
+  try {
+    // 🔥 여기서 자동으로 글 생성 or 기존 글 ID 확보
+    const postId = await ensurePostExists();
+
+    setIsUploading(true);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await api.post(
+      `/community/posts/${postId}/files`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    const fileData = res.data;
+    setUploadedFiles((prev) => [...prev, fileData]);
+
+    const fileUrl = fileData.fileUrl;
+    const fileType = fileData.fileType;
+    const fileName = fileData.fileName;
+
+    let htmlTag = '';
+    if (fileType === 'IMAGE') {
+      htmlTag = `\n\n<img src="${fileUrl}" alt="${fileName}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" />\n\n`;
+    } else if (fileType === 'VIDEO') {
+      htmlTag = `\n\n<video src="${fileUrl}" controls style="max-width: 100%; border-radius: 8px; margin: 10px 0;"></video>\n\n`;
+    }
+
+    // 본문 끝에 태그 추가
+    setNewPostContent((prev) => prev + htmlTag);
+  } catch (error: any) {
+    console.error('파일 업로드 실패:', error);
+    if (!error.__handled) {
+      alert(error.response?.data?.message || '파일 업로드에 실패했습니다.');
+    }
+  } finally {
+    setIsUploading(false);
+  }
+};
+
+
+  // 파일 삭제 함수
+  const handleFileDelete = async (fileId: number) => {
+    if (!currentPostId) return;
+    if (!window.confirm('파일을 삭제하시겠습니까?')) return;
+
+    try {
+      await api.delete(`/community/posts/${currentPostId}/files/${fileId}`);
+      setUploadedFiles((prev) => prev.filter((f) => f.fileId !== fileId));
+    } catch (error: any) {
+      console.error('파일 삭제 실패:', error);
+      alert('파일 삭제에 실패했습니다.');
     }
   };
 
@@ -123,97 +213,154 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
   };
 
   const handleSubmit = async () => {
-    if (!newPostTitle.trim() || !newPostContent.trim()) {
-      alert('제목과 내용을 모두 입력해주세요.');
-      return;
+  if (!newPostTitle.trim() || !newPostContent.trim()) {
+    alert("제목과 내용을 모두 입력해주세요.");
+    return;
+  }
+
+  // 토큰 확인
+  const token = localStorage.getItem("accessToken");
+  if (!token) {
+    alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+    window.location.href = "/login";
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+
+    const postType = mapCategoryToPostType(newPostCategory);
+
+    const requestBody = {
+      title: newPostTitle.trim(),
+      content: newPostContent.trim(),
+      postType,
+    };
+
+    let res;
+
+    // ✅ 1) 수정 모드: 항상 initialPost.postId 기준으로 수정
+    if (mode === "edit") {
+      if (!initialPost?.postId) {
+        alert("수정할 게시글 ID가 없습니다.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log("✏️ 게시글 수정 요청:", {
+        url: `/community/posts/${initialPost.postId}`,
+        body: requestBody,
+      });
+
+      res = await api.put(
+        `/community/posts/${initialPost.postId}`,
+        requestBody
+      );
+
+      // 수정 모드에서도 currentPostId 동기화해두면 좋음 (혹시나 이후에 쓸 수도 있으니)
+      setCurrentPostId(initialPost.postId);
+    }
+    // ✅ 2) 작성 모드인데, 이미 postId가 생긴 경우 (파일 업로드 등으로 임시 글 생성됨)
+    else if (currentPostId) {
+      console.log("✏️ 기존에 생성된 글 업데이트 요청:", {
+        url: `/community/posts/${currentPostId}`,
+        body: requestBody,
+      });
+
+      res = await api.put(
+        `/community/posts/${currentPostId}`,
+        requestBody
+      );
+    }
+    // ✅ 3) 작성 모드 + 아직 postId도 없는 완전 새 글
+    else {
+      console.log("📝 새 게시글 작성 요청:", {
+        url: "/community/posts",
+        body: requestBody,
+      });
+
+      res = await api.post("/community/posts", requestBody);
+      const newPostId = res.data.postId;
+      setCurrentPostId(newPostId);
     }
 
-    // 토큰 확인
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      alert('로그인이 필요합니다. 로그인 페이지로 이동합니다.');
-      window.location.href = '/login';
-      return;
+    console.log("✅ 성공 응답:", res.data);
+
+    // 부모 콜백 호출 (ex. 커뮤니티 목록으로 이동)
+    if (onSubmit) {
+      onSubmit();
+    } else {
+      onBack();
     }
 
-    try {
-      setIsSubmitting(true);
+    // 새 글 작성 모드일 때만 폼 리셋
+    if (mode === "create") {
+      setNewPostTitle("");
+      setNewPostContent("");
+      setNewPostCategory("free");
+      setNewPostTags("");
+    }
+  } catch (error: any) {
+    console.error("❌ 게시글 작성/수정 실패:", error);
 
-      const postType = mapCategoryToPostType(newPostCategory);
+    let errorMessage = "게시글 처리에 실패했습니다.";
 
-      const requestBody = {
-        title: newPostTitle.trim(),
-        content: newPostContent.trim(),
-        postType,
-      };
+    if (error.response) {
+      const status = error.response.status;
+      const message = error.response.data?.message || error.response.data;
 
-      let res;
-      if (mode === 'edit') {
-        if (!initialPost?.postId) {
-          alert('수정할 게시글 ID가 없습니다.');
-          return;
-        }
-        console.log('✏️ 게시글 수정 요청:', {
-          url: `/community/posts/${initialPost.postId}`,
-          body: requestBody,
-        });
-        res = await api.put(`/community/posts/${initialPost.postId}`, requestBody);
+      if (status === 401) {
+        errorMessage = "로그인이 필요합니다. 다시 로그인해주세요.";
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
+      } else if (status === 403) {
+        errorMessage =
+          message || "이 게시글을 수정할 권한이 없습니다. (작성자만 수정 가능)";
+      } else if (status === 400) {
+        errorMessage = message || "입력한 정보를 확인해주세요.";
       } else {
-        console.log('📝 게시글 작성 요청:', {
-          url: '/community/posts',
-          body: requestBody,
-        });
-        res = await api.post('/community/posts', requestBody);
+        errorMessage = message || `서버 오류가 발생했습니다. (${status})`;
       }
-
-      console.log('✅ 성공 응답:', res.data);
-
-      // 부모 콜백 호출 (ex. 커뮤니티 목록으로 이동)
-      if (onSubmit) {
-        onSubmit();
-      } else {
-        onBack();
-      }
-
-      // 새 글 작성 모드일 때만 폼 리셋
-      if (mode === 'create') {
-        setNewPostTitle('');
-        setNewPostContent('');
-        setNewPostCategory('free');
-        setNewPostTags('');
-      }
-    } catch (error: any) {
-      console.error('❌ 게시글 작성/수정 실패:', error);
-
-      let errorMessage = '게시글 처리에 실패했습니다.';
-
-      if (error.response) {
-        const status = error.response.status;
-        const message = error.response.data?.message || error.response.data;
-
-        if (status === 401) {
-          errorMessage = '로그인이 필요합니다. 다시 로그인해주세요.';
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 1500);
-        } else if (status === 403) {
-          errorMessage = message || '이 게시글을 수정할 권한이 없습니다. (작성자만 수정 가능)';
-        } else if (status === 400) {
-          errorMessage = message || '입력한 정보를 확인해주세요.';
-        } else {
-          errorMessage = message || `서버 오류가 발생했습니다. (${status})`;
-        }
-      } else if (error.request) {
-        errorMessage = '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.';
-      }
-
-      alert(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+    } else if (error.request) {
+      errorMessage =
+        "서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.";
     }
-  };
+
+    alert(errorMessage);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+  // 📌 아직 postId가 없으면 자동으로 글을 먼저 생성해주는 헬퍼
+  const ensurePostExists = async (): Promise<number> => {
+  // 이미 postId 있으면 그대로 사용
+  if (currentPostId) return currentPostId;
+
+  const safeTitle = newPostTitle.trim() || "(제목 없음)";
+  const postType = mapCategoryToPostType(newPostCategory);
+
+  try {
+    const res = await api.post('/community/posts', {
+      title: safeTitle,
+      content: newPostContent.trim() || "(임시 내용)", // ⚠️ 비어있으면 에러. 그래서 || "(임시 내용)" 으로 수정함
+      postType,
+    });
+
+    const newId = res.data.postId;
+    setCurrentPostId(newId);   // 상태에 저장
+    return newId;
+  } catch (error: any) {
+    console.error("임시 게시글 생성 실패:", error);
+    alert("게시글을 생성하는 중 오류가 발생했습니다. 다시 시도해주세요.");
+    throw error;
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -463,7 +610,34 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
                 <div className="mt-2 text-sm text-gray-400">
                   {newPostContent.length} / 10000 자
                 </div>
+                {/* 🔥 미리보기 영역 */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-white mb-2">
+                    미리보기
+                  </label>
+
+                  <div
+                    className="bg-black/30 border border-white/10 rounded-xl p-4 min-h-[200px] prose prose-invert max-w-none"
+                    style={{ wordBreak: "break-word", lineHeight: 1.6 }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(newPostContent || "", {
+                        ALLOWED_TAGS: [
+                          "p", "br", "strong", "em", "u", "s", "strike",
+                          "img", "video", "a", "ul", "ol", "li",
+                          "h1", "h2", "h3", "h4", "h5", "h6",
+                          "blockquote", "code", "pre", "span", "div"
+                        ],
+                        ALLOWED_ATTR: [
+                          "src", "alt", "href", "target", "rel",
+                          "controls", "style", "class", "width", "height"
+                        ],
+                        ALLOWED_URI_REGEXP:
+                          /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+                      }),
+                    }}
+                  />
               </div>
+            </div>
 
               {/* Tags */}
               <div>
@@ -492,6 +666,73 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
                   </div>
                 )}
               </div>
+
+              {/* 파일 첨부 섹션 */}
+              {currentPostId && (
+                <div className="space-y-4">
+                  <label className="block font-medium text-white mb-3">
+                    파일 첨부 (이미지/동영상)
+                  </label>
+                  
+                  {/* 파일 선택 */}
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        files.forEach((file) => handleFileUpload(file)); // 1️⃣ 파일 업로드
+                      }}
+                      className="hidden"
+                      id="file-upload"
+                      disabled={isUploading}
+                    />
+                    <label
+                      htmlFor="file-upload"
+                      className={`px-4 py-2 rounded-lg cursor-pointer ${
+                        isUploading
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      }`}
+                    >
+                      {isUploading ? '업로드 중...' : '파일 선택'}
+                    </label>
+                  </div>
+
+                  {/* 업로드된 파일 미리보기 */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {uploadedFiles.map((file) => (
+                        <div key={file.fileId} className="relative group">
+                          {file.fileType === 'IMAGE' ? (
+                            <img
+                              src={file.fileUrl}
+                              alt={file.fileName}
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <video
+                              src={file.fileUrl}
+                              className="w-full h-32 object-cover rounded-lg"
+                              controls
+                            />
+                          )}
+                          <button
+                            onClick={() => handleFileDelete(file.fileId)}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                          <p className="text-xs text-gray-400 mt-1 truncate">
+                            {file.fileName}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Preview Notice */}
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
@@ -661,7 +902,7 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
               )}
               {imageUploadTab === 'file' && (
                 <div>
-                  <label className="block text-sm text-gray-300 mb-2">이미지 파일 선택</label>
+                  <label className="block text-sm text-gray-300 mb-2">이미지/동영상 파일 선택</label>
                   <div className="flex items-center gap-2">
                     <Input
                       type="text"
@@ -679,17 +920,22 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
                     </Button>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/*"
                       ref={fileInputRef}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
                           setSelectedImageFile(file);
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            setImagePreview(event.target?.result as string);
-                          };
-                          reader.readAsDataURL(file);
+                          // 이미지만 미리보기, 동영상은 파일명만
+                          if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setImagePreview(event.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          } else {
+                            setImagePreview('');  // 동영상은 미리보기 없음
+                          }
                         }
                       }}
                       className="hidden"
@@ -700,9 +946,14 @@ export function CommunityWritePage({ onBack, onSubmit, mode = 'create', initialP
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        className="max-w-full h-auto"
+                        className="max-w-full h-auto rounded-lg"
                       />
                     </div>
+                  )}
+                  {selectedImageFile && !imagePreview && (
+                    <p className="text-xs text-gray-400 mt-2">
+                      동영상 파일은 업로드 후 재생할 수 있습니다.
+                    </p>
                   )}
                 </div>
               )}
