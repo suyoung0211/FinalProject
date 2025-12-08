@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import api from "../api/api";
-
+import DOMPurify from "dompurify";
 import { MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Avatar } from "../components/Avatar";
 import { Button } from "../components/ui/button";
@@ -54,6 +54,17 @@ type Comment = {
   avatarVariant?: number;
 };
 
+interface FileUploadResponse {
+  fileId: number;
+  postId: number;
+  fileType: 'IMAGE' | 'VIDEO';
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+}
+
 // 댓글 트리 재귀 매핑
 function mapComment(c: Comment): Comment {
   return {
@@ -79,6 +90,7 @@ export function CommunityPostDetailPage() {
   const [replyText, setReplyText] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
+  const [postFiles, setPostFiles] = useState<FileUploadResponse[]>([]);
 
   const requireLogin = () => navigate("/login");
 
@@ -308,6 +320,14 @@ export function CommunityPostDetailPage() {
           isLiked: myReaction === 1,
           isDisliked: myReaction === -1,
         });
+
+        // 파일 목록 조회
+        try {
+          const filesRes = await api.get(`/community/posts/${postId}/files`);
+          setPostFiles(filesRes.data);
+        } catch (error) {
+          console.error('파일 목록 조회 실패:', error);
+        }
       } catch {
         setError("게시글을 불러오지 못했습니다.");
       } finally {
@@ -335,9 +355,58 @@ export function CommunityPostDetailPage() {
           {post.authorNickname} · {new Date(post.createdAt).toLocaleString()}
         </div>
 
-        <div className="bg-black/20 p-6 rounded-xl mb-6 whitespace-pre-wrap">
-          {post.content}
-        </div>
+        {/* ⭐ 본문을 HTML로 렌더링 (이미지/동영상이 본문에 포함됨) */}
+        <div 
+          className="bg-black/20 p-6 rounded-xl mb-6 prose prose-invert max-w-none"
+          style={{
+            wordBreak: 'break-word',
+            lineHeight: '1.6',
+          }}
+          dangerouslySetInnerHTML={{ 
+            __html: DOMPurify.sanitize(post.content || '', {
+              ALLOWED_TAGS: [
+                'p', 'br', 'strong', 'em', 'u', 's', 'strike',
+                'img', 'video', 'a', 'ul', 'ol', 'li', 
+                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'code', 'pre', 'span', 'div'
+              ],
+              ALLOWED_ATTR: [
+                'src', 'alt', 'href', 'target', 'rel',
+                'controls', 'style', 'class', 'width', 'height'
+              ],
+              ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+            })
+          }}
+        />
+
+        {/* ⭐ 첨부 파일 섹션 제거 (본문에 이미 포함되므로 불필요) */}
+        {/* 
+        {postFiles.length > 0 && (
+          <div className="mb-6 space-y-4">
+            <h3 className="text-lg font-bold text-white">첨부 파일</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {postFiles.map((file) => (
+                <div key={file.fileId} className="bg-white/5 rounded-lg p-4">
+                  {file.fileType === 'IMAGE' ? (
+                    <img
+                      src={file.fileUrl}
+                      alt={file.fileName}
+                      className="w-full rounded-lg mb-2"
+                    />
+                  ) : (
+                    <video
+                      src={file.fileUrl}
+                      className="w-full rounded-lg mb-2"
+                      controls
+                    />
+                  )}
+                  <p className="text-sm text-gray-400 truncate">{file.fileName}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        */}
 
         {/* 게시글 추천 및 수정 */}
         <div className="flex gap-4 items-center">

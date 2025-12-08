@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"user", "comments"})
+@ToString(exclude = {"user", "comments", "files"})
 public class CommunityPostEntity {
 
     /** 게시글 고유 ID (PK) */
@@ -79,6 +79,11 @@ public class CommunityPostEntity {
     @Builder.Default
     @OneToMany(mappedBy = "post")
     private List<CommunityCommentEntity> comments = new ArrayList<>();
+
+    /** 해당 게시글에 첨부된 파일 목록 */
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommunityPostFileEntity> files = new ArrayList<>();
 
     /** INSERT 시 기본값 자동 설정 */
     @PrePersist
