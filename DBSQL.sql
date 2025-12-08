@@ -10,7 +10,7 @@ CREATE TABLE Users (
     profile_image VARCHAR(255) COMMENT '프로필 사진 URL',
     profile_background VARCHAR(255) COMMENT '프로필 배경 이미지 URL',
     profile_frame VARCHAR(255) COMMENT '프로필 테두리 URL';
-    profile_badge VARCHAR(255); COMMENT '프로필 닉네임 뱃지 URL'
+    profile_badge VARCHAR(255) COMMENT '프로필 닉네임 뱃지 URL'
     
     email_verified TINYINT(1) DEFAULT 0 COMMENT '이메일 인증 여부 (0=미인증, 1=인증 완료)',
     email_verification_token VARCHAR(255) COMMENT '이메일 인증 토큰',

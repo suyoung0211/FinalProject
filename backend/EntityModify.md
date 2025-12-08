@@ -368,3 +368,15 @@ public void softDelete() {
 
 
   
+---------------------------------
+2025-12-08
+
+1. CommunityPostFileEntity 새로 추가함
+
+2. CommunityPostEntity.files 필드 추가함 
+/** 해당 게시글에 첨부된 파일 목록 */
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommunityPostFileEntity> files = new ArrayList<>();
+
+⚠️ DB 새로 업데이트 필요함!

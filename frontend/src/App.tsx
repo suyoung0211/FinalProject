@@ -23,6 +23,9 @@ import { ProfilePageContainer } from "./pages/ProfilePageContainer";
 
 import { AdminProtectedRoute } from './components/admin/AdminProtectedRoute';
 import { Toaster } from "react-hot-toast";
+import { ProfilePageWrapper } from './pages/ProfilePageWrapper';
+import "./styles/glow.css";
+
 
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
@@ -64,7 +67,7 @@ export default function App() {
               <Route path="/store" element={<PointsShopPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/article" element={<ArticleListPage />} />
-
+              <Route path='/profile' element={<ProfilePageWrapper />} />
               <Route 
                 path="/admin/*"
                 element={

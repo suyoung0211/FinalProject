@@ -83,6 +83,13 @@ public class SecurityConfig {
 
         // 커뮤니티 조회 허용
         .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+
+        // ⭐ 업로드된 파일 접근 허용 (모든 사용자)
+        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
+        // ⭐ 커뮤니티 파일 업로드/삭제는 인증 필요
+        .requestMatchers(HttpMethod.POST, "/api/community/posts/*/files").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/community/posts/*/files/**").authenticated()
         
 
         // 아래는 인증 필요한 API (GET 제외)
