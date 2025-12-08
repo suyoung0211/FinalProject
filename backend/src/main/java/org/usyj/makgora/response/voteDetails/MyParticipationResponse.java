@@ -9,8 +9,11 @@ import lombok.Data;
 @Builder
 public class MyParticipationResponse {
     private boolean hasParticipated;
+    private boolean isCancelled;
     private Integer optionId;
     private Integer choiceId;
     private Long pointsBet;
     private LocalDateTime votedAt;
+    private LocalDateTime canceledAt;
+    
 }

@@ -8,7 +8,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class VoteDetailResponse {
+public class VoteListDetailResponse {
 
     private Integer voteId;
     private Integer issueId;

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RankingRepository extends JpaRepository<RankingEntity, Integer> {
@@ -15,4 +16,7 @@ public interface RankingRepository extends JpaRepository<RankingEntity, Integer>
     List<RankingEntity> findByRankingTypeOrderByScoreDesc(RankingType rankingType);
 
     List<RankingEntity> findTop10ByRankingTypeOrderByScoreDesc(RankingType rankingType);
+
+    Optional<RankingEntity> findByUser_IdAndRankingType(Integer userId, RankingEntity.RankingType type);
+
 }

@@ -41,16 +41,21 @@ public class VoteUserEntity {
     private UserEntity user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "option_id", nullable = false)
+    @JoinColumn(name = "option_id", nullable = true)
     private VoteOptionEntity option;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "choice_id", nullable = false)
+    @JoinColumn(name = "choice_id", nullable = true)
     private VoteOptionChoiceEntity choice;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "normal_choice_id")
+    @JoinColumn(name = "normal_choice_id", nullable = true)
     private NormalVoteChoiceEntity normalChoice;
+
+    // ★ 추가되는 부분
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "normal_option_id", nullable = true)
+    private NormalVoteOptionEntity normalOption;
 
     @Column(name = "points_bet")
     @Builder.Default

@@ -16,9 +16,14 @@ interface VoteItemProps {
 }
 
 export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) {
+  console.log("🔵 VoteItem initialVote:", initialVote);
+  console.log("🔵 VoteItem voteId:", voteId);
   const [vote, setVote] = useState<any>(initialVote ?? null);
   const [loading, setLoading] = useState(!initialVote);
   const [showAllOptions, setShowAllOptions] = useState(false);
+  useEffect(() => {
+  console.log("🔵 VoteItem loaded vote:", vote);
+}, [vote]);
 
   /* ------------------------------------------------------------- */
   /* 🔥 AI 투표 상세 로드 */

@@ -7,7 +7,10 @@ interface NormalVoteItemProps {
 }
 
 export function NormalVoteItem({ vote, onMarketClick }: NormalVoteItemProps) {
+  console.log("🟢 NormalVoteItem vote:", vote);
+  console.log("🟢 NormalVoteItem vote.id:", vote?.id);
   const [showAllOptions, setShowAllOptions] = useState(false);
+  
 
   /* ------------------------------------------------------------------ */
   /* 🔢 YES / DRAW / NO 계산 (전체 도넛 계산용) */

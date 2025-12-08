@@ -9,6 +9,7 @@ import org.usyj.makgora.request.voteDetails.VoteDetailResolveRequest;
 import org.usyj.makgora.response.voteDetails.VoteDetailMainResponse;
 import org.usyj.makgora.response.voteDetails.VoteDetailSettlementResponse;
 import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.service.VoteDetailService;
 import org.usyj.makgora.service.VoteListService;
 import org.usyj.makgora.service.VoteService;
 import org.usyj.makgora.service.VoteSettlementService;
@@ -22,8 +23,9 @@ import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 public class VoteController {
 
     private final VoteService voteService;
-    private final VoteListService voteDetailService;
+    private final VoteListService votelistService;
     private final VoteSettlementService voteSettlementService;
+    private final VoteDetailService voteDetailService; 
 
     /** 상세 조회 */
     @GetMapping("/{voteId}")
@@ -132,10 +134,23 @@ public ResponseEntity<?> getMyVotes(@AuthenticationPrincipal CustomUserDetails u
     ) {
         Integer userId = (user != null) ? user.getId() : null;
 
-        VoteDetailMainResponse response = voteDetailService.getVoteDetail(voteId, userId);
+        VoteDetailMainResponse response = votelistService.getVoteDetail(voteId, userId);
 
         return ResponseEntity.ok(response);
     }
+
+    /** 내 참여 정보만 조회 */
+@GetMapping("/{voteId}/my")
+public ResponseEntity<?> getMyParticipation(
+        @PathVariable Integer voteId,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    if (user == null) return ResponseEntity.status(401).body("로그인이 필요합니다.");
+
+    return ResponseEntity.ok(
+            voteDetailService.getMyParticipationOnly(voteId, user.getId())
+    );
+}
 
      /**
      * 🎯 정답 선택 + 정산 한 번에 수행

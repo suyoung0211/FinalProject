@@ -144,6 +144,7 @@ function CommentItem(props: CommentItemProps) {
     handleReplySubmit,
   } = props;
 
+  
   const indent = depth * 20;
 
   const dateText =

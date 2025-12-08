@@ -6,7 +6,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.VoteDetailCommentService;
-import org.usyj.makgora.service.NormalVoteCommentService;
 import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
 
 import java.util.List;
@@ -18,27 +17,13 @@ import java.util.Map;
 public class VoteCommentController {
 
     private final VoteDetailCommentService voteCommentService;
-    private final NormalVoteCommentService normalVoteCommentService;
 
     /* ============================================
        🔥 1) 댓글 조회 (AI Vote 또는 Normal Vote)
        ============================================ */
     @GetMapping
-    public ResponseEntity<?> getComments(
-            @RequestParam(required = false) Integer voteId,
-            @RequestParam(required = false) Long normalVoteId
-    ) {
-        if (voteId != null) {
-            List<VoteDetailCommentResponse> list = voteCommentService.getComments(voteId);
-            return ResponseEntity.ok(list);
-        }
-
-        if (normalVoteId != null) {
-            List<VoteDetailCommentResponse> list = normalVoteCommentService.getComments(normalVoteId);
-            return ResponseEntity.ok(list);
-        }
-
-        return ResponseEntity.badRequest().body("voteId 또는 normalVoteId 중 하나는 반드시 필요합니다.");
+    public List<VoteDetailCommentResponse> getComments(@RequestParam Integer voteId) {
+        return voteCommentService.getComments(voteId);
     }
 
     /* ============================================
@@ -82,7 +67,7 @@ public class VoteCommentController {
     }
 
     /* ============================================
-       🔥 3) 댓글 좋아요/싫어요 (AI + NormalVote 공용)
+       🔥 3) 댓글 좋아요/싫어요
        ============================================ */
     @PostMapping("/{id}/react")
     public ResponseEntity<?> react(
@@ -100,7 +85,7 @@ public class VoteCommentController {
     }
 
     /* ============================================
-       🔥 4) 댓글 삭제 (본인만 가능)
+       🔥 4) 댓글 삭제
        ============================================ */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteComment(

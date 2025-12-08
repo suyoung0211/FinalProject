@@ -343,6 +343,28 @@ export const adminSettleVote = (voteId) =>
   현재 오류나서 일단 gpt코드 이식함 나중에 물어보고 다시 바꾸던지할듯
   + 현재 당장은 gpt코드 이식 버전으로 실행가능함
 
+VoteUserEntity에 normalvoteoption 추가
+  // ★ 추가되는 부분
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "normal_option_id", nullable = true)
+    private NormalVoteOptionEntity normalOption;
+
+    VoteCommentEntity에 소프트 삭제 추가
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+public void softDelete() {
+    this.deleted = true;
+    this.content = "[삭제된 댓글입니다]";
+    this.deletedAt = LocalDateTime.now();
+}
+
+
+
 
 
   

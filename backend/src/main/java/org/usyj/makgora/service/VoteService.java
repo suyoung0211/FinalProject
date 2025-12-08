@@ -1,6 +1,8 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
@@ -16,6 +18,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VoteService {
 
+    @Autowired
+    private RankingRepository rankingRepo;
     private final VoteRepository voteRepository;
     private final IssueRepository issueRepository;
     private final VoteOptionRepository optionRepository;
@@ -65,7 +69,7 @@ private Double calculateOdds(VoteOptionChoiceEntity choice, VoteEntity vote) {
        🔹 2. 투표 상세 조회
        =============================== */
     @Transactional(readOnly = true)
-public VoteDetailResponse getVoteDetail(Integer voteId) {
+public VoteListDetailResponse getVoteDetail(Integer voteId) {
     System.out.println("🔥 [BACKEND] getVoteDetail() 요청 들어옴 voteId=" + voteId);
 
     VoteEntity vote = voteRepository.findById(voteId)
@@ -89,15 +93,15 @@ public VoteDetailResponse getVoteDetail(Integer voteId) {
     VoteRuleEntity rule = voteRuleRepository.findByVote(vote).orElse(null);
 
     // ==== 옵션 + 선택지 구성 ====
-    List<VoteDetailResponse.OptionResponse> options =
+    List<VoteListDetailResponse.OptionResponse> options =
             vote.getOptions().stream()
                     .map(option ->
-                            VoteDetailResponse.OptionResponse.builder()
+                            VoteListDetailResponse.OptionResponse.builder()
                                     .optionId(option.getId())
                                     .title(option.getOptionTitle())
                                     .choices(
                                             option.getChoices().stream()
-                                                    .map(ch -> VoteDetailResponse.ChoiceResponse.builder()
+                                                    .map(ch -> VoteListDetailResponse.ChoiceResponse.builder()
                                                             .choiceId(ch.getId())
                                                             .text(ch.getChoiceText())
                                                             .pointsTotal(ch.getPointsTotal())
@@ -109,7 +113,7 @@ public VoteDetailResponse getVoteDetail(Integer voteId) {
                                     .build()
                     ).toList();
 
-    return VoteDetailResponse.builder()
+    return VoteListDetailResponse.builder()
             .voteId(vote.getId())
             .issueId(issue.getId())
             .title(vote.getTitle())
@@ -121,14 +125,14 @@ public VoteDetailResponse getVoteDetail(Integer voteId) {
             .endAt(vote.getEndAt())
 
             .stats(
-                    VoteDetailResponse.Stats.builder()
+                    VoteListDetailResponse.Stats.builder()
                             .totalPoints(vote.getTotalPoints())
                             .totalParticipants(vote.getTotalParticipants())
                             .build()
             )
 
             .rule(rule != null ?
-                    VoteDetailResponse.Rule.builder()
+                    VoteListDetailResponse.Rule.builder()
                             .type(rule.getRuleType())
                             .description(rule.getRuleDescription())
                             .build() : null
@@ -186,7 +190,7 @@ public VoteDetailResponse getVoteDetail(Integer voteId) {
        🔹 4. 투표 참여
        =============================== */
     @Transactional
-    public VoteDetailResponse participateVote(Integer voteId, VoteParticipateRequest req, Integer userId) {
+    public VoteListDetailResponse participateVote(Integer voteId, VoteParticipateRequest req, Integer userId) {
 
         VoteOptionChoiceEntity choice = choiceRepository.findById(req.getChoiceId())
                 .orElseThrow(() -> new RuntimeException("선택지 없음"));
@@ -316,7 +320,7 @@ if (voteUserRepository.existsByUserIdAndOptionId(userId, optionId)) {
 
 
 @Transactional
-public VoteDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
+public VoteListDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
 
     VoteUserEntity voteUser = voteUserRepository.findById(voteUserId)
             .orElseThrow(() -> new RuntimeException("베팅 정보를 찾을 수 없습니다."));
@@ -362,7 +366,7 @@ public VoteDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
 }
 
 @Transactional
-public VoteDetailResponse cancelVote(Integer voteId, Integer userId) {
+public VoteListDetailResponse cancelVote(Integer voteId, Integer userId) {
 
     VoteEntity vote = voteRepository.findById(voteId)
             .orElseThrow(() -> new RuntimeException("투표 없음"));
@@ -707,11 +711,112 @@ public String resolveVote(Integer voteId, Long choiceId) {
     vote.setCorrectChoice(correct);
     vote.setStatus(VoteEntity.Status.RESOLVED);
     voteRepository.save(vote);
+    updateVoteResults(vote);
 
     logHistory(vote, VoteStatusHistoryEntity.Status.RESOLVED);
 
     return "정답이 확정되었습니다.";
 }
+
+private void updateVoteResults(VoteEntity vote) {
+
+    List<VoteUserEntity> bets = voteUserRepository.findByVoteId(vote.getId());
+
+    for (VoteUserEntity vu : bets) {
+
+        if (Boolean.TRUE.equals(vu.getIsCancelled())) continue;
+
+        Integer userId = vu.getUser().getId();
+
+        // 🔥 이 유저의 승률/연승 랭킹을 다시 계산해서 score 갱신
+        updateWinRate(userId);
+        updateStreak(userId);
+    }
+}
+
+/** 🔥 승률 업데이트 */
+@Transactional
+public void updateWinRate(Integer userId) {
+
+    // 1) 사용자의 전체 투표내역 조회
+    List<VoteUserEntity> records = voteUserRepository.findByUserId(userId).stream()
+            .filter(vu -> !Boolean.TRUE.equals(vu.getIsCancelled()))
+            .filter(vu -> vu.getVote() != null)
+            .filter(vu -> vu.getVote().getCorrectChoice() != null)
+            .toList();
+
+    int wins = 0;
+    int losses = 0;
+
+    for (VoteUserEntity vu : records) {
+        boolean win = vu.getChoice().getId().equals(vu.getVote().getCorrectChoice().getId());
+        if (win) wins++; else losses++;
+    }
+
+    int total = wins + losses;
+    int winRate = total > 0 ? (wins * 100 / total) : 0;
+
+    // 2) Ranking 엔티티에 저장
+    RankingEntity ranking = rankingRepo
+            .findByUser_IdAndRankingType(userId, RankingEntity.RankingType.WINRATE)
+            .orElse(RankingEntity.builder()
+                    .user(userRepository.findById(userId).orElseThrow())
+                    .rankingType(RankingEntity.RankingType.WINRATE)
+                    .ranking(0)
+                    .score(0)
+                    .build()
+            );
+
+    ranking.setScore(winRate);
+    rankingRepo.save(ranking);
+}
+
+/** 🔥 연승 업데이트 */
+@Transactional
+public void updateStreak(Integer userId) {
+
+    // 최근 종료된 투표 내역만
+    List<VoteUserEntity> records = voteUserRepository.findByUserId(userId).stream()
+        .filter(vu -> !Boolean.TRUE.equals(vu.getIsCancelled()))
+        .filter(vu -> vu.getVote() != null)
+        .filter(vu -> vu.getVote().getStatus() == VoteEntity.Status.REWARDED
+                   || vu.getVote().getStatus() == VoteEntity.Status.RESOLVED)
+        .sorted((a, b) -> b.getVote().getEndAt().compareTo(a.getVote().getEndAt()))
+        .toList();
+
+    int current = 0;
+    int max = 0;
+
+    for (VoteUserEntity vu : records) {
+
+        VoteEntity vote = vu.getVote();
+        if (vote.getCorrectChoice() == null) break;
+
+        boolean win = vu.getChoice().getId().equals(vote.getCorrectChoice().getId());
+        if (win) {
+            current++;
+            max = Math.max(max, current);
+        } else {
+            break;
+        }
+    }
+
+    RankingEntity ranking = rankingRepo
+            .findByUser_IdAndRankingType(userId, RankingEntity.RankingType.STREAK)
+            .orElse(RankingEntity.builder()
+                    .user(userRepository.findById(userId).orElseThrow())
+                    .rankingType(RankingEntity.RankingType.STREAK)
+                    .ranking(0)
+                    .score(0)
+                    .build()
+            );
+
+    ranking.setScore(current);   // 현재 연승만 저장
+    ranking.setRanking(max);     // 최고 연승 기록 저장(선택사항)
+
+    rankingRepo.save(ranking);
+}
+
 
 @Transactional
 public String rewardVote(Integer voteId) {

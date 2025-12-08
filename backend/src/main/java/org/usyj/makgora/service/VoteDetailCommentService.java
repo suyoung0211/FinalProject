@@ -24,25 +24,54 @@ public class VoteDetailCommentService {
     private final StringRedisTemplate redis;
 
     /* =========================================================
-       🔥 Redis Key Builder
+       🔗 Redis Key Builder
        ========================================================= */
-    private String likeKey(Long commentId) { return "VOTE_COMMENT:" + commentId + ":LIKE"; }
-    private String dislikeKey(Long commentId) { return "VOTE_COMMENT:" + commentId + ":DISLIKE"; }
-    private String likeUserSet(Long commentId) { return "VOTE_COMMENT_LIKED:" + commentId; }
-    private String dislikeUserSet(Long commentId) { return "VOTE_COMMENT_DISLIKED:" + commentId; }
-    private String commentCountKey(Long voteId) { return "VOTE_COMMENT_COUNT:" + voteId; }
+    private String likeKey(Long id) { return "VOTE_COMMENT:" + id + ":LIKE"; }
+    private String dislikeKey(Long id) { return "VOTE_COMMENT:" + id + ":DISLIKE"; }
+    private String likeUserKey(Long id) { return "VOTE_COMMENT_LIKED:" + id; }
+    private String dislikeUserKey(Long id) { return "VOTE_COMMENT_DISLIKED:" + id; }
+    private String countKey(Object id) { return "VOTE_COMMENT_COUNT:" + id; }
 
 
     /* =========================================================
-       🔥 1) AI Vote 댓글 작성
+       🔥 공통 댓글 생성 로직
+       ========================================================= */
+    private VoteCommentEntity createComment(
+            VoteEntity aiVote,
+            NormalVoteEntity normalVote,
+            UserEntity user,
+            VoteCommentEntity parent,
+            String content,
+            String position,
+            String userPosition
+    ) {
+
+        VoteCommentEntity comment = VoteCommentEntity.builder()
+                .vote(aiVote)
+                .normalVote(normalVote)
+                .issue(aiVote != null ? aiVote.getIssue() : null)
+                .user(user)
+                .content(content)
+                .position(position)
+                .userPosition(userPosition)
+                .parent(parent)
+                .likeCount(0)
+                .dislikeCount(0)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        voteCommentRepository.save(comment);
+        return comment;
+    }
+
+
+    /* =========================================================
+       🔥 댓글 등록: AI Vote
        ========================================================= */
     public VoteDetailCommentResponse addCommentToVote(
-            Integer voteId,
-            Integer userId,
-            String content,
-            Integer parentCommentId,
-            String position,
-            String userPosition,
+            Integer voteId, Integer userId, String content,
+            Integer parentId, String position, String userPosition,
             Long linkedChoiceId
     ) {
         VoteEntity vote = voteRepository.findById(voteId)
@@ -51,107 +80,59 @@ public class VoteDetailCommentService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        VoteCommentEntity parent = null;
-        if (parentCommentId != null) {
-            parent = voteCommentRepository.findById(parentCommentId.longValue())
-                    .orElseThrow(() -> new RuntimeException("Parent comment not found"));
-        }
+        VoteCommentEntity parent = parentId != null
+                ? voteCommentRepository.findById(parentId.longValue())
+                    .orElseThrow(() -> new RuntimeException("Parent not found"))
+                : null;
 
-        VoteCommentEntity comment = VoteCommentEntity.builder()
-                .vote(vote)
-                .normalVote(null)
-                .user(user)
-                .content(content)
-                .position(position)
-                .userPosition(userPosition)
-                .parent(parent)
-                .likeCount(0)
-                .dislikeCount(0)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        // 부모가 NormalVote이면 오류
+        if (parent != null && parent.getNormalVote() != null)
+            throw new RuntimeException("AI 댓글에는 NormalVote 부모를 사용할 수 없습니다.");
 
-        voteCommentRepository.save(comment);
+        // 댓글 생성
+        VoteCommentEntity comment =
+                createComment(vote, null, user, parent, content, position, userPosition);
 
-        // Redis 댓글 수 증가
-        redis.opsForValue().increment(commentCountKey(vote.getId().longValue()));
+        // Redis 카운트 증가
+        redis.opsForValue().increment(countKey(voteId));
 
-        return convertRedisDto(comment);
+        return convertTreeNode(comment);
     }
 
-    /* =========================================================
-   🔥 공용 댓글 조회 (AI Vote + Normal Vote 자동 판단)
-   ========================================================= */
-public List<VoteDetailCommentResponse> getComments(Integer voteId) {
-
-    // AI Vote인지 확인
-    boolean isAiVote = voteRepository.existsById(voteId);
-
-    if (isAiVote) {
-        List<VoteCommentEntity> roots =
-                voteCommentRepository.findByVote_IdAndParentIsNull(voteId);
-
-        return roots.stream()
-                .map(this::convertTreeDto)
-                .toList();
-    }
-
-    // NormalVote로 처리
-    List<VoteCommentEntity> roots =
-            voteCommentRepository.findByNormalVote_IdAndParentIsNull(Long.valueOf(voteId));
-
-    return roots.stream()
-            .map(this::convertTreeDto)
-            .toList();
-}
 
     /* =========================================================
-       🔥 2) Normal Vote 댓글 작성
+       🔥 댓글 등록: NormalVote
        ========================================================= */
     public VoteDetailCommentResponse addCommentToNormalVote(
-            Long normalVoteId,
-            Integer userId,
-            String content,
-            Integer parentCommentId,
-            String position,
-            String userPosition,
+            Long normalVoteId, Integer userId, String content,
+            Integer parentId, String position, String userPosition,
             Long linkedChoiceId
     ) {
+
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("NormalVote not found"));
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        VoteCommentEntity parent = null;
-        if (parentCommentId != null) {
-            parent = voteCommentRepository.findById(parentCommentId.longValue())
-                    .orElseThrow(() -> new RuntimeException("Parent comment not found"));
-        }
+        VoteCommentEntity parent = parentId != null
+                ? voteCommentRepository.findById(parentId.longValue())
+                    .orElseThrow(() -> new RuntimeException("Parent not found"))
+                : null;
 
-        VoteCommentEntity comment = VoteCommentEntity.builder()
-                .vote(null)
-                .normalVote(vote)
-                .user(user)
-                .content(content)
-                .position(position)
-                .userPosition(userPosition)
-                .parent(parent)
-                .likeCount(0)
-                .dislikeCount(0)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        // 댓글 생성
+        VoteCommentEntity comment =
+                createComment(null, vote, user, parent, content, position, userPosition);
 
-        voteCommentRepository.save(comment);
+        // Redis 카운트 증가
+        redis.opsForValue().increment(countKey(normalVoteId));
 
-        return convertRedisDto(comment);
+        return convertTreeNode(comment);
     }
 
 
-
     /* =========================================================
-       🔥 3) 댓글 좋아요/싫어요 (AI + NormalVote 공용)
+       🔥 댓글 좋아요/싫어요 (AI + Normal 공용)
        ========================================================= */
     public VoteDetailCommentResponse reactComment(Long commentId, Integer userId, boolean like) {
 
@@ -160,134 +141,111 @@ public List<VoteDetailCommentResponse> getComments(Integer voteId) {
 
         String likeKey = likeKey(commentId);
         String dislikeKey = dislikeKey(commentId);
-        String likeSet = likeUserSet(commentId);
-        String dislikeSet = dislikeUserSet(commentId);
 
-        /* ----- 좋아요 ----- */
+        String likeUsers = likeUserKey(commentId);
+        String dislikeUsers = dislikeUserKey(commentId);
+
+        String userStr = userId.toString();
+
         if (like) {
-            if (Boolean.TRUE.equals(redis.opsForSet().isMember(likeSet, userId.toString()))) {
-                redis.opsForSet().remove(likeSet, userId.toString());
+            if (Boolean.TRUE.equals(redis.opsForSet().isMember(likeUsers, userStr))) {
+                redis.opsForSet().remove(likeUsers, userStr);
                 redis.opsForValue().decrement(likeKey);
             } else {
-                if (Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeSet, userId.toString()))) {
-                    redis.opsForSet().remove(dislikeSet, userId.toString());
+                if (Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeUsers, userStr))) {
+                    redis.opsForSet().remove(dislikeUsers, userStr);
                     redis.opsForValue().decrement(dislikeKey);
                 }
-                redis.opsForSet().add(likeSet, userId.toString());
+                redis.opsForSet().add(likeUsers, userStr);
                 redis.opsForValue().increment(likeKey);
             }
-        }
-        /* ----- 싫어요 ----- */
-        else {
-            if (Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeSet, userId.toString()))) {
-                redis.opsForSet().remove(dislikeSet, userId.toString());
+        } else {
+            if (Boolean.TRUE.equals(redis.opsForSet().isMember(dislikeUsers, userStr))) {
+                redis.opsForSet().remove(dislikeUsers, userStr);
                 redis.opsForValue().decrement(dislikeKey);
             } else {
-                if (Boolean.TRUE.equals(redis.opsForSet().isMember(likeSet, userId.toString()))) {
-                    redis.opsForSet().remove(likeSet, userId.toString());
+                if (Boolean.TRUE.equals(redis.opsForSet().isMember(likeUsers, userStr))) {
+                    redis.opsForSet().remove(likeUsers, userStr);
                     redis.opsForValue().decrement(likeKey);
                 }
-                redis.opsForSet().add(dislikeSet, userId.toString());
+                redis.opsForSet().add(dislikeUsers, userStr);
                 redis.opsForValue().increment(dislikeKey);
             }
         }
 
-        return convertRedisDto(comment);
+        return convertTreeNode(comment);
     }
 
 
+    /* =========================================================
+       🔥 댓글 조회 (AI → 없으면 Normal)
+       ========================================================= */
+    public List<VoteDetailCommentResponse> getComments(Integer voteId) {
+
+        List<VoteCommentEntity> aiRoots =
+                voteCommentRepository.findByVote_IdAndParentIsNull(voteId);
+
+        if (!aiRoots.isEmpty())
+            return aiRoots.stream().map(this::convertTreeNode).toList();
+
+        List<VoteCommentEntity> normalRoots =
+                voteCommentRepository.findByNormalVote_IdAndParentIsNull(Long.valueOf(voteId));
+
+        return normalRoots.stream().map(this::convertTreeNode).toList();
+    }
+
 
     /* =========================================================
-       🔥 4) 댓글 삭제
+       🔥 댓글 삭제 (Soft Delete)
        ========================================================= */
     public void deleteComment(Long commentId, Integer userId) {
 
         VoteCommentEntity comment = voteCommentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        if (!comment.getUser().getId().equals(userId)) {
+        if (!comment.getUser().getId().equals(userId))
             throw new RuntimeException("본인 댓글만 삭제 가능합니다.");
-        }
 
-        voteCommentRepository.delete(comment);
+        comment.softDelete();
     }
 
 
-
     /* =========================================================
-       🔥 5) 댓글 조회 (AI Vote / Normal Vote 자동 판단)
+       🔥 트리 변환 + Redis 좋아요 반영
        ========================================================= */
-    public List<VoteDetailCommentResponse> getCommentsForNormalVote(Long voteId) {
+    private VoteDetailCommentResponse convertTreeNode(VoteCommentEntity c) {
 
-        List<VoteCommentEntity> roots =
-                voteCommentRepository.findByNormalVote_IdAndParentIsNull(voteId);
-
-        return roots.stream()
-                .map(this::convertTreeDto)
-                .toList();
-    }
-
-
-
-
-    /* =========================================================
-       🔥 Util: 단건 + Redis 값 포함 DTO 변환
-       ========================================================= */
-    private VoteDetailCommentResponse convertRedisDto(VoteCommentEntity c) {
-
-        int likeCount = getInt(redis.opsForValue().get(likeKey(c.getCommentId())));
-        int dislikeCount = getInt(redis.opsForValue().get(dislikeKey(c.getCommentId())));
+        int like = getRedisInt(redis.opsForValue().get(likeKey(c.getCommentId())));
+        int dislike = getRedisInt(redis.opsForValue().get(dislikeKey(c.getCommentId())));
 
         return VoteDetailCommentResponse.builder()
                 .commentId(c.getCommentId().intValue())
                 .voteId(c.getVote() != null ? c.getVote().getId() : null)
-                .normalVoteId(c.getNormalVote() != null ? c.getNormalVote().getId().intValue() : null)
+                .normalVoteId(
+                        c.getNormalVote() != null ? c.getNormalVote().getId().intValue() : null
+                )
                 .userId(c.getUser().getId())
                 .username(c.getUser().getNickname())
-                .content(c.getContent())
+                .content(c.getDeleted() ? "[삭제된 댓글입니다]" : c.getContent())
                 .position(c.getPosition())
                 .userPosition(c.getUserPosition())
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
                 .parentId(c.getParent() != null ? c.getParent().getCommentId().intValue() : null)
-                .children(List.of())
-                .likeCount(likeCount)
-                .dislikeCount(dislikeCount)
-                .build();
-    }
-
-
-
-    /* =========================================================
-       🔥 트리 형태 변환 (NormalVoteResponse에서 사용)
-       ========================================================= */
-    public VoteDetailCommentResponse convertTreeDto(VoteCommentEntity c) {
-        return VoteDetailCommentResponse.builder()
-                .commentId(c.getCommentId().intValue())
-                .voteId(null)
-                .normalVoteId(c.getNormalVote().getId().intValue())
-                .userId(c.getUser().getId())
-                .username(c.getUser().getNickname())
-                .content(c.getContent())
-                .position(c.getPosition())
-                .userPosition(c.getUserPosition())
-                .createdAt(c.getCreatedAt())
-                .updatedAt(c.getUpdatedAt())
-                .parentId(c.getParent() != null ? c.getParent().getCommentId().intValue() : null)
-                .likeCount(c.getLikeCount())
-                .dislikeCount(c.getDislikeCount())
+                .likeCount(like)
+                .dislikeCount(dislike)
                 .children(
                         c.getChildren().stream()
-                                .map(this::convertTreeDto)
+                                .map(this::convertTreeNode)
                                 .toList()
                 )
                 .build();
     }
 
 
-    private int getInt(String value) {
-        if (value == null) return 0;
-        try { return Integer.parseInt(value); }
+    private int getRedisInt(String v) {
+        if (v == null) return 0;
+        try { return Integer.parseInt(v); }
         catch (Exception e) { return 0; }
     }
 }

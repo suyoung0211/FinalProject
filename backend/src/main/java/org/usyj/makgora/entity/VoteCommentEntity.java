@@ -29,7 +29,7 @@ public class VoteCommentEntity {
 
     /** 연결된 이슈 ID (FK: Issues.issue_id) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "issue_id", nullable = false)
+    @JoinColumn(name = "issue_id", nullable = true)
     private IssueEntity issue;
 
         /** 🔗 AI Vote 연결 */
@@ -66,6 +66,19 @@ public class VoteCommentEntity {
     @Builder.Default
     @OneToMany(mappedBy = "parent")
     private List<VoteCommentEntity> children = new ArrayList<>();
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+public void softDelete() {
+    this.deleted = true;
+    this.content = "[삭제된 댓글입니다]";
+    this.deletedAt = LocalDateTime.now();
+}
 
     /** 댓글 내용 */
     @Lob

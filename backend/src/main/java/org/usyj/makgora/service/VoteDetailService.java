@@ -435,4 +435,24 @@ public class VoteDetailService {
                 .linkedChoiceId(linkedChoiceId)
                 .build();
     }
+
+    public MyParticipationResponse getMyParticipationOnly(Integer voteId, Integer userId) {
+    return voteUserRepository.findByUserIdAndVoteId(userId, voteId)
+            .map(v -> MyParticipationResponse.builder()
+                    .hasParticipated(true)
+                    .isCancelled(Boolean.TRUE.equals(v.getIsCancelled()))
+                    .optionId(v.getOption().getId().intValue())
+                    .choiceId(v.getChoice().getId().intValue())
+                    .pointsBet(v.getPointsBet().longValue())
+                    .votedAt(v.getCreatedAt())
+                    .canceledAt(v.getIsCancelled() ? v.getUpdatedAt() : null)
+                    .build()
+            )
+            .orElse(
+                    MyParticipationResponse.builder()
+                            .hasParticipated(false)
+                            .isCancelled(false)
+                            .build()
+            );
+}
 }

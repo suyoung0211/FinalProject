@@ -34,7 +34,7 @@ public class VoteDetailCommentResponse {
     private Integer dislikeCount;
     private Boolean myLike;    // 내가 좋아요 했는가
     private Boolean myDislike;
-
+    private boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
