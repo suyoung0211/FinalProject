@@ -16,7 +16,7 @@ interface ShopItem {
   price: number;
   description: string;
   emoji: string;
-  category: "icons" | "badges" | "banners";
+  category: "icons" | "badges" | "frame";
   rarity: "common" | "rare" | "epic" | "legendary";
 }
 export interface UserType {
@@ -35,7 +35,7 @@ interface StoreItemResponse {
   name: string;
   price: number;
   image: string | null;
-  category: "AVATAR" | "BADGE" | "BACKGROUND" | "SKIN";
+  category: "AVATAR" | "BADGE" | "FRAME" ;
 }
 
 interface MyItemResponse {
@@ -58,19 +58,27 @@ export function PointsShopPage({ onBack }: any) {
   const [userPoints, setUserPoints] = useState<number>(user?.points || 50000);
 
   /** 🔥 백엔드 카테고리 → 프론트 카테고리 매핑 */
-  const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["category"] => {
-    switch (backendCategory) {
-      case "AVATAR":
-        return "icons";
-      case "BADGE":
-        return "badges";
-      case "BACKGROUND":
-      case "SKIN":
-        return "banners";
-      default:
-        return "icons";
-    }
-  };
+  const resolveImage = (path?: string | null): string => {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  return `http://localhost:8080/${path}`;
+};
+
+const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["category"] => {
+  switch (backendCategory) {
+    case "AVATAR":
+      return "icons";
+
+    case "FRAME":
+      return "frame"; // 프레임은 꾸미기(배너) 쪽 UI에 들어가는 게 자연스러움
+
+    case "BADGE":
+      return "badges";
+
+    default:
+      return "icons";
+  }
+};
 
   /** 🔥 가격 기반 희귀도 계산 */
   const getRarityFromPrice = (price: number): ShopItem["rarity"] => {
@@ -92,7 +100,12 @@ export function PointsShopPage({ onBack }: any) {
           name: i.name,
           price: i.price,
           description: `${i.category} 카테고리`,
-          emoji: i.image || "🌹",
+        
+          // 🔥 핵심 수정!
+          emoji: i.image
+            ? (i.image.length <= 3 ? i.image : resolveImage(i.image))
+            : "",
+        
           category: mapCategory(i.category),
           rarity: getRarityFromPrice(i.price),
         }));
@@ -176,7 +189,7 @@ export function PointsShopPage({ onBack }: any) {
 
         {/* Category Tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto">
-          {["all", "icons", "badges", "banners"].map((c) => (
+          {["all", "icons", "badges", "frame"].map((c) => (
             <button
               key={c}
               onClick={() => setSelectedCategory(c)}
@@ -189,8 +202,8 @@ export function PointsShopPage({ onBack }: any) {
               {{
                 all: "전체",
                 icons: "프로필 아이콘",
+                frame: "프레임",
                 badges: "뱃지",
-                banners: "배너",
               }[c]}
             </button>
           ))}
@@ -200,7 +213,7 @@ export function PointsShopPage({ onBack }: any) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredItems.map((item) => (
             <div
-              key={item.id}
+              key={`${item.id}-${item.category}`} 
               className={`bg-white/5 border rounded-2xl overflow-hidden hover:scale-105 transition ${getRarityColor(item.rarity)}`}
             >
               <div className="aspect-square flex items-center justify-center bg-black/20">

@@ -24,7 +24,7 @@ public class StoreItemResponse {
                 .category(e.getCategory().name())
                 .price(e.getPrice())
                 .stock(e.getStock())
-                .image(e.getImage() != null ? e.getImage() : "🌹")
+                .image(e.getImage())
                 .createdAt(e.getCreatedAt() != null ? e.getCreatedAt().toString() : null)
                 .build();
     }
