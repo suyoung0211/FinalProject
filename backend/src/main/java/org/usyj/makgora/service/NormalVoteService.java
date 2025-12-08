@@ -9,7 +9,6 @@ import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
 import org.usyj.makgora.request.normalvote.NormalVoteFullUpdateRequest;
 import org.usyj.makgora.response.normalvote.*;
 import org.usyj.makgora.response.voteDetails.NormalVoteResultResponse;
-import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,7 +23,7 @@ public class NormalVoteService {
     private final NormalVoteStatusHistoryRepository normalVoteStatusHistoryRepository;
     private final UserRepository userRepository;
     private final VoteUserRepository voteUserRepository;
-    private final VoteCommentRepository voteCommentRepository;
+    // 🔥 댓글 분리 → VoteCommentRepository 제거
 
     /* ============================================================
        1) 일반투표 생성
@@ -87,7 +86,7 @@ public class NormalVoteService {
        2) 상세 조회
        ============================================================ */
     @Transactional(readOnly = true)
-    public NormalVoteResponse getDetail(Long id) {
+    public NormalVoteResponse getDetail(Integer id) {
         return toResponse(
                 normalVoteRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."))
@@ -98,7 +97,7 @@ public class NormalVoteService {
        3) 전체 수정
        ============================================================ */
     @Transactional
-    public NormalVoteResponse updateVote(Long voteId, NormalVoteFullUpdateRequest req, Integer userId) {
+    public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest req, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
@@ -161,7 +160,7 @@ public class NormalVoteService {
        4) 투표 참여
        ============================================================ */
     @Transactional
-    public NormalVoteResponse participate(Long voteId, Integer userId, Long choiceId) {
+    public NormalVoteResponse participate(Integer voteId, Integer userId, Integer choiceId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
@@ -241,7 +240,7 @@ public class NormalVoteService {
        6) 투표 삭제 (CANCELLED)
        ============================================================ */
     @Transactional
-    public void deleteVote(Long voteId, Integer userId) {
+    public void deleteVote(Integer voteId, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
@@ -256,7 +255,7 @@ public class NormalVoteService {
        7) 투표 마감
        ============================================================ */
     @Transactional
-    public String finishVote(Long voteId, Integer userId) {
+    public String finishVote(Integer voteId, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
@@ -273,7 +272,7 @@ public class NormalVoteService {
        8) 투표 취소
        ============================================================ */
     @Transactional
-    public String cancelVote(Long voteId, Integer userId) {
+    public String cancelVote(Integer voteId, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
@@ -296,7 +295,7 @@ public class NormalVoteService {
                 voteUserRepository.findByUser_IdAndNormalVoteIsNotNull(userId);
 
         return participated.stream()
-                .map(vu -> vu.getNormalVote())
+                .map(VoteUserEntity::getNormalVote)
                 .distinct()
                 .map(v -> NormalVoteListItemResponse.builder()
                         .id(v.getId())
@@ -313,7 +312,7 @@ public class NormalVoteService {
        10) 일반투표 결과 조회
        ============================================================ */
     @Transactional(readOnly = true)
-    public NormalVoteResultResponse getResult(Long normalVoteId) {
+    public NormalVoteResultResponse getResult(Integer normalVoteId) {
 
         NormalVoteEntity vote =
                 normalVoteRepository.findById(normalVoteId)
@@ -353,73 +352,37 @@ public class NormalVoteService {
     }
 
     /* ============================================================
-       내부 공통 매핑
+       내부 공통 매핑 (댓글 X)
        ============================================================ */
     private NormalVoteResponse toResponse(NormalVoteEntity v) {
 
-    int commentCount = voteCommentRepository.countByNormalVote_Id(v.getId());
+        List<NormalVoteResponse.OptionResponse> options =
+                v.getOptions().stream()
+                        .map(o -> NormalVoteResponse.OptionResponse.builder()
+                                .optionId(o.getId())
+                                .optionTitle(o.getOptionTitle())
+                                .choices(
+                                        o.getChoices().stream()
+                                                .map(c -> NormalVoteResponse.ChoiceResponse.builder()
+                                                        .choiceId(c.getId())
+                                                        .choiceText(c.getChoiceText())
+                                                        .participantsCount(c.getParticipantsCount())
+                                                        .build())
+                                                .toList()
+                                )
+                                .build())
+                        .toList();
 
-    // 🔥 댓글 루트 목록 조회
-    List<VoteCommentEntity> roots = 
-            voteCommentRepository.findByNormalVote_IdAndParentIsNull(v.getId());
-
-    // 🔥 댓글 DTO 변환
-    List<VoteDetailCommentResponse> comments =
-            roots.stream()
-                    .map(this::convertComment)
-                    .toList();
-
-    List<NormalVoteResponse.OptionResponse> options =
-            v.getOptions().stream()
-                    .map(o -> NormalVoteResponse.OptionResponse.builder()
-                            .optionId(o.getId())
-                            .optionTitle(o.getOptionTitle())
-                            .choices(
-                                    o.getChoices().stream()
-                                            .map(c -> NormalVoteResponse.ChoiceResponse.builder()
-                                                    .choiceId(c.getId())
-                                                    .choiceText(c.getChoiceText())
-                                                    .participantsCount(c.getParticipantsCount())
-                                                    .build())
-                                            .toList()
-                            )
-                            .build())
-                    .toList();
-
-    return NormalVoteResponse.builder()
-            .id(v.getId())
-            .title(v.getTitle())
-            .description(v.getDescription())
-            .category(v.getCategory().name())
-            .status(v.getStatus().name())
-            .totalParticipants(v.getTotalParticipants())
-            .commentCount(commentCount)
-            .comments(comments)   // 🔥 이제 정상 작동
-            .endAt(v.getEndAt())
-            .createdAt(v.getCreatedAt())
-            .options(options)
-            .build();
-}
-
-private VoteDetailCommentResponse convertComment(VoteCommentEntity e) {
-    return VoteDetailCommentResponse.builder()
-            .commentId(e.getCommentId().intValue())
-            .normalVoteId(e.getNormalVote() != null ? e.getNormalVote().getId().intValue() : null)
-            .userId(e.getUser().getId())
-            .username(e.getUser().getNickname())
-            .content(e.getContent())
-            .position(e.getPosition())
-            .likeCount(e.getLikeCount())
-            .dislikeCount(e.getDislikeCount())
-            .createdAt(e.getCreatedAt())
-            .updatedAt(e.getUpdatedAt())
-            .parentId(e.getParent() != null ? e.getParent().getCommentId().intValue() : null)
-            .children(
-                    e.getChildren().stream()
-                            .map(this::convertComment)
-                            .toList()
-            )
-            .build();
-}
-    
+        return NormalVoteResponse.builder()
+                .id(v.getId())
+                .title(v.getTitle())
+                .description(v.getDescription())
+                .category(v.getCategory().name())
+                .status(v.getStatus().name())
+                .totalParticipants(v.getTotalParticipants())
+                .endAt(v.getEndAt())
+                .createdAt(v.getCreatedAt())
+                .options(options)
+                .build();
+    }
 }

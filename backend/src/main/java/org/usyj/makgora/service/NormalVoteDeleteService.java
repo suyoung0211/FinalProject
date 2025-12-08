@@ -13,7 +13,7 @@ public class NormalVoteDeleteService {
     private final NormalVoteRepository normalVoteRepository;
 
     @Transactional
-    public String delete(Long normalVoteId, Integer userId) {
+    public String delete(Integer normalVoteId, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("NormalVote not found"));

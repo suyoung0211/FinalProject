@@ -29,13 +29,13 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
     List<VoteUserEntity> findByUserId(Integer userId);
 
     // 🔵 NormalVote 참여자 총 수
-    int countByNormalVote_Id(Long normalVoteId);
+    int countByNormalVote_Id(Integer normalVoteId);
 
     // 🔵 NormalVote 옵션별 참여자
-    int countByNormalVote_IdAndOption_Id(Long normalVoteId, Long optionId);
+    int countByNormalVote_IdAndOption_Id(Integer normalVoteId, Integer optionId);
 
     // 🔴 NormalVote 참여 기록
-    Optional<VoteUserEntity> findByUserIdAndNormalVoteId(Integer userId, Long normalVoteId);
+    Optional<VoteUserEntity> findByUserIdAndNormalVoteId(Integer userId, Integer normalVoteId);
 
     // NormalVote 전체 투표 기록 가져오기
     List<VoteUserEntity> findByNormalVote_Id(Long normalVoteId);
@@ -56,7 +56,7 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
     List<VoteUserEntity> findByUser_IdAndNormalVoteIsNotNull(Integer userId);
 
     /** NormalVote + User별 유일 투표(중복 금지) */
-    VoteUserEntity findByNormalVote_IdAndUser_Id(Long normalVoteId, Integer userId);
+    VoteUserEntity findByNormalVote_IdAndUser_Id(Integer normalVoteId, Integer userId);
 
     
 }

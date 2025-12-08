@@ -6,9 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.VoteDetailCommentService;
-import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -19,15 +17,17 @@ public class VoteCommentController {
     private final VoteDetailCommentService voteCommentService;
 
     /* ============================================
-       🔥 1) 댓글 조회 (AI Vote 또는 Normal Vote)
+       🔥 1) 댓글 조회 (AI Vote 전용)
        ============================================ */
     @GetMapping
-    public List<VoteDetailCommentResponse> getComments(@RequestParam Integer voteId) {
-        return voteCommentService.getComments(voteId);
+    public ResponseEntity<?> getComments(
+            @RequestParam Integer voteId
+    ) {
+        return ResponseEntity.ok(voteCommentService.getComments(voteId));
     }
 
     /* ============================================
-       🔥 2) 댓글 작성 (AI Vote + NormalVote 공용)
+       🔥 2) 댓글 작성 (AI Vote 전용)
        ============================================ */
     @PostMapping
     public ResponseEntity<?> addComment(
@@ -38,32 +38,27 @@ public class VoteCommentController {
             return ResponseEntity.status(401).body("로그인이 필요합니다.");
         }
 
-        Integer voteId = req.get("voteId") != null ? (Integer) req.get("voteId") : null;
-        Long normalVoteId = req.get("normalVoteId") != null ? Long.valueOf(req.get("normalVoteId").toString()) : null;
+        Integer voteId = (Integer) req.get("voteId");
         Integer parentId = req.get("parentId") != null ? (Integer) req.get("parentId") : null;
 
         String content = (String) req.get("content");
         String position = (String) req.getOrDefault("position", "중립");
         String userPosition = (String) req.getOrDefault("userPosition", "USER");
-        Long linkedChoiceId = req.get("linkedChoiceId") != null ? Long.valueOf(req.get("linkedChoiceId").toString()) : null;
+        Long linkedChoiceId = req.get("linkedChoiceId") != null
+                ? Long.valueOf(req.get("linkedChoiceId").toString())
+                : null;
 
-        if (voteId != null) {
-            return ResponseEntity.ok(
-                    voteCommentService.addCommentToVote(
-                            voteId, user.getId(), content, parentId, position, userPosition, linkedChoiceId
-                    )
-            );
-        }
-
-        if (normalVoteId != null) {
-            return ResponseEntity.ok(
-                    voteCommentService.addCommentToNormalVote(
-                            normalVoteId, user.getId(), content, parentId, position, userPosition, linkedChoiceId
-                    )
-            );
-        }
-
-        return ResponseEntity.badRequest().body("voteId 또는 normalVoteId 필요");
+        return ResponseEntity.ok(
+                voteCommentService.addCommentToVote(
+                        voteId,
+                        user.getId(),
+                        content,
+                        parentId,
+                        position,
+                        userPosition,
+                        linkedChoiceId
+                )
+        );
     }
 
     /* ============================================
@@ -85,7 +80,7 @@ public class VoteCommentController {
     }
 
     /* ============================================
-       🔥 4) 댓글 삭제
+       🔥 4) 댓글 삭제 (Soft Delete)
        ============================================ */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteComment(

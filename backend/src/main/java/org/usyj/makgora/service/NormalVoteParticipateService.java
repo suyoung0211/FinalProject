@@ -16,7 +16,7 @@ public class NormalVoteParticipateService {
     private final UserRepository userRepository;
 
     @Transactional
-    public String participate(Long normalVoteId, Long choiceId, Integer userId) {
+    public String participate(Integer normalVoteId, Integer choiceId, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("NormalVote not found"));

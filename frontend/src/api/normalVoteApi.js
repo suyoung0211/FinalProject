@@ -43,3 +43,22 @@ export const fetchMyNormalVotes = () =>
 
 export const fetchNormalVoteResult = (voteId) =>
   api.get(`/normal-votes/${voteId}/result`);
+
+/* ============================================
+ * Normal Vote 댓글
+ * ============================================ */
+
+export const fetchNormalVoteComments = (normalVoteId) =>
+  api.get(`/normal-votes/comments`, { params: { normalVoteId } });
+
+export const addNormalVoteComment = (body) =>
+  api.post(`/normal-votes/comments`, body);
+// body = { normalVoteId, content, parentId }
+
+export const reactNormalVoteComment = (commentId, like) =>
+  api.post(`/normal-votes/comments/${commentId}/react`, null, {
+    params: { like },
+  });
+
+export const deleteNormalVoteComment = (commentId) =>
+  api.delete(`/normal-votes/comments/${commentId}`);

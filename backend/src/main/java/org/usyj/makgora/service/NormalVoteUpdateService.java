@@ -14,7 +14,7 @@ public class NormalVoteUpdateService {
     private final NormalVoteRepository normalVoteRepository;
 
     @Transactional
-    public String update(Long normalVoteId, Integer userId, NormalVoteUpdateRequest req) {
+    public String update(Integer normalVoteId, Integer userId, NormalVoteUpdateRequest req) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("NormalVote not found"));

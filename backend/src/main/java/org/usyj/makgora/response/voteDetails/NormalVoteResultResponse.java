@@ -9,7 +9,7 @@ import lombok.Data;
 @Builder
 public class NormalVoteResultResponse {
 
-    private Long normalVoteId;
+    private Integer normalVoteId;
     private String title;
     private String status;
 

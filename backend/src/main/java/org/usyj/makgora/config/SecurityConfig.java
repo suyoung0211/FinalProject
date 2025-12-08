@@ -76,6 +76,7 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.PUT, "/api/votes/**").authenticated()
         .requestMatchers(HttpMethod.DELETE, "/api/votes/**").authenticated()
 
+        .requestMatchers(HttpMethod.GET, "/api/normal-votes/comments/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/normal-votes/**").authenticated()
         .requestMatchers(HttpMethod.PUT, "/api/normal-votes/**").authenticated()

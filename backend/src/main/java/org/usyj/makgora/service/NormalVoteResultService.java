@@ -22,7 +22,7 @@ public class NormalVoteResultService {
     private final NormalVoteOptionRepository optionRepository;
     private final VoteUserRepository voteUserRepository;
 
-    public NormalVoteResultResponse getResult(Long normalVoteId) {
+    public NormalVoteResultResponse getResult(Integer normalVoteId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("Normal Vote not found"));

@@ -13,7 +13,7 @@ public class NormalVoteCloseService {
     private final NormalVoteRepository normalVoteRepository;
 
     @Transactional
-    public String close(Long normalVoteId, Integer userId) {
+    public String close(Integer normalVoteId, Integer userId) {
 
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("NormalVote not found"));

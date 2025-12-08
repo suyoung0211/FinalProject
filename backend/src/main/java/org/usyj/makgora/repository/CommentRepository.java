@@ -14,4 +14,6 @@ public interface CommentRepository extends JpaRepository<VoteCommentEntity, Long
 
     // 특정 유저가 작성한 댓글 목록 조회 (최신순)
     List<VoteCommentEntity> findByUser_IdOrderByCreatedAtDesc(Integer userId);
+
+    
 }

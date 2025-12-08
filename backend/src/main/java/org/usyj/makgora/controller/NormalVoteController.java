@@ -9,8 +9,8 @@ import org.usyj.makgora.request.normalvote.NormalVoteFullUpdateRequest;
 import org.usyj.makgora.response.normalvote.*;
 import org.usyj.makgora.response.voteDetails.NormalVoteResultResponse;
 import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.service.NormalVoteDetailService;
 import org.usyj.makgora.service.NormalVoteService;
-
 
 @RestController
 @RequestMapping("/api/normal-votes")
@@ -18,6 +18,7 @@ import org.usyj.makgora.service.NormalVoteService;
 public class NormalVoteController {
 
     private final NormalVoteService normalVoteService;
+    private final NormalVoteDetailService normalVoteDetailService;
 
     /* -----------------------------------------------------
        1. 일반투표 생성
@@ -35,12 +36,12 @@ public class NormalVoteController {
      ----------------------------------------------------- */
     @PostMapping("/{voteId}/participate")
     public ResponseEntity<NormalVoteResponse> participate(
-        @PathVariable Long voteId,
-        @RequestParam Long choiceId,
-        @AuthenticationPrincipal CustomUserDetails user
+            @PathVariable Integer voteId,
+            @RequestParam Integer choiceId,
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
         return ResponseEntity.ok(
-            normalVoteService.participate(voteId, user.getId(), choiceId)
+                normalVoteService.participate(voteId, user.getId(), choiceId)
         );
     }
 
@@ -56,16 +57,16 @@ public class NormalVoteController {
        4. 상세 조회
      ----------------------------------------------------- */
     @GetMapping("/{id}")
-    public ResponseEntity<NormalVoteResponse> getDetail(@PathVariable Long id) {
-        return ResponseEntity.ok(normalVoteService.getDetail(id));
+    public ResponseEntity<NormalVoteDetailResponse> getDetail(@PathVariable Integer id) {
+        return ResponseEntity.ok(normalVoteDetailService.getDetail(id));
     }
 
     /* -----------------------------------------------------
-       5. 통합 수정(옵션, 선택지 포함)
+       5. 통합 수정
      ----------------------------------------------------- */
     @PutMapping("/{id}")
     public ResponseEntity<NormalVoteResponse> update(
-            @PathVariable Long id,
+            @PathVariable Integer id,     // 🔥 Long → Integer 변경
             @RequestBody NormalVoteFullUpdateRequest req,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
@@ -73,11 +74,11 @@ public class NormalVoteController {
     }
 
     /* -----------------------------------------------------
-       6. 삭제 (soft delete)
+       6. 삭제
      ----------------------------------------------------- */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(
-            @PathVariable Long id,
+            @PathVariable Integer id,     // 🔥 Long → Integer 변경
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         normalVoteService.deleteVote(id, user.getId());
@@ -85,11 +86,11 @@ public class NormalVoteController {
     }
 
     /* -----------------------------------------------------
-       7. 투표 마감 (본인이 생성한 투표만 가능)
+       7. 투표 마감
      ----------------------------------------------------- */
     @PatchMapping("/{id}/finish")
     public ResponseEntity<?> finish(
-            @PathVariable Long id,
+            @PathVariable Integer id,     // 🔥 Long → Integer 변경
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return ResponseEntity.ok(
@@ -98,11 +99,11 @@ public class NormalVoteController {
     }
 
     /* -----------------------------------------------------
-       8. 투표 취소 (CANCELLED)
+       8. 투표 취소
      ----------------------------------------------------- */
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<?> cancel(
-            @PathVariable Long id,
+            @PathVariable Integer id,    // 🔥 Long → Integer 변경
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         return ResponseEntity.ok(
@@ -111,7 +112,7 @@ public class NormalVoteController {
     }
 
     /* -----------------------------------------------------
-       9. 내가 참여한 일반투표 조회(My Page)
+       9. 내가 참여한 일반투표 조회
      ----------------------------------------------------- */
     @GetMapping("/my")
     public ResponseEntity<?> getMyNormalVotes(
@@ -127,7 +128,7 @@ public class NormalVoteController {
      ----------------------------------------------------- */
     @GetMapping("/{id}/result")
     public ResponseEntity<NormalVoteResultResponse> getResult(
-            @PathVariable Long id
+            @PathVariable Integer id   // 🔥 Long → Integer 변경
     ) {
         return ResponseEntity.ok(
                 normalVoteService.getResult(id)

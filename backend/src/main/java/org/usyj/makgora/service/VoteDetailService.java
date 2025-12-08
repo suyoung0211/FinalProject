@@ -385,7 +385,7 @@ public class VoteDetailService {
     private List<VoteDetailCommentResponse> loadComments(Integer voteId) {
 
         List<VoteCommentEntity> rootComments =
-                voteCommentRepository.findByVoteIdAndParentIsNull(voteId);
+                voteCommentRepository.findByVote_IdAndParentIsNull(voteId);
 
         return rootComments.stream()
                 .map(this::convertCommentTree)
@@ -413,7 +413,6 @@ public class VoteDetailService {
         return VoteDetailCommentResponse.builder()
                 .commentId(c.getCommentId().intValue())
                 .voteId(c.getVote() != null ? c.getVote().getId() : null)
-                .normalVoteId(c.getNormalVote() != null ? c.getNormalVote().getId().intValue() : null)
 
                 .userId(c.getUser().getId())
                 .username(c.getUser().getNickname())
