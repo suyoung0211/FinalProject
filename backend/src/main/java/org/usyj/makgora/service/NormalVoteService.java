@@ -94,104 +94,161 @@ public class NormalVoteService {
     }
 
     /* ============================================================
-       3) 전체 수정
+   3) 전체 수정
+   ============================================================ */
+@Transactional
+public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest req, Integer userId) {
+
+    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+    // 🔥 관리자 권한이면 수정 허용
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
+
+    boolean isAdmin = user.getRole() == UserEntity.Role.ADMIN
+            || user.getRole() == UserEntity.Role.SUPER_ADMIN;
+
+    // 🔥 owner가 아니고 관리자도 아니면 수정 금지
+    if (!isAdmin && !vote.getUser().getId().equals(userId)) {
+        throw new RuntimeException("본인이 생성한 투표만 수정 가능합니다.");
+    }
+
+    // 기본 정보 수정
+    vote.setTitle(req.getTitle());
+    vote.setDescription(req.getDescription());
+    vote.setEndAt(req.getEndAt());
+    vote.setCategory(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()));
+
+    /* ============================================================
+       ✔ 옵션 삭제 처리 — 안전하게 검증 후 삭제
        ============================================================ */
-    @Transactional
-    public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest req, Integer userId) {
+    if (req.getDeletedOptionIds() != null) {
+    for (Integer optionIdLong : req.getDeletedOptionIds()) {
 
-        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
-                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+        Integer optionId = optionIdLong.intValue(); // 🔥 Long → Integer 변환
 
-        if (!vote.getUser().getId().equals(userId))
-            throw new RuntimeException("본인이 생성한 투표만 수정 가능합니다.");
+        NormalVoteOptionEntity option = optionRepository.findById(optionId)
+                .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
 
-        vote.setTitle(req.getTitle());
-        vote.setDescription(req.getDescription());
-        vote.setEndAt(req.getEndAt());
-        vote.setCategory(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()));
-
-        // 삭제 옵션
-        if (req.getDeletedOptionIds() != null)
-            req.getDeletedOptionIds().forEach(optionRepository::deleteById);
-
-        // 삭제 선택지
-        if (req.getDeletedChoiceIds() != null)
-            req.getDeletedChoiceIds().forEach(choiceRepository::deleteById);
-
-        // 수정/추가 옵션
-        for (NormalVoteFullUpdateRequest.OptionUpdateDto dto : req.getOptions()) {
-
-            NormalVoteOptionEntity option;
-
-            if (dto.getOptionId() != null) {
-                option = optionRepository.findById(dto.getOptionId())
-                        .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
-                option.setOptionTitle(dto.getOptionTitle());
-            } else {
-                option = NormalVoteOptionEntity.builder()
-                        .normalVote(vote)
-                        .optionTitle(dto.getOptionTitle())
-                        .build();
-                optionRepository.save(option);
-            }
-
-            // 선택지 처리
-            for (NormalVoteFullUpdateRequest.ChoiceUpdateDto c : dto.getChoices()) {
-
-                if (c.getChoiceId() != null) {
-                    NormalVoteChoiceEntity choice = choiceRepository.findById(c.getChoiceId())
-                            .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
-                    choice.setChoiceText(c.getChoiceText());
-                } else {
-                    choiceRepository.save(
-                            NormalVoteChoiceEntity.builder()
-                                    .normalOption(option)
-                                    .choiceText(c.getChoiceText())
-                                    .build()
-                    );
-                }
-            }
+        if (!option.getNormalVote().getId().equals(voteId)) {
+            throw new RuntimeException("해당 옵션은 이 투표에 속하지 않습니다.");
         }
 
-        return toResponse(vote);
+        optionRepository.delete(option);
     }
+}
+
+    /* ============================================================
+       ✔ 선택지 삭제 처리 — 안전하게 검증 후 삭제
+       ============================================================ */
+    if (req.getDeletedChoiceIds() != null) {
+    for (Integer choiceIdLong : req.getDeletedChoiceIds()) {
+
+        Integer choiceId = choiceIdLong.intValue(); // 🔥 Long → Integer 변환
+
+        NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
+                .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+
+        if (!choice.getNormalOption().getNormalVote().getId().equals(voteId)) {
+            throw new RuntimeException("해당 선택지는 이 투표에 속하지 않습니다.");
+        }
+
+        choiceRepository.delete(choice);
+    }
+}
+
+    /* ============================================================
+       ✔ 옵션 + 선택지 수정 및 추가 처리
+       ============================================================ */
+    for (NormalVoteFullUpdateRequest.OptionUpdateDto dto : req.getOptions()) {
+
+        NormalVoteOptionEntity option;
+
+        // 옵션 수정
+        if (dto.getOptionId() != null) {
+            option = optionRepository.findById(dto.getOptionId())
+                    .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
+            option.setOptionTitle(dto.getOptionTitle());
+
+        } else {
+            // 옵션 추가
+            option = NormalVoteOptionEntity.builder()
+                    .normalVote(vote)
+                    .optionTitle(dto.getOptionTitle())
+                    .build();
+            optionRepository.save(option);
+        }
+
+        // 선택지 추가/수정
+        for (NormalVoteFullUpdateRequest.ChoiceUpdateDto c : dto.getChoices()) {
+
+            if (c.getChoiceId() != null) {
+                // 기존 선택지 수정
+                NormalVoteChoiceEntity choice = choiceRepository.findById(c.getChoiceId())
+                        .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+                choice.setChoiceText(c.getChoiceText());
+
+            } else {
+                // 선택지 추가
+                choiceRepository.save(
+                        NormalVoteChoiceEntity.builder()
+                                .normalOption(option)
+                                .choiceText(c.getChoiceText())
+                                .build()
+                );
+            }
+        }
+    }
+
+    return toResponse(vote);
+}
 
     /* ============================================================
        4) 투표 참여
        ============================================================ */
     @Transactional
-    public NormalVoteResponse participate(Integer voteId, Integer userId, Integer choiceId) {
+public NormalVoteResponse participate(Integer voteId, Integer userId, Integer choiceId) {
 
-        NormalVoteEntity vote = normalVoteRepository.findById(voteId)
-                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
 
-        if (vote.getStatus() != NormalVoteEntity.Status.ONGOING)
-            throw new RuntimeException("이미 종료된 투표입니다.");
+    if (vote.getStatus() != NormalVoteEntity.Status.ONGOING)
+        throw new RuntimeException("이미 종료된 투표입니다.");
 
-        NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
-                .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+    NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
+        .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
 
-        // 중복 참가 방지
-        VoteUserEntity existing = voteUserRepository.findByNormalVote_IdAndUser_Id(voteId, userId);
-        if (existing != null)
-            throw new RuntimeException("이미 참여한 투표입니다.");
+NormalVoteOptionEntity option = choice.getNormalOption();
 
-        // 저장
-        voteUserRepository.save(
-                VoteUserEntity.builder()
-                        .normalVote(vote)
-                        .normalChoice(choice)
-                        .user(userRepository.getReferenceById(userId))
-                        .isCancelled(false)
-                        .build()
-        );
+// 🔥 선택지가 해당 투표에 속하는지 검증
+Long voteIdOfChoice = option.getNormalVote().getId();
 
-        // count 증가
-        choice.setParticipantsCount(choice.getParticipantsCount() + 1);
-        vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+if (!voteIdOfChoice.equals(voteId.longValue())) {
+    throw new RuntimeException("선택지가 해당 투표에 속하지 않습니다.");
+}
 
-        return toResponse(vote);
-    }
+    // 중복참여 방지
+    VoteUserEntity existing = voteUserRepository.findByNormalVote_IdAndUser_Id(voteId, userId);
+    if (existing != null)
+        throw new RuntimeException("이미 참여한 투표입니다.");
+
+    // 저장
+    voteUserRepository.save(
+            VoteUserEntity.builder()
+                    .normalVote(vote)
+                    .normalChoice(choice)
+                    .user(userRepository.getReferenceById(userId))
+                    .isCancelled(false)
+                    .build()
+    );
+
+    // count 증가
+    choice.setParticipantsCount(choice.getParticipantsCount() + 1);
+    vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+
+    return toResponse(vote);
+}
 
     /* ============================================================
        5) 전체 조회

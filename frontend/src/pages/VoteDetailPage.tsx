@@ -177,7 +177,7 @@ async function handleParticipateAI(mode: "YES" | "NO") {
     if (!user) return alert("로그인 필요");
 
     try {
-      await participateNormalVote(data.id, choiceId);
+      await participateNormalVote(marketId, choiceId);
       alert("투표 완료");
       load();
     } catch {

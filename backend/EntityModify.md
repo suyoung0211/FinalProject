@@ -383,3 +383,8 @@ NormalVoteCommentEntity 추가(normalvote랑 AIvote쪽이랑 충돌남...)
 -----------------------------------
 voteuserentity에 normal_vote_id, vote_id, choice_id, option_id  nullable=true로 변경
 안그러면 vote랑 normal_vote쪽이랑 충돌남
+
+@Builder.Default
+    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
+    private List<VoteCommentEntity> children = new ArrayList<>();
+댓글 부모자식관계 fetch = FetchType.EAGER 붙여줌

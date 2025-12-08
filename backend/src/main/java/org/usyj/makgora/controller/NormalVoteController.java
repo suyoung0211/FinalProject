@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
 import org.usyj.makgora.request.normalvote.NormalVoteFullUpdateRequest;
+import org.usyj.makgora.request.normalvote.NormalVoteParticipateRequest;
 import org.usyj.makgora.response.normalvote.*;
 import org.usyj.makgora.response.voteDetails.NormalVoteResultResponse;
 import org.usyj.makgora.security.CustomUserDetails;
@@ -35,15 +36,19 @@ public class NormalVoteController {
        2. 참여
      ----------------------------------------------------- */
     @PostMapping("/{voteId}/participate")
-    public ResponseEntity<NormalVoteResponse> participate(
-            @PathVariable Integer voteId,
-            @RequestParam Integer choiceId,
-            @AuthenticationPrincipal CustomUserDetails user
-    ) {
-        return ResponseEntity.ok(
-                normalVoteService.participate(voteId, user.getId(), choiceId)
-        );
-    }
+public ResponseEntity<?> participate(
+    @PathVariable Integer voteId,
+    @RequestBody NormalVoteParticipateRequest req,
+    @AuthenticationPrincipal CustomUserDetails user
+) {
+    return ResponseEntity.ok(
+        normalVoteService.participate(
+            voteId,
+            req.getChoiceId(),
+            user.getId()
+        )
+    );
+}
 
     /* -----------------------------------------------------
        3. 전체 조회
