@@ -10,8 +10,16 @@ import { NormalVoteList } from '../components/vote/NormalVoteList';
 import { fetchVoteList } from "../api/voteApi";
 import { fetchNormalVoteList } from "../api/normalVoteApi";
 import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
-export function VoteListPage({ onBack, onMarketClick }: any) {
+export function VoteListPage() {
+  const navigate = useNavigate();
+
+  /** 🔥 여기서 함수 정의! props 제거 */
+  const onMarketClick = (id: number, type: "AI" | "NORMAL") => {
+    navigate(`/vote/${id}`, { state: { voteType: type } });
+  };
+
   const [aiVotes, setAiVotes] = useState<any[]>([]);
   const [normalVotes, setNormalVotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

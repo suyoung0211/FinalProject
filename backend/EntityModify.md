@@ -339,4 +339,10 @@ export const adminResolveAndSettleVote = (voteId, body) =>
 export const adminSettleVote = (voteId) =>
   api.post(`/admin/votes/${voteId}/settle`);
 
+  generate_ai_titles_api aititle부분 오류로 인해 일시적으로 주석처리
+  현재 오류나서 일단 gpt코드 이식함 나중에 물어보고 다시 바꾸던지할듯
+  + 현재 당장은 gpt코드 이식 버전으로 실행가능함
+
+
+
   

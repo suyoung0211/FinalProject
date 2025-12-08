@@ -6,7 +6,16 @@ import { useEffect, useState } from "react";
 import { User } from "lucide-react";
 import { fetchVoteDetail, fetchVoteOdds } from "../../api/voteApi";
 
-export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
+/* -------------------------------------------------------------
+   🔥 타입 정의
+------------------------------------------------------------- */
+interface VoteItemProps {
+  voteId: number;
+  initialVote: any;
+  onMarketClick: (id: number, type: "AI") => void;
+}
+
+export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) {
   const [vote, setVote] = useState<any>(initialVote ?? null);
   const [loading, setLoading] = useState(!initialVote);
   const [showAllOptions, setShowAllOptions] = useState(false);
@@ -15,7 +24,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
   /* 🔥 AI 투표 상세 로드 */
   /* ------------------------------------------------------------- */
   useEffect(() => {
-    if (initialVote?.type === "NORMAL") return;
+    if (initialVote?.type === "NORMAL") return; // Normal vote는 여기 사용하지 않음
 
     async function load() {
       try {
@@ -51,7 +60,9 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
 
   if (!vote) {
     return (
-      <div className="bg-white/5 p-6 rounded-2xl text-gray-400">로딩 중...</div>
+      <div className="bg-white/5 p-6 rounded-2xl text-gray-400">
+        로딩 중...
+      </div>
     );
   }
 
@@ -93,9 +104,8 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
   });
 
   /* ------------------------------------------------------------- */
-  /* 🔥 옵션 UI 렌더링 함수 */
+  /* 🔥 옵션 카드 렌더링 함수 */
   /* ------------------------------------------------------------- */
-
   const renderOptionCard = (opt: any) => {
     const hasDraw = opt.draw > 0;
 
@@ -103,7 +113,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
       <div key={opt.optionId} className="bg-white/5 border border-white/10 rounded-xl p-3 mb-3">
         <p className="text-white font-semibold text-sm mb-2">{opt.title}</p>
 
-        {/* DRAW 포함 3단 바 */}
+        {/* DRAW 있음 → 3분할 BAR */}
         {hasDraw ? (
           <>
             <div className="w-full h-6 rounded-full overflow-hidden flex bg-white/10 shadow-inner">
@@ -119,7 +129,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
             </div>
           </>
         ) : (
-          /* 기존 YES/NO 형태 */
+          /* 기존 YES/NO 바 */
           <>
             <div className="w-full h-6 rounded-full overflow-hidden bg-white/10 shadow-inner">
               <div
@@ -155,21 +165,24 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
       : optionsWithPercent;
 
   /* ------------------------------------------------------------- */
-  /* 🔥 최종 UI */
+  /* 🔥 도넛 각도 계산 */
   /* ------------------------------------------------------------- */
   const yesDeg = yesPercent * 3.6;
   const drawDeg = drawPercent * 3.6;
 
+  /* ------------------------------------------------------------- */
+  /* 🔥 최종 UI */
+  /* ------------------------------------------------------------- */
   return (
     <div
-      onClick={() => onMarketClick(vote.id)}
+      onClick={() => onMarketClick(vote.id, "AI")}
       className="flex flex-col rounded-2xl p-4 cursor-pointer bg-[#261b3a] border border-purple-700/30 hover:bg-[#381f5c]"
     >
       {/* HEADER */}
       <div className="flex justify-between pb-3">
         <h3 className="text-white font-bold text-lg flex-1">{vote.title}</h3>
 
-        {/* 도넛 */}
+        {/* 도넛 그래프 */}
         <div className="flex flex-col items-center">
           <div className="relative w-14 h-14 flex items-center justify-center">
             <div
@@ -193,7 +206,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
       <div className="flex-1">
         {visibleOptions.map(renderOptionCard)}
 
-        {/* 옵션 더보기 / 접기 버튼 */}
+        {/* 옵션 더보기 */}
         {optionsWithPercent.length > 2 && (
           <button
             className="w-full text-center py-2 text-sm text-purple-300 hover:text-purple-400"
@@ -202,9 +215,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
               setShowAllOptions((prev) => !prev);
             }}
           >
-            {showAllOptions
-              ? "접기 ▲"
-              : `옵션 더보기 (${optionsWithPercent.length - 2}개) ▼`}
+            {showAllOptions ? "접기 ▲" : `옵션 더보기 (${optionsWithPercent.length - 2}개) ▼`}
           </button>
         )}
       </div>
@@ -221,7 +232,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: any) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onMarketClick(vote.id);
+            onMarketClick(vote.id, "AI");
           }}
           className="
             bg-gradient-to-r from-purple-500 to-pink-500

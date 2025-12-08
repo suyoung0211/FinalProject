@@ -3,7 +3,7 @@ import { User } from "lucide-react";
 
 interface NormalVoteItemProps {
   vote: any;
-  onMarketClick: (id: number) => void;
+  onMarketClick: (id: number, type: "AI" | "NORMAL") => void;
 }
 
 export function NormalVoteItem({ vote, onMarketClick }: NormalVoteItemProps) {
@@ -84,7 +84,7 @@ export function NormalVoteItem({ vote, onMarketClick }: NormalVoteItemProps) {
   /* ------------------------------------------------------------------ */
   return (
     <div
-      onClick={() => onMarketClick(vote.id)}
+      onClick={() => onMarketClick(vote.id, "NORMAL")}
       className="
         flex flex-col 
         rounded-2xl p-4 cursor-pointer 
@@ -147,7 +147,7 @@ export function NormalVoteItem({ vote, onMarketClick }: NormalVoteItemProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onMarketClick(vote.id);
+            onMarketClick(vote.id, "NORMAL");
           }}
           className="
             bg-gradient-to-r from-purple-500 to-pink-500
