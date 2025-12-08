@@ -1,6 +1,15 @@
 import { Button } from "../../components/ui/button";
 
-export function VoteCompleteModal({ amount, onClose }: any) {
+export function VoteCompleteModal({ amount, onClose, myParticipation }: any) {
+  
+  const handleConfirm = () => {
+    if (myParticipation?.hasParticipated) {
+      alert("이미 이 투표에 참여하셨습니다!");
+      return;
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-900 p-8 rounded-2xl border border-white/20 w-full max-w-md">
@@ -12,7 +21,10 @@ export function VoteCompleteModal({ amount, onClose }: any) {
           <div className="text-white text-3xl font-bold">{amount}pt</div>
         </div>
 
-        <Button className="w-full bg-purple-600 text-white" onClick={onClose}>
+        <Button
+          className="w-full bg-purple-600 text-white"
+          onClick={handleConfirm}
+        >
           확인
         </Button>
       </div>

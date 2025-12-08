@@ -57,7 +57,7 @@ public class VoteCommentEntity {
     private VoteOptionChoiceEntity choice;
 
     @Builder.Default
-    @OneToMany(mappedBy = "parent")
+    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
     private List<VoteCommentEntity> children = new ArrayList<>();
 
     @Column(name = "is_deleted")

@@ -15,7 +15,6 @@ import { useNavigate } from "react-router-dom";
 export function VoteListPage() {
   const navigate = useNavigate();
 
-  /** 🔥 여기서 함수 정의! props 제거 */
   const onMarketClick = (id: number, type: "AI" | "NORMAL") => {
     navigate(`/vote/${id}`, { state: { voteType: type } });
   };
@@ -27,17 +26,14 @@ export function VoteListPage() {
 
   const { user } = useAuth();
 
-  /* ------------------------------------------------------------
-    🔵 AI 검색 + 정렬
-  ------------------------------------------------------------ */
+  // 검색 및 정렬
   const [aiSearch, setAiSearch] = useState("");
-  const [aiSort, setAiSort] = useState("latest"); // 추가됨
-
-  /* ------------------------------------------------------------
-    🟢 Normal 검색 + 정렬
-  ------------------------------------------------------------ */
+  const [aiSort, setAiSort] = useState("latest");
   const [normalSearch, setNormalSearch] = useState("");
   const [normalSort, setNormalSort] = useState("latest");
+
+  // 🔥 진행중 / 종료됨 버튼 상태
+  const [statusFilter, setStatusFilter] = useState<"ONGOING" | "FINISHED">("ONGOING");
 
   const loadVoteList = async () => {
     setLoading(true);
@@ -49,7 +45,7 @@ export function VoteListPage() {
       ]);
 
       const aiMapped = (aiRes.data || [])
-        .filter((v: any) => v.status !== "REVIEWING")
+        .filter((v: any) => v.status !== "REVIEWING" && v.status !== "CANCELLED")
         .map((v: any) => ({
           id: v.id,
           type: "AI",
@@ -58,19 +54,23 @@ export function VoteListPage() {
           totalParticipants: v.totalParticipants,
           endAt: v.endAt,
           createdAt: v.createdAt,
+          status: v.status,
           options: v.options,
         }));
 
-      const normalMapped = (normalRes.data.votes || []).map((v: any) => ({
-        id: v.id,
-        type: "NORMAL",
-        title: v.title,
-        description: v.description ?? "",
-        totalParticipants: v.totalParticipants ?? 0,
-        endAt: v.endAt,
-        createdAt: v.createdAt,
-        options: v.options ?? [],
-      }));
+      const normalMapped = (normalRes.data.votes || [])
+        .filter((v: any) => v.status !== "REVIEWING" && v.status !== "CANCELLED")
+        .map((v: any) => ({
+          id: v.id,
+          type: "NORMAL",
+          title: v.title,
+          description: v.description ?? "",
+          totalParticipants: v.totalParticipants ?? 0,
+          endAt: v.endAt,
+          createdAt: v.createdAt,
+          status: v.status,
+          options: v.options ?? [],
+        }));
 
       setAiVotes(aiMapped);
       setNormalVotes(normalMapped);
@@ -86,51 +86,48 @@ export function VoteListPage() {
     loadVoteList();
   }, []);
 
+  // 🔥 상태 분류
+  const finishedStates = ["FINISHED", "RESOLVED", "REWARDED"];
+
+  const filterByStatus = (item: any) => {
+    if (statusFilter === "ONGOING") {
+      return item.status === "ONGOING";
+    }
+    if (statusFilter === "FINISHED") {
+      return finishedStates.includes(item.status);
+    }
+    return false;
+  };
+
   /* ========================================================
-      🔍 AI 검색 + 정렬
+      🔍 AI 검색 + 정렬 + 상태 필터링
   ======================================================== */
   const filteredAiVotes = aiVotes
+    .filter(filterByStatus)
     .filter((v) => {
       const t = aiSearch.toLowerCase();
-      return (
-        v.title.toLowerCase().includes(t) ||
-        v.description.toLowerCase().includes(t)
-      );
+      return v.title.toLowerCase().includes(t) || v.description.toLowerCase().includes(t);
     })
     .sort((a, b) => {
-      if (aiSort === "latest") {
-        return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-      }
-      if (aiSort === "popular") {
-        return (b.totalParticipants ?? 0) - (a.totalParticipants ?? 0);
-      }
-      if (aiSort === "end") {
-        return Date.parse(a.endAt ?? "") - Date.parse(b.endAt ?? "");
-      }
+      if (aiSort === "latest") return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      if (aiSort === "popular") return (b.totalParticipants ?? 0) - (a.totalParticipants ?? 0);
+      if (aiSort === "end") return Date.parse(a.endAt ?? "") - Date.parse(b.endAt ?? "");
       return 0;
     });
 
   /* ========================================================
-      🔍 Normal 검색 + 정렬
+      🔍 Normal 검색 + 정렬 + 상태 필터링
   ======================================================== */
   const filteredNormalVotes = normalVotes
+    .filter(filterByStatus)
     .filter((v) => {
       const t = normalSearch.toLowerCase();
-      return (
-        v.title.toLowerCase().includes(t) ||
-        v.description.toLowerCase().includes(t)
-      );
+      return v.title.toLowerCase().includes(t) || v.description.toLowerCase().includes(t);
     })
     .sort((a, b) => {
-      if (normalSort === "latest") {
-        return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-      }
-      if (normalSort === "popular") {
-        return (b.totalParticipants ?? 0) - (a.totalParticipants ?? 0);
-      }
-      if (normalSort === "end") {
-        return Date.parse(a.endAt ?? "") - Date.parse(b.endAt ?? "");
-      }
+      if (normalSort === "latest") return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      if (normalSort === "popular") return (b.totalParticipants ?? 0) - (a.totalParticipants ?? 0);
+      if (normalSort === "end") return Date.parse(a.endAt ?? "") - Date.parse(b.endAt ?? "");
       return 0;
     });
 
@@ -158,6 +155,31 @@ export function VoteListPage() {
           )}
         </div>
 
+        {/* 🔥 진행중 / 종료됨 버튼 */}
+        <div className="flex gap-4 mb-8">
+          <button
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
+              statusFilter === "ONGOING"
+                ? "bg-purple-600 text-white"
+                : "bg-white/10 text-gray-300 hover:bg-white/20"
+            }`}
+            onClick={() => setStatusFilter("ONGOING")}
+          >
+            진행중
+          </button>
+
+          <button
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
+              statusFilter === "FINISHED"
+                ? "bg-purple-600 text-white"
+                : "bg-white/10 text-gray-300 hover:bg-white/20"
+            }`}
+            onClick={() => setStatusFilter("FINISHED")}
+          >
+            종료됨
+          </button>
+        </div>
+
         {loading ? (
           <div className="text-center text-white py-20">로딩 중...</div>
         ) : (
@@ -169,7 +191,6 @@ export function VoteListPage() {
                 <h2 className="text-2xl font-bold text-white">AI 예측 마켓</h2>
 
                 <div className="flex items-center gap-3">
-                  {/* AI 검색 */}
                   <input
                     value={aiSearch}
                     onChange={(e) => setAiSearch(e.target.value)}
@@ -177,7 +198,6 @@ export function VoteListPage() {
                     className="bg-white/40 text-black px-3 py-2 rounded-lg w-40 sm:w-60"
                   />
 
-                  {/* AI 정렬 */}
                   <select
                     value={aiSort}
                     onChange={(e) => setAiSort(e.target.value)}
@@ -199,7 +219,6 @@ export function VoteListPage() {
                 <h2 className="text-2xl font-bold text-white">일반 투표</h2>
 
                 <div className="flex items-center gap-3">
-                  {/* NORMAL 검색 */}
                   <input
                     value={normalSearch}
                     onChange={(e) => setNormalSearch(e.target.value)}
@@ -207,7 +226,6 @@ export function VoteListPage() {
                     className="bg-white/40 text-black px-3 py-2 rounded-lg w-40 sm:w-60"
                   />
 
-                  {/* NORMAL 정렬 */}
                   <select
                     value={normalSort}
                     onChange={(e) => setNormalSort(e.target.value)}

@@ -28,8 +28,9 @@ export const deleteNormalVote = (voteId) =>
 
 // 🔹 일반투표 참여
 export const participateNormalVote = (voteId, choiceId) =>
-  api.post(`/normal-votes/${voteId}/participate`, null, {
-    params: { choiceId },
+  api.post(`/normal-votes/${voteId}/participate`, {
+    choiceId,
+    points: 0
   });
 
 export const finishNormalVote = (voteId) =>

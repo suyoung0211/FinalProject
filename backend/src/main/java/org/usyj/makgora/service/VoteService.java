@@ -6,9 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
+import org.usyj.makgora.exception.VoteException;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.vote.*;
 import org.usyj.makgora.response.vote.*;
+import org.usyj.makgora.response.voteDetails.VoteDetailMainResponse;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ public class VoteService {
     private final UserRepository userRepository;
     private final VoteRuleRepository voteRuleRepository;
     private final VotesStatusHistoryRepository historyRepository;
+    private final VoteDetailService voteDetailService;
 
     /* ===============================
        🔹 공용: 상태 히스토리 기록
@@ -63,86 +66,6 @@ private Double calculateOdds(VoteOptionChoiceEntity choice, VoteEntity vote) {
 
     return (double) totalPool / (double) choice.getPointsTotal();
 }
-
-
-    /* ===============================
-       🔹 2. 투표 상세 조회
-       =============================== */
-    @Transactional(readOnly = true)
-public VoteListDetailResponse getVoteDetail(Integer voteId) {
-    System.out.println("🔥 [BACKEND] getVoteDetail() 요청 들어옴 voteId=" + voteId);
-
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("Vote not found"));
-
-    System.out.println("➡️ Vote title=" + vote.getTitle() + ", status=" + vote.getStatus());
-    System.out.println("➡️ Issue summary=" + vote.getIssue().getAiSummary());
-    
-    IssueEntity issue = vote.getIssue();
-    RssArticleEntity article = issue.getArticle();
-    String category = "기타";
-    String thumbnail = null;
-    if (article != null) {
-        category = article.getFeed() != null ? article.getFeed().getSourceName() : "뉴스";
-        thumbnail = article.getThumbnailUrl();
-    } else if (issue.getCommunityPost() != null) {
-        category = "커뮤니티";
-    }
-
-    // rule 가져오기
-    VoteRuleEntity rule = voteRuleRepository.findByVote(vote).orElse(null);
-
-    // ==== 옵션 + 선택지 구성 ====
-    List<VoteListDetailResponse.OptionResponse> options =
-            vote.getOptions().stream()
-                    .map(option ->
-                            VoteListDetailResponse.OptionResponse.builder()
-                                    .optionId(option.getId())
-                                    .title(option.getOptionTitle())
-                                    .choices(
-                                            option.getChoices().stream()
-                                                    .map(ch -> VoteListDetailResponse.ChoiceResponse.builder()
-                                                            .choiceId(ch.getId())
-                                                            .text(ch.getChoiceText())
-                                                            .pointsTotal(ch.getPointsTotal())
-                                                            .participantsCount(ch.getParticipantsCount())
-                                                            .odds(calculateOdds(ch, vote))
-                                                            .build()
-                                                    ).toList()
-                                    )
-                                    .build()
-                    ).toList();
-
-    return VoteListDetailResponse.builder()
-            .voteId(vote.getId())
-            .issueId(issue.getId())
-            .title(vote.getTitle())
-            .description(issue.getAiSummary())
-            .category(category)
-            .thumbnail(thumbnail)
-            .status(vote.getStatus().name())
-            .createdAt(vote.getCreatedAt())
-            .endAt(vote.getEndAt())
-
-            .stats(
-                    VoteListDetailResponse.Stats.builder()
-                            .totalPoints(vote.getTotalPoints())
-                            .totalParticipants(vote.getTotalParticipants())
-                            .build()
-            )
-
-            .rule(rule != null ?
-                    VoteListDetailResponse.Rule.builder()
-                            .type(rule.getRuleType())
-                            .description(rule.getRuleDescription())
-                            .build() : null
-            )
-
-            .options(options)
-            .build();
-}
-
-
 
     /* ===============================
        🔹 3. 배당률 계산
@@ -187,51 +110,84 @@ public VoteListDetailResponse getVoteDetail(Integer voteId) {
 
 
     /* ===============================
-       🔹 4. 투표 참여
-       =============================== */
-    @Transactional
-    public VoteListDetailResponse participateVote(Integer voteId, VoteParticipateRequest req, Integer userId) {
+   🔹 4. 투표 참여 (최종본)
+   =============================== */
+@Transactional
+public VoteDetailMainResponse participateVote(Integer voteId, VoteParticipateRequest req, Integer userId) {
 
-        VoteOptionChoiceEntity choice = choiceRepository.findById(req.getChoiceId())
-                .orElseThrow(() -> new RuntimeException("선택지 없음"));
+    VoteOptionChoiceEntity choice = choiceRepository.findById(req.getChoiceId())
+            .orElseThrow(() -> new VoteException("CHOICE_NOT_FOUND", "선택지를 찾을 수 없습니다."));
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("user 없음"));
+    VoteEntity vote = choice.getOption().getVote();
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new VoteException("USER_NOT_FOUND", "유저 정보를 찾을 수 없습니다."));
 
-        // 같은 choice에 대해 이미 참여했는지 확인
-if (voteUserRepository.existsByUserIdAndChoiceId(userId, req.getChoiceId())) {
-    throw new RuntimeException("이미 이 선택지에 참여했습니다.");
-}
-
-// 같은 option에 대해 이미 참여했는지 확인
-Long optionId = choice.getOption().getId();
-if (voteUserRepository.existsByUserIdAndOptionId(userId, optionId)) {
-    throw new RuntimeException("이미 이 옵션에 참여했습니다.");
-}
-
-        VoteUserEntity vu = VoteUserEntity.builder()
-                .vote(choice.getOption().getVote())
-                .user(user)
-                .option(choice.getOption())
-                .choice(choice)
-                .pointsBet(req.getPoints())
-                .build();
-
-        voteUserRepository.save(vu);
-
-        // 선택지 업데이트
-        choice.setPointsTotal(choice.getPointsTotal() + req.getPoints());
-        choice.setParticipantsCount(choice.getParticipantsCount() + 1);
-        choiceRepository.save(choice);
-
-        // 투표 전체 풀 업데이트
-        VoteEntity vote = choice.getOption().getVote();
-        vote.setTotalPoints(vote.getTotalPoints() + req.getPoints());
-        vote.setTotalParticipants(vote.getTotalParticipants() + 1);
-        voteRepository.save(vote);
-
-        return getVoteDetail(voteId);
+    // 🔥 0. 포인트 부족
+    if (user.getPoints() < req.getPoints()) {
+        throw new VoteException("NOT_ENOUGH_POINTS", "포인트가 부족합니다.");
     }
+
+    // 🔥 1. 중복 참여 방지 (옵션 단위)
+    if (voteUserRepository.existsByUserIdAndOptionId(userId, choice.getOption().getId())) {
+        throw new VoteException("ALREADY_VOTED", "이미 이 옵션에서 투표했습니다.");
+    }
+
+    // 🔥 2. 투표가 ONGOING 인지 체크
+    if (vote.getStatus() != VoteEntity.Status.ONGOING) {
+        throw new VoteException("VOTE_CLOSED", "이미 종료된 투표입니다.");
+    }
+
+    // ========== 참여 저장 ==========
+    VoteUserEntity vu = VoteUserEntity.builder()
+            .vote(vote)
+            .user(user)
+            .option(choice.getOption())
+            .choice(choice)
+            .pointsBet(req.getPoints())
+            .build();
+    voteUserRepository.save(vu);
+
+    // 🔥 유저 포인트 차감
+    user.setPoints(user.getPoints() - req.getPoints());
+    userRepository.save(user);
+
+    // 🔥 선택지 통계 증가
+    choice.setPointsTotal(choice.getPointsTotal() + req.getPoints());
+    choice.setParticipantsCount(choice.getParticipantsCount() + 1);
+    choiceRepository.save(choice);
+
+    // 🔥 투표 전체 통계 증가
+    vote.setTotalPoints(vote.getTotalPoints() + req.getPoints());
+    vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+    voteRepository.save(vote);
+
+    // ======================================================
+    // 🔥 배당률 실시간 재계산 — 모든 선택지에 대해 Odds 업데이트
+    // ======================================================
+    int totalPool = vote.getOptions().stream()
+            .flatMap(opt -> opt.getChoices().stream())
+            .mapToInt(VoteOptionChoiceEntity::getPointsTotal)
+            .sum();
+
+    vote.getOptions().forEach(opt ->
+            opt.getChoices().forEach(ch -> {
+
+                double newOdds;
+                if (totalPool == 0 || ch.getPointsTotal() == 0) {
+                    newOdds = 1.0;
+                } else {
+                    newOdds = (double) totalPool / ch.getPointsTotal();
+                }
+
+                ch.setOdds(newOdds);
+                choiceRepository.save(ch);
+            })
+    );
+
+    // 🔥 최신 상세정보 반환 (프론트는 이것만 다시 받아서 갱신)
+    return voteDetailService.getVoteDetail(voteId, userId);
+}
+
 
 
     public List<VoteListItemResponse> getVoteList() {
@@ -320,19 +276,17 @@ if (voteUserRepository.existsByUserIdAndOptionId(userId, optionId)) {
 
 
 @Transactional
-public VoteListDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
+public VoteDetailMainResponse cancelMyVote(Long voteUserId, Integer userId) {
 
     VoteUserEntity voteUser = voteUserRepository.findById(voteUserId)
             .orElseThrow(() -> new RuntimeException("베팅 정보를 찾을 수 없습니다."));
 
-    // 본인 확인
     if (!voteUser.getUser().getId().equals(userId)) {
         throw new RuntimeException("내 베팅만 취소할 수 있습니다.");
     }
 
     VoteEntity vote = voteUser.getVote();
 
-    // 상태 체크
     if (vote.getStatus() != VoteEntity.Status.ONGOING) {
         throw new RuntimeException("진행 중인 투표만 취소할 수 있습니다.");
     }
@@ -362,16 +316,16 @@ public VoteListDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
     voteUser.setUpdatedAt(LocalDateTime.now());
     voteUserRepository.save(voteUser);
 
-    return getVoteDetail(vote.getId());
+    // 🔥 여기 수정됨
+    return voteDetailService.getVoteDetail(voteUser.getVote().getId(), userId);
 }
 
 @Transactional
-public VoteListDetailResponse cancelVote(Integer voteId, Integer userId) {
+public VoteDetailMainResponse cancelVote(Integer voteId, Integer userId) {
 
     VoteEntity vote = voteRepository.findById(voteId)
             .orElseThrow(() -> new RuntimeException("투표 없음"));
 
-    // 상태 체크
     if (vote.getStatus() != VoteEntity.Status.ONGOING) {
         throw new RuntimeException("진행 중인 투표만 취소할 수 있습니다.");
     }
@@ -404,7 +358,8 @@ public VoteListDetailResponse cancelVote(Integer voteId, Integer userId) {
     vu.setUpdatedAt(LocalDateTime.now());
     voteUserRepository.save(vu);
 
-    return getVoteDetail(voteId);
+    // 🔥 여기 핵심 수정
+    return voteDetailService.getVoteDetail(vote.getId(), userId);
 }
 
 

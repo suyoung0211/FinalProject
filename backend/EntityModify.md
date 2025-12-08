@@ -379,3 +379,7 @@ NormalVoteCommentEntity 추가(normalvote랑 AIvote쪽이랑 충돌남...)
     private List<CommunityPostFileEntity> files = new ArrayList<>();
 
 ⚠️ DB 새로 업데이트 필요함!
+
+-----------------------------------
+voteuserentity에 normal_vote_id, vote_id, choice_id, option_id  nullable=true로 변경
+안그러면 vote랑 normal_vote쪽이랑 충돌남

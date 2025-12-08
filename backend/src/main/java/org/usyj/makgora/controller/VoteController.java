@@ -28,10 +28,15 @@ public class VoteController {
     private final VoteDetailService voteDetailService; 
 
     /** 상세 조회 */
-    @GetMapping("/{voteId}")
-    public ResponseEntity<?> getVote(@PathVariable Integer voteId) {
-        return ResponseEntity.ok(voteService.getVoteDetail(voteId));
-    }
+@GetMapping("/{voteId}")
+public ResponseEntity<?> getVote(
+        @PathVariable Integer voteId,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    Integer userId = (user != null) ? user.getId() : null;
+    return ResponseEntity.ok(voteDetailService.getVoteDetail(voteId, userId));
+}
+
 
     /** 배당 조회 */
     @GetMapping("/{voteId}/odds")
@@ -47,13 +52,14 @@ public class VoteController {
 
     /** 참여 */
     @PostMapping("/{voteId}/participate")
-    public ResponseEntity<?> participate(
-            @PathVariable Integer voteId,
-            @RequestBody VoteParticipateRequest req,
-            @AuthenticationPrincipal CustomUserDetails user
-    ) {
-        return ResponseEntity.ok(voteService.participateVote(voteId, req, user.getId()));
-    }
+public ResponseEntity<?> participate(
+        @PathVariable Integer voteId,
+        @RequestBody VoteParticipateRequest req,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    return ResponseEntity.ok(voteService.participateVote(voteId, req, user.getId()));
+}
+
 
     /** 🔥 내 참여만 취소 (vote_user_id 기반) */
     @PatchMapping("/my/{voteUserId}/cancel")

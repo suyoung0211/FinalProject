@@ -1,3 +1,5 @@
+// src/components/voteDetail/VoteTabs.tsx
+
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { VoteCommentSection } from "../vote/comments/VoteCommentSection";
 
@@ -12,7 +14,6 @@ export function VoteTabs({
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
 
-      {/* TAB BUTTONS */}
       <div className="flex border-b border-white/10">
         {["chart", "discussion"].map((tab) => (
           <button
@@ -25,19 +26,31 @@ export function VoteTabs({
             }`}
           >
             {tab === "chart"
-              ? isAIVote
-                ? "차트"
-                : "결과 분포"
+              ? isAIVote ? "배당 / 차트" : "결과 분포"
               : "토론"}
           </button>
         ))}
       </div>
 
-      {/* TAB CONTENT */}
       <div className="p-6">
         {selectedTab === "chart" ? (
           isAIVote ? (
-            <ChartAI chartData={chartData} />
+            <>
+              {/* 🔥 배당률 테이블 */}
+              <div className="mb-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                {data.odds?.odds?.map((o: any) => (
+                  <div key={o.choiceId} className="flex justify-between py-1 text-gray-200">
+                    <span>{o.text}</span>
+                    <span className="text-green-300 font-semibold">
+                      x{o.odds?.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* 기존 차트 */}
+              <ChartAI chartData={chartData} />
+            </>
           ) : (
             <ChartNormal data={data} getPercent={getNormalChoicePercent} />
           )
@@ -67,27 +80,33 @@ function ChartAI({ chartData }: any) {
     </div>
   );
 }
-
 function ChartNormal({ data, getPercent }: any) {
   return (
     <div className="space-y-4">
       {data.options?.map((opt: any) => (
-        <div key={opt.optionId} className="bg-white/5 rounded-xl p-4 border border-white/10">
-          <p className="text-white font-semibold mb-3">{opt.optionTitle}</p>
+        <div
+          key={opt.optionId}
+          className="bg-white/5 rounded-xl p-4 border border-white/10"
+        >
+          <p className="text-white font-semibold mb-3">{opt.title}</p>
 
           {opt.choices?.map((ch: any) => {
             const percent = getPercent(ch, opt);
             return (
-              <div key={ch.choiceId} className="mb-2">
+              <div key={ch.choiceId} className="mb-3">
+                
                 <div className="flex justify-between text-xs text-gray-300 mb-1">
-                  <span>{ch.choiceText}</span>
+                  <span>{ch.text ?? ch.choiceText}</span>
                   <span>
                     {ch.participantsCount ?? 0}명 ({percent}%)
                   </span>
                 </div>
 
                 <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500" style={{ width: `${percent}%` }} />
+                  <div
+                    className="h-full bg-purple-500 transition-all"
+                    style={{ width: `${percent}%` }}
+                  />
                 </div>
               </div>
             );
