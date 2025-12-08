@@ -1,0 +1,47 @@
+@keyframes sparkle {
+  0% { filter: drop-shadow(0 0 4px rgba(255, 230, 128, 0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(255, 255, 180, 0)); }
+  100% { filter: drop-shadow(0 0 4px rgba(255, 230, 128, 0.4)); }
+}
+
+.legendary-glow {
+  animation: sparkle 1.8s infinite ease-in-out;
+}
+
+/* ✨ 에픽 아이템: 좌 → 우로 부드럽게 지나가는 보라빛 광택 */
+@keyframes epic-glow {
+  0% {
+    opacity: 0.2;
+    transform: translateX(-120%);
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateX(120%);
+  }
+}
+
+/* 에픽 오라 효과 */
+.epic-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.epic-shine::before {
+  content: "";
+  position: absolute;
+  top: 20%;
+  left: -50%;
+  width: 200%;
+  height: 60%;
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.25) 0%,
+    rgba(168, 85, 247, 0) 100%
+  ); /* 보라빛 */
+  animation: epic-glow 2.8s infinite linear;
+  pointer-events: none;
+  filter: blur(12px);
+}

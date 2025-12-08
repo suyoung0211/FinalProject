@@ -24,6 +24,8 @@ import { ProfilePageContainer } from "./pages/ProfilePageContainer";
 import { AdminProtectedRoute } from './components/admin/AdminProtectedRoute';
 import { Toaster } from "react-hot-toast";
 import { ProfilePageWrapper } from './pages/ProfilePageWrapper';
+import "./styles/glow.css";
+
 
 function CommunityWriteRouteWrapper() {
   const navigate = useNavigate();
