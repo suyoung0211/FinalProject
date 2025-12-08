@@ -55,7 +55,13 @@ export function PointsShopPage({ onBack }: any) {
   
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [myItems, setMyItems] = useState<number[]>([]);
-  const [userPoints, setUserPoints] = useState<number>(user?.points || 50000);
+  const [userPoints, setUserPoints] = useState<number>(user?.points ?? 0);
+
+useEffect(() => {
+  if (user?.points !== undefined) {
+    setUserPoints(user.points);
+  }
+}, [user]);
 
   /** 🔥 백엔드 카테고리 → 프론트 카테고리 매핑 */
   const resolveImage = (path?: string | null): string => {
@@ -82,11 +88,14 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
 
   /** 🔥 가격 기반 희귀도 계산 */
   const getRarityFromPrice = (price: number): ShopItem["rarity"] => {
-    if (price >= 1500) return "legendary";
-    if (price >= 900) return "epic";
-    if (price >= 500) return "rare";
+    if (price >= 500000) return "legendary";
+    if (price >= 100000) return "epic";
+    if (price >= 50000) return "rare";
     return "common";
   };
+
+  
+  
 
   /** 🔥 서버에서 아이템 목록 로딩 */
   useEffect(() => {
@@ -100,16 +109,16 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
           name: i.name,
           price: i.price,
           description: `${i.category} 카테고리`,
-        
-          // 🔥 핵심 수정!
           emoji: i.image
             ? (i.image.length <= 3 ? i.image : resolveImage(i.image))
             : "",
-        
           category: mapCategory(i.category),
           rarity: getRarityFromPrice(i.price),
         }));
-
+        
+        // 🔥🔥 가격 높은 순으로 정렬
+        items.sort((a, b) => b.price - a.price);
+        
         setShopItems(items);
       } catch (e) {
         console.error("아이템 불러오기 실패:", e);
@@ -165,18 +174,23 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
   );
 
   /** 🔥 희귀도 색상 */
-  const getRarityColor = (rarity: ShopItem["rarity"]) => {
-    switch (rarity) {
-      case "rare":
-        return "text-blue-400 border-blue-500/30";
-      case "epic":
-        return "text-purple-400 border-purple-500/30";
-      case "legendary":
-        return "text-yellow-400 border-yellow-500/30";
-      default:
-        return "text-gray-400 border-gray-500/30";
-    }
-  };
+  const getRarityStyle = (rarity: ShopItem["rarity"]) => {
+  switch (rarity) {
+    case "rare":
+      return "border-blue-400 bg-blue-500/10 shadow-[0_0_12px_#60a5fa55]";
+    case "epic":
+      return "border-purple-400 bg-purple-500/10 shadow-[0_0_15px_#c084fc66]";
+    case "legendary":
+      return `
+        border-yellow-400 
+        bg-yellow-500/10 
+        shadow-[0_0_20px_#facc1588] 
+        animate-pulse-slow
+      `;
+    default:
+      return "border-gray-400/30 bg-white/5";
+  }
+};
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -189,7 +203,7 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
 
         {/* Category Tabs */}
         <div className="flex gap-2 mb-8 overflow-x-auto">
-          {["all", "icons", "badges", "frame"].map((c) => (
+          {["all", "frame" ,"badges" ].map((c) => (
             <button
               key={c}
               onClick={() => setSelectedCategory(c)}
@@ -201,7 +215,6 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
             >
               {{
                 all: "전체",
-                icons: "프로필 아이콘",
                 frame: "프레임",
                 badges: "뱃지",
               }[c]}
@@ -214,7 +227,16 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
           {filteredItems.map((item) => (
             <div
               key={`${item.id}-${item.category}`} 
-              className={`bg-white/5 border rounded-2xl overflow-hidden hover:scale-105 transition ${getRarityColor(item.rarity)}`}
+              className={`
+                bg-white/5 
+                border rounded-2xl 
+                overflow-hidden 
+                hover:scale-105 
+                transition 
+                ${getRarityStyle(item.rarity)}
+                ${item.rarity === "legendary" ? "legendary-glow" : ""}
+                ${item.rarity === "epic" ? "epic-shine" : ""}
+              `}
             >
               <div className="aspect-square flex items-center justify-center bg-black/20">
                 {item.emoji.startsWith("http") ? (
@@ -223,7 +245,7 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
                     alt={item.name}
                     className={`
                       object-contain
-                      ${item.category === "frame" ? "w-36 h-36" : "w-24 h-24"}
+                      ${item.category === "frame" ? "w-48 h-48" : "w-48 h-48"}
                     `}
                   />
                 ) : (
@@ -271,7 +293,7 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
                 <img
                   src={selectedItem.emoji}
                   alt={selectedItem.name}
-                  className="w-32 h-32 object-contain"
+                  className="w-54 h-54 object-contain"
                 />
               ) : (
                 <span className="text-8xl">{selectedItem.emoji}</span>
