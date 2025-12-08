@@ -36,16 +36,25 @@ public class StoreDataInitializer {
                 .category(StoreItemEntity.Category.FRAME)
                 .price(1200)
                 .stock(999)
-                .image("https://i.imgur.com/R8XlK3o.png")
+                .image("uploads/frame/image.png")
                 .build());
 
         storeItemRepository.save(StoreItemEntity.builder()
-                .name("레드 파이어 테두리")
+                .name("사이버펑크 테두리")
                 .type(StoreItemEntity.ItemType.POINT)
                 .category(StoreItemEntity.Category.FRAME)
                 .price(1500)
                 .stock(999)
-                .image("https://i.imgur.com/nT6eW3k.png")
+                .image("/uploads/frame/767d8afe-8068-43e7-9f72-92b1771b31b5.png")
+                .build());
+
+        storeItemRepository.save(StoreItemEntity.builder()
+                .name("챌린저 테두리")
+                .type(StoreItemEntity.ItemType.POINT)
+                .category(StoreItemEntity.Category.FRAME)
+                .price(100000)
+                .stock(999)
+                .image("/uploads/frame/61d6866d-fc36-400a-aa21-befa8bc454ed.png")
                 .build());
 
         // ============================

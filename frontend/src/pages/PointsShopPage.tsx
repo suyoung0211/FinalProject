@@ -221,7 +221,10 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
                   <img
                     src={item.emoji}
                     alt={item.name}
-                    className="w-24 h-24 object-contain"
+                    className={`
+                      object-contain
+                      ${item.category === "frame" ? "w-36 h-36" : "w-24 h-24"}
+                    `}
                   />
                 ) : (
                   <span className="text-6xl">{item.emoji}</span>

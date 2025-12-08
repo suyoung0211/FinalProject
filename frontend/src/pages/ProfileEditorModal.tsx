@@ -27,6 +27,11 @@ export function ProfileEditorModal({
   const [selectedBadge, setSelectedBadge] = useState<OwnedItem | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const isEmoji = (v: string) => {
+  // 이모지는 4바이트 문자라 정규식으로 구분 가능
+  return /\p{Emoji}/u.test(v);
+};
+
   const resolveImage = (p?: string | null) =>
     !p ? "" : p.startsWith("http") ? p : `http://localhost:8080/${p}`;
 
@@ -130,10 +135,24 @@ export function ProfileEditorModal({
                       
               {/* BADGE는 무조건 이모지 출력 */}
               {selectedBadge ? (
-                <span className="text-4xl">{selectedBadge.image || selectedBadge.name}</span>
-              ) : previewBadgeSrc ? (
-                <span className="text-4xl">{previewBadgeSrc}</span>
-              ) : null}
+  isEmoji(selectedBadge.image) ? (
+    <span className="text-4xl">{selectedBadge.image}</span>
+  ) : (
+    <img
+      src={resolveImage(selectedBadge.image)}
+      className="w-8 h-8 object-contain"
+    />
+  )
+) : previewBadgeSrc ? (
+  isEmoji(previewBadgeSrc) ? (
+    <span className="text-4xl">{previewBadgeSrc}</span>
+  ) : (
+    <img
+      src={resolveImage(previewBadgeSrc)}
+      className="w-8 h-8 object-contain"
+    />
+  )
+) : null}
             </div>
 
           <p className="text-sm text-gray-400">
