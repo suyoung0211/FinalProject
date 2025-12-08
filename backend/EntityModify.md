@@ -305,3 +305,15 @@ CommentReactionEntity 추가
 JwtAuthFilter 안에
 (method.equals("GET") && path.startsWith("/api/articles")) 주석처리
 기사 상세 모달추가 + APP.tsx에 전역모달 추가
+---------------------------------
+2025-12-08
+
+1. CommunityPostFileEntity 새로 추가함
+
+2. CommunityPostEntity.files 필드 추가함 
+/** 해당 게시글에 첨부된 파일 목록 */
+    @Builder.Default
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommunityPostFileEntity> files = new ArrayList<>();
+
+⚠️ DB 새로 업데이트 필요함!
