@@ -1,100 +1,245 @@
-// Store.tsx
-export function Store() {
+import { useEffect, useState } from "react";
+import api from "../../../api/api";
 
-  // 📌 기존 products → storeItems로 확장
-  const storeItems = [
-    {
-      id: 1,
-      name: "영화 예매권",
-      category: "Entertainment",
-      price: 15000,
-      stock: 10,
-      sold: 5,
-      status: "ACTIVE"
-    },
-    {
-      id: 2,
-      name: "포인트 쿠폰",
-      category: "Coupon",
-      price: 10000,
-      stock: 25,
-      sold: 12,
-      status: "ACTIVE"
+export function Store() {
+  const [items, setItems] = useState<any[]>([]);
+  const [cloudImages, setCloudImages] = useState<any[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [badgeEmoji, setBadgeEmoji] = useState<string>("");
+
+  const [newItem, setNewItem] = useState({
+    name: "",
+    category: "FRAME",
+    type: "POINT",
+    price: 100,
+    stock: 100,
+  });
+
+  // ===============================
+  // 🔥 Cloudinary 이미지 로드
+  // ===============================
+  const loadCloudImages = async () => {
+    try {
+      const res = await api.get("/admin/store/images", {
+        params: { folder: "frames" },
+      });
+      setCloudImages(res.data);
+    } catch (err) {
+      console.error("이미지 불러오기 실패:", err);
     }
-  ];
+  };
+
+  // ===============================
+  // 🔥 기존 아이템 로드
+  // ===============================
+  const loadItems = async () => {
+    try {
+      const res = await api.get("/admin/store/items");
+      setItems(res.data);
+    } catch (err) {
+      console.error("아이템 불러오기 실패:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadItems();
+    loadCloudImages();
+  }, []);
+
+  // ===============================
+  // 🔥 아이템 생성
+  // ===============================
+  const createItem = async () => {
+    if (newItem.category === "FRAME" && !selectedImage) {
+      alert("프레임 이미지를 선택해주세요!");
+      return;
+    }
+
+    if (newItem.category === "BADGE" && badgeEmoji.trim() === "") {
+      alert("뱃지 이모지를 입력해주세요!");
+      return;
+    }
+
+    try {
+      const data =
+        newItem.category === "FRAME"
+          ? { ...newItem, image: selectedImage }
+          : { ...newItem, image: badgeEmoji };
+
+      await api.post("/admin/store/items", data);
+
+      alert("아이템이 생성되었습니다!");
+      setSelectedImage(null);
+      setBadgeEmoji("");
+      setNewItem({
+        name: "",
+        category: "FRAME",
+        type: "POINT",
+        price: 100,
+        stock: 100,
+      });
+
+      loadItems();
+    } catch (err) {
+      console.error("아이템 생성 실패:", err);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 제목 영역 */}
+    <div className="space-y-10 text-white">
+
+      {/* ================================================================= */}
+      {/* 🔥 상단: 제목 + 아이템 추가 버튼 */}
+      {/* ================================================================= */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">상점 관리</h2>
-        <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm">
-          아이템 추가
+        <h2 className="text-2xl font-bold">상점 관리</h2>
+      </div>
+
+      {/* ================================================================= */}
+      {/* 🔥 아이템 생성 섹션 */}
+      {/* ================================================================= */}
+      <div className="bg-white/5 p-6 rounded-xl space-y-4 border border-white/10">
+        <h3 className="text-xl font-semibold">아이템 생성</h3>
+
+        <input
+          type="text"
+          placeholder="아이템 이름"
+          className="w-full p-2 bg-black/20 border border-white/20 rounded"
+          value={newItem.name}
+          onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+        />
+
+        <select
+          className="w-full p-2 bg-black/20 border border-white/20 rounded"
+          value={newItem.category}
+          onChange={(e) => {
+            setNewItem({ ...newItem, category: e.target.value });
+            setSelectedImage(null);
+            setBadgeEmoji("");
+          }}
+        >
+          <option value="FRAME">FRAME</option>
+          <option value="BADGE">BADGE</option>
+        </select>
+
+        {/* 🔥 FRAME일 때 Cloudinary 이미지 목록 */}
+        {newItem.category === "FRAME" && (
+          <div>
+            <div className="grid grid-cols-6 gap-4 bg-white/5 p-4 rounded-xl max-h-64 overflow-y-auto">
+              {cloudImages.map((img) => (
+                <div
+                  key={img.asset_id}
+                  onClick={() => setSelectedImage(img.secure_url)}
+                  className={`p-1 border rounded-xl cursor-pointer ${
+                    selectedImage === img.secure_url ? "border-pink-400" : "border-white/20"
+                  }`}
+                >
+                  <img src={img.secure_url} className="w-full h-20 object-contain" />
+                </div>
+              ))}
+            </div>
+
+            {selectedImage && (
+              <div className="mt-4">
+                <p className="text-gray-300 mb-2">선택된 이미지</p>
+                <img src={selectedImage} className="w-32 h-32 object-contain border rounded-xl" />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 🔥 BADGE일 때 Emoji 입력 */}
+        {newItem.category === "BADGE" && (
+          <div>
+            <h3 className="text-lg mb-2">뱃지 이모지 입력</h3>
+            <input
+              type="text"
+              maxLength={4}
+              placeholder="예: ⭐ 🔥 👑"
+              className="w-full p-2 bg-black/20 border border-white/20 rounded text-2xl"
+              value={badgeEmoji}
+              onChange={(e) => setBadgeEmoji(e.target.value)}
+            />
+            {badgeEmoji && (
+              <p className="text-5xl mt-2">미리보기: {badgeEmoji}</p>
+            )}
+          </div>
+        )}
+
+        <select
+          className="w-full p-2 bg-black/20 border border-white/20 rounded"
+          value={newItem.type}
+          onChange={(e) => setNewItem({ ...newItem, type: e.target.value })}
+        >
+          <option value="POINT">POINT</option>
+          <option value="CASH">CASH</option>
+        </select>
+
+        <input
+          type="number"
+          placeholder="가격"
+          className="w-full p-2 bg-black/20 border border-white/20 rounded"
+          value={newItem.price}
+          onChange={(e) => setNewItem({ ...newItem, price: Number(e.target.value) })}
+        />
+
+        <button
+          onClick={createItem}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg"
+        >
+          아이템 생성
         </button>
       </div>
 
-      {/* 테이블 UI 적용 */}
+      {/* ================================================================= */}
+      {/* 🔥 아이템 목록을 '관리자 테이블 UI'로 보여줌 */}
+      {/* ================================================================= */}
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">아이템명</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">카테고리</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">가격</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">재고</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">판매량</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">상태</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">관리</th>
+
+        <table className="w-full">
+          <thead className="bg-white/5">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs text-gray-400 uppercase">아이템명</th>
+              <th className="px-6 py-3 text-left text-xs text-gray-400 uppercase">카테고리</th>
+              <th className="px-6 py-3 text-left text-xs text-gray-400 uppercase">가격</th>
+              <th className="px-6 py-3 text-left text-xs text-gray-400 uppercase">이미지</th>
+              <th className="px-6 py-3 text-left text-xs text-gray-400 uppercase">관리</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-white/10">
+            {items.map((item) => (
+              <tr key={item.id} className="hover:bg-white/5 transition">
+                <td className="px-6 py-4 text-white">{item.name}</td>
+
+                <td className="px-6 py-4">
+                  <span className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs">
+                    {item.category}
+                  </span>
+                </td>
+
+                <td className="px-6 py-4 text-yellow-400 font-bold">
+                  {item.price.toLocaleString()}P
+                </td>
+
+                <td className="px-6 py-4">
+                  {item.category === "BADGE" ? (
+                    <span className="text-3xl">{item.image}</span>
+                  ) : (
+                    <img src={item.image} className="w-12 h-12 rounded" />
+                  )}
+                </td>
+
+                <td className="px-6 py-4">
+                  <button className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
+                    삭제
+                  </button>
+                </td>
               </tr>
-            </thead>
+            ))}
+          </tbody>
+        </table>
 
-            <tbody className="divide-y divide-white/5">
-              {storeItems.map(item => (
-                <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-white font-medium">
-                    {item.name}
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-400 border border-purple-500/30 text-xs font-medium">
-                      {item.category}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-yellow-400 font-bold">
-                    {item.price.toLocaleString()}P
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-white font-bold">{item.stock}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-green-400 font-bold">{item.sold}</td>
-
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                      item.status === "ACTIVE"
-                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                        : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 transition-colors">
-                        수정
-                      </button>
-                      <button className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors">
-                        삭제
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-
-          </table>
-        </div>
       </div>
     </div>
   );
