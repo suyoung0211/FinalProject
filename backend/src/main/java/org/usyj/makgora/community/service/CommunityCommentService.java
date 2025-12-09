@@ -175,6 +175,9 @@ public class CommunityCommentService {
                 .likedByMe(likedByMe)
                 .dislikedByMe(dislikedByMe)
                 .replies(new ArrayList<>())
+                .avatarIcon(entity.getUser().getAvatarIcon())      // dto에 맞게 추가함
+                .profileFrame(entity.getUser().getProfileFrame())  // dto에 맞게 추가함
+                .profileBadge(entity.getUser().getProfileBadge())  // dto에 맞게 추가함 
                 .build();
     }
 }

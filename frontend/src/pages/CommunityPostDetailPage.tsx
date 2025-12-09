@@ -7,6 +7,7 @@ import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { Avatar } from "../components/Avatar";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
+import ProfileAvatar from "./ProfileAvatar";
 
 type PostDetail = {
   postId: number;
@@ -32,26 +33,22 @@ type Comment = {
   commentId: number;
   postId: number;
   parentCommentId: number | null;
-
   userId: number;
   nickname: string;
-
   content: string;
   createdAt: string;
   updatedAt: string;
-
   likeCount: number;
   dislikeCount: number;
-
   mine?: boolean;
-
   likedByMe?: boolean;
   dislikedByMe?: boolean;
-
   replies: Comment[];
-
   avatarType?: "male" | "female";
   avatarVariant?: number;
+  avatarIcon?: string;
+  profileFrame?: string;
+  profileBadge?: string;
 };
 
 interface FileUploadResponse {
@@ -230,6 +227,18 @@ export function CommunityPostDetailPage() {
   const currentUserId = user?.id ? Number(user.id) : null;
 
   const requireLogin = useCallback(() => navigate("/login"), [navigate]);
+
+  // 프로필 이미지 URL 해석 함수
+  const resolveImage = (url?: string | null) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `http://localhost:8080/${url}`;
+  };
+
+  // 뱃지가 이모지인지 확인
+  const isEmoji = (v: string) => {
+    return /\p{Emoji}/u.test(v);
+  };
 
   // 🔥 댓글/대댓글을 개별 업데이트하는 헬퍼
   const updateComment = (commentId: number, update: Partial<Comment>) => {
@@ -540,15 +549,28 @@ export function CommunityPostDetailPage() {
             {comments.map((comment) => (
               <div key={comment.commentId}>
                 <div className="flex gap-3">
-                  <Avatar
-                    type={comment.avatarType ?? "male"}
-                    variant={comment.avatarVariant ?? 1}
+                  <ProfileAvatar
+                    avatarUrl={comment.avatarIcon ? resolveImage(comment.avatarIcon) : undefined}
+                    frameUrl={comment.profileFrame ? resolveImage(comment.profileFrame) : undefined}
                     size={48}
                   />
 
                   <div className="flex-1">
-                    <div className="text-white font-medium">
-                      {comment.nickname}
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">
+                        {comment.nickname}
+                      </span>
+                      {comment.profileBadge && (
+                        isEmoji(comment.profileBadge) ? (
+                          <span className="text-lg leading-none">{comment.profileBadge}</span>
+                        ) : (
+                          <img
+                            src={resolveImage(comment.profileBadge)}
+                            alt="badge"
+                            className="w-5 h-5 object-contain"
+                          />
+                        )
+                      )}
                     </div>
                     <div className="text-xs text-gray-500">
                       {new Date(comment.createdAt).toLocaleString()}
@@ -670,15 +692,28 @@ export function CommunityPostDetailPage() {
                   <div className="ml-10 mt-4 space-y-6">
                     {comment.replies.map((reply) => (
                       <div key={reply.commentId} className="flex gap-3">
-                        <Avatar
-                          type={reply.avatarType ?? "male"}
-                          variant={reply.avatarVariant ?? 1}
+                        <ProfileAvatar
+                          avatarUrl={reply.avatarIcon ? resolveImage(reply.avatarIcon) : undefined}
+                          frameUrl={reply.profileFrame ? resolveImage(reply.profileFrame) : undefined}
                           size={36}
                         />
 
                         <div className="flex-1">
-                          <div className="text-white text-sm">
-                            {reply.nickname}
+                          <div className="flex items-center gap-2">
+                            <span className="text-white text-sm">
+                              {reply.nickname}
+                            </span>
+                            {reply.profileBadge && (
+                              isEmoji(reply.profileBadge) ? (
+                                <span className="text-base leading-none">{reply.profileBadge}</span>
+                              ) : (
+                                <img
+                                  src={resolveImage(reply.profileBadge)}
+                                  alt="badge"
+                                  className="w-4 h-4 object-contain"
+                                />
+                              )
+                            )}
                           </div>
                           <div className="text-xs text-gray-500">
                             {new Date(reply.createdAt).toLocaleString()}
