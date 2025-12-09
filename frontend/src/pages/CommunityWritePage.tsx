@@ -22,7 +22,7 @@ import {
   Type,
   Palette,
 } from "lucide-react";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, memo } from "react";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -53,6 +53,21 @@ interface CommunityWritePageProps {
   };
 }
 
+// 🔍 미리보기 전용 컴포넌트 + memo로 불필요 리렌더 방지
+interface PostPreviewProps {
+  html: string;
+}
+
+const PostPreview = memo(function PostPreview({ html }: PostPreviewProps) {
+  return (
+    <div
+      className="bg-black/30 border border-white/10 rounded-xl p-4 min-h-[200px] prose prose-invert max-w-none"
+      style={{ wordBreak: "break-word", lineHeight: 1.6 }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+});
+
 export function CommunityWritePage({
   onBack,
   onSubmit,
@@ -62,6 +77,11 @@ export function CommunityWritePage({
   // 초기값 설정 (수정 모드일 경우 initialPost 사용)
   const [newPostTitle, setNewPostTitle] = useState(initialPost?.title || "");
   const [newPostContent, setNewPostContent] = useState(
+    initialPost?.content || ""
+  );
+
+  // 🔥 미리보기용 별도 상태 (디바운스 대상)
+  const [previewContent, setPreviewContent] = useState(
     initialPost?.content || ""
   );
 
@@ -116,6 +136,7 @@ export function CommunityWritePage({
     if (initialPost && mode === "edit") {
       setNewPostTitle(initialPost.title || "");
       setNewPostContent(initialPost.content || "");
+      setPreviewContent(initialPost.content || "");
       setNewPostCategory(mapPostTypeToCategory(initialPost.postType || "일반"));
       setNewPostTags(initialPost.tags?.join(", ") || "");
       setCurrentPostId(initialPost.postId);
@@ -310,6 +331,7 @@ export function CommunityWritePage({
       if (mode === "create") {
         setNewPostTitle("");
         setNewPostContent("");
+        setPreviewContent("");
         setNewPostCategory("free");
         setNewPostTags("");
       }
@@ -372,53 +394,60 @@ export function CommunityWritePage({
     }
   };
 
-  // 🧼 미리보기용 sanitize를 useMemo로 캐싱
-  const sanitizedPreview = useMemo(
-    () =>
-      DOMPurify.sanitize(newPostContent || "", {
-        ALLOWED_TAGS: [
-          "p",
-          "br",
-          "strong",
-          "em",
-          "u",
-          "s",
-          "strike",
-          "img",
-          "video",
-          "a",
-          "ul",
-          "ol",
-          "li",
-          "h1",
-          "h2",
-          "h3",
-          "h4",
-          "h5",
-          "h6",
-          "blockquote",
-          "code",
-          "pre",
-          "span",
-          "div",
-        ],
-        ALLOWED_ATTR: [
-          "src",
-          "alt",
-          "href",
-          "target",
-          "rel",
-          "controls",
-          "style",
-          "class",
-          "width",
-          "height",
-        ],
-        ALLOWED_URI_REGEXP:
-          /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-      }),
-    [newPostContent]
-  );
+  // ⏱ 타이핑 후 300ms 지나면 previewContent 갱신 (디바운스)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPreviewContent(newPostContent);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [newPostContent]);
+
+  // 🧼 미리보기용 sanitize를 useMemo로 캐싱 (previewContent 기준)
+  const sanitizedContent = useMemo(() => {
+    return DOMPurify.sanitize(previewContent || "", {
+      ALLOWED_TAGS: [
+        "p",
+        "br",
+        "strong",
+        "em",
+        "u",
+        "s",
+        "strike",
+        "img",
+        "video",
+        "a",
+        "ul",
+        "ol",
+        "li",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "blockquote",
+        "code",
+        "pre",
+        "span",
+        "div",
+      ],
+      ALLOWED_ATTR: [
+        "src",
+        "alt",
+        "href",
+        "target",
+        "rel",
+        "controls",
+        "style",
+        "class",
+        "width",
+        "height",
+      ],
+      ALLOWED_URI_REGEXP:
+        /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    });
+  }, [previewContent]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -548,7 +577,7 @@ export function CommunityWritePage({
                         const size = e.target.value;
                         setFontSize(size);
                         let tag = "";
-                        if (size === "12") tag = '<small>';
+                        if (size === "12") tag = "<small>";
                         else if (size === "20") tag = "<big>";
                         else if (size === "24") tag = "## ";
                         else if (size === "32") tag = "# ";
@@ -722,13 +751,7 @@ export function CommunityWritePage({
                   <label className="block text-sm font-medium text-white mb-2">
                     미리보기
                   </label>
-                  <div
-                    className="bg-black/30 border border-white/10 rounded-xl p-4 min-h-[200px] prose prose-invert max-w-none"
-                    style={{ wordBreak: "break-word", lineHeight: 1.6 }}
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizedPreview,
-                    }}
-                  />
+                  <PostPreview html={sanitizedContent} />
                 </div>
               </div>
 
