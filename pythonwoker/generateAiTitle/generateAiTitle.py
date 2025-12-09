@@ -12,7 +12,7 @@ from collections import Counter
 # 환경변수 로드
 # ===============================
 load_dotenv()
-DB_URL = os.getenv("DB_URL")
+DB_URL = os.getenv("MYSQL_PUBLIC_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # ===============================
