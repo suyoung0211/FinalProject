@@ -57,7 +57,8 @@ export function Issues() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden flex flex-col"
+             style={{ height: "calc(100vh - 64px)" }}>
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           <h3 className="font-bold text-white">승인 대기 이슈</h3>
           <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm">
