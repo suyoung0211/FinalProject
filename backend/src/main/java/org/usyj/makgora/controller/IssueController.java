@@ -2,6 +2,7 @@
 package org.usyj.makgora.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -26,7 +27,11 @@ public class IssueController {
 
     private final IssueService issueService;
     private final VoteService voteService;
-    private final IssueRepository issueRepo;    
+    private final IssueRepository issueRepo;
+
+    // 🔹 클래스 필드로 선언, Spring에서 application.properties 또는 환경변수로 주입
+    @Value("${worker.url:http://localhost:5001/trigger/vote}")
+    private String workerUrl;
 
     /** 🔹 AI 추천 이슈 목록 */
     @GetMapping("/recommended")
@@ -48,28 +53,27 @@ public class IssueController {
 
     /** 🔥 관리자: Issue 승인  */
     @PostMapping("/{issueId}/approve")
-public ResponseEntity<?> approveIssue(@PathVariable Integer issueId) {
+    public ResponseEntity<?> approveIssue(@PathVariable Integer issueId) {
 
-    IssueEntity issue = issueRepo.findById(issueId)
-            .orElseThrow(() -> new RuntimeException("Issue not found"));
+        IssueEntity issue = issueRepo.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
 
-    issue.setStatus(Status.APPROVED);
-    issue.setApprovedAt(LocalDateTime.now());
-    issueRepo.save(issue);
+        issue.setStatus(Status.APPROVED);
+        issue.setApprovedAt(LocalDateTime.now());
+        issueRepo.save(issue);
 
-    // 🔥 Python Worker에 Vote 생성 요청
-    String workerUrl = "http://localhost:5001/trigger/vote";
-    Map<String, Object> request = new HashMap<>();
-    request.put("issueId", issueId);
+        // 🔥 Python Worker에 Vote 생성 요청
+        Map<String, Object> request = new HashMap<>();
+        request.put("issueId", issueId);
 
-    try {
-        RestTemplate rest = new RestTemplate();
-        rest.postForObject(workerUrl, request, String.class);
-    } catch (Exception e) {
-        e.printStackTrace();
-        return ResponseEntity.status(500).body("Vote 생성 Worker 호출 실패");
+        try {
+            RestTemplate rest = new RestTemplate();
+            rest.postForObject(workerUrl, request, String.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Vote 생성 Worker 호출 실패");
+        }
+
+        return ResponseEntity.ok("Issue Approved + Vote 생성 트리거됨");
     }
-
-    return ResponseEntity.ok("Issue Approved + Vote 생성 트리거됨");
-}
 }
