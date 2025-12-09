@@ -82,8 +82,19 @@ export function UnifiedSidebar({
       ?.choiceText;
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sticky top-24 space-y-6">
-
+    <div className="
+  bg-white/5 border border-white/10 rounded-2xl 
+  p-4 
+  space-y-4 
+  max-h-[calc(85vh-8rem)] 
+  overflow-y-auto
+">
+                  {/* 🔥 참여 완료 배지 */}
+      {myParticipation?.hasParticipated && (
+        <div className="absolute top-2 right-3 bg-green-600/70 text-white text-xs font-semibold px-2 py-1 rounded-md">
+          참여 완료
+        </div>
+      )}
       <h3 className="text-white font-semibold text-lg">
         {isAIVote ? "포인트 배팅" : "설문 참여하기"}
       </h3>

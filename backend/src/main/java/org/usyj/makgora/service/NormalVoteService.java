@@ -133,7 +133,7 @@ public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest
         NormalVoteOptionEntity option = optionRepository.findById(optionId)
                 .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
 
-        if (!option.getNormalVote().getId().equals(voteId)) {
+        if (!option.getNormalVote().getId().equals(voteId.longValue())) {
             throw new RuntimeException("해당 옵션은 이 투표에 속하지 않습니다.");
         }
 
@@ -152,7 +152,7 @@ public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest
         NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
                 .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
 
-        if (!choice.getNormalOption().getNormalVote().getId().equals(voteId)) {
+        if (!choice.getNormalOption().getNormalVote().getId().equals(voteId.longValue())) {
             throw new RuntimeException("해당 선택지는 이 투표에 속하지 않습니다.");
         }
 
@@ -217,6 +217,10 @@ public NormalVoteParticipateResponse participate(Integer voteId, Integer choiceI
 
     NormalVoteOptionEntity option = choice.getNormalOption();
     NormalVoteEntity vote = option.getNormalVote();
+    voteUserRepository.findByNormalVote_IdAndUser_Id(voteId, userId)
+    .ifPresent(v -> {
+        throw new RuntimeException("이미 일반투표에 참여했습니다.");
+    });
 
     // 안전한 타입 비교
     if (!Objects.equals(vote.getId(), Long.valueOf(voteId))) {

@@ -16,6 +16,8 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
 
     boolean existsByUserIdAndVoteId(Integer userId, Integer voteId);
 
+    Optional<VoteUserEntity> findByNormalVote_IdAndUser_Id(Integer voteId, Integer userId);
+
     boolean existsByUserAndChoice(UserEntity user, VoteOptionChoiceEntity choice);
 
     boolean existsByUserIdAndOptionId(Integer userId, Long optionId);
@@ -55,8 +57,4 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
     // 🔥 내가 참여한 일반투표 목록 조회 (mypage용)
     List<VoteUserEntity> findByUser_IdAndNormalVoteIsNotNull(Integer userId);
 
-    /** NormalVote + User별 유일 투표(중복 금지) */
-    VoteUserEntity findByNormalVote_IdAndUser_Id(Integer normalVoteId, Integer userId);
-
-    
 }

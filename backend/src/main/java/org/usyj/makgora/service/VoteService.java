@@ -127,10 +127,10 @@ public VoteDetailMainResponse participateVote(Integer voteId, VoteParticipateReq
         throw new VoteException("NOT_ENOUGH_POINTS", "포인트가 부족합니다.");
     }
 
-    // 🔥 1. 중복 참여 방지 (옵션 단위)
-    if (voteUserRepository.existsByUserIdAndOptionId(userId, choice.getOption().getId())) {
-        throw new VoteException("ALREADY_VOTED", "이미 이 옵션에서 투표했습니다.");
-    }
+    // 🔥 1. 투표 전체에 이미 참여했는지 확인
+if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
+    throw new VoteException("ALREADY_VOTED", "이미 이 투표에 참여했습니다.");
+}
     // 🔥 URL의 voteId 와 choice 가 속한 vote 가 다르면 에러
     if (vote.getId() != voteId.longValue()) {
     throw new VoteException("INVALID_CHOICE_FOR_VOTE", "이 투표에 속하지 않는 선택지입니다.");
