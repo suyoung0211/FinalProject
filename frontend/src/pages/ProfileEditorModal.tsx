@@ -99,8 +99,18 @@ export function ProfileEditorModal({
 
 
   // ✨ 라이브 미리보기 (현재 아바타 + 선택된 프레임/뱃지)
-  const previewFrameSrc = selectedFrame?.image || user.profileFrame;
-  const previewBadgeSrc = selectedBadge?.image || user.profileBadge;
+  const previewFrameSrc =
+  selectedFrame === null
+    ? null // 선택 해제 → 완전 제거
+    : selectedFrame
+    ? selectedFrame.image // 새 선택 적용
+    : user.profileFrame; // 초기 상태
+  const previewBadgeSrc =
+  selectedBadge === null
+    ? null
+    : selectedBadge
+    ? selectedBadge.image
+    : user.profileBadge;
 
   return (
   <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-6 z-50">
@@ -171,7 +181,11 @@ export function ProfileEditorModal({
                   <button
                     type="button"
                     key={f.userStoreId}
-                    onClick={() => setSelectedFrame(f)}
+                    onClick={() =>
+                      setSelectedFrame((prev) =>
+                        prev?.userStoreId === f.userStoreId ? null : f
+                      )
+                    }
                     className={`p-2 border rounded-xl cursor-pointer transition-all bg-black/40 ${
                       selectedFrame?.userStoreId === f.userStoreId
                         ? "border-pink-400 shadow-lg shadow-pink-500/30"
@@ -199,7 +213,11 @@ export function ProfileEditorModal({
                   <button
                     type="button"
                     key={b.userStoreId}
-                    onClick={() => setSelectedBadge(b)}
+                    onClick={() =>
+                      setSelectedBadge((prev) =>
+                        prev?.userStoreId === b.userStoreId ? null : b
+                      )
+                    }
                     className={`flex items-center justify-center 
                       w-20 h-19  /* 🔥 버튼 크기 커짐 */
                       text-6xl   /* 🔥 이모지 크기 커짐 */

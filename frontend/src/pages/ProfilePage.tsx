@@ -26,12 +26,6 @@ interface UserProfile {
   level: number;
 }
 
-interface ProfileAvatarProps {
-  avatarUrl?: string;
-  frameUrl?: string;
-  size?: number; // px 크기 (32, 48, 96 등)
-}
-
 interface RecentCommunityActivity {
   activityId: number;
   type: "POST" | "COMMENT";
@@ -56,12 +50,17 @@ interface RecentVoteActivity {
   createdAt: string;
 }
 
-
 export function ProfilePage({ onBack }: { onBack: () => void }) {
   const [user, setUser] = useState<UserProfile | null>(null);
+
   const [isEditingAppearance, setIsEditingAppearance] = useState(false);
   const [isEditingPhoto, setIsEditingPhoto] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+
+  const [editForm, setEditForm] = useState({
+    nickname: "",
+    email: "",
+  });
 
   const [communityActivities, setCommunityActivities] = useState<
     RecentCommunityActivity[]
@@ -70,22 +69,22 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
   const [voteActivities, setVoteActivities] = useState<RecentVoteActivity[]>([]);
 
   //===============================
-  // 프로필 정보 불러오기
+  // 1) 프로필 정보 불러오기
   //===============================
   useEffect(() => {
-  const loadProfile = async () => {
-    const res = await api.get("/profile/me");
+    const loadProfile = async () => {
+      const res = await api.get("/profile/me");
 
-    setUser({
-      ...res.data,
-      email: res.data.loginId, // ← 이메일로 쓰기 위해 매핑
-    });
-  };
-  loadProfile();
-}, []);
+      setUser({
+        ...res.data,
+        email: res.data.loginId, // 이메일로 사용
+      });
+    };
+    loadProfile();
+  }, []);
 
   //===============================
-  // 활동 내역
+  // 2) 활동 내역 불러오기
   //===============================
   useEffect(() => {
     api
@@ -97,7 +96,17 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
       .then((res) => setVoteActivities(res.data));
   }, []);
 
-  if (!user) return <div className="text-white p-8">불러오는 중...</div>;
+  //===============================
+  // 3) 편집 모드일 때 form에 초기값 넣기
+  //===============================
+  useEffect(() => {
+    if (isEditingProfile && user) {
+      setEditForm({
+        nickname: user.nickname,
+        email: user.email ?? "",
+      });
+    }
+  }, [isEditingProfile, user]);
 
   //===============================
   // 이미지 경로 처리
@@ -124,28 +133,34 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
   };
 
   //===============================
-  // 프로필 정보 저장 (모달에서 호출)
+  // 프로필 정보 저장
   //===============================
-  const handleProfileUpdate = async (updated: { nickname: string; email?: string }) => {
-  try {
-    await api.post("/profile/update", {
-      nickname: updated.nickname,
-      loginId: updated.email, 
-    });
+  const handleProfileUpdate = async (updated: {
+    nickname: string;
+    email?: string;
+  }) => {
+    try {
+      await api.post("/profile/update", {
+        nickname: updated.nickname,
+        loginId: updated.email,
+      });
 
-    setIsEditingProfile(false);
-  } catch (e) {
-    console.error("프로필 업데이트 실패", e);
-  }
-};
+      setUser((prev) =>
+        prev ? { ...prev, nickname: updated.nickname, email: updated.email } : prev
+      );
 
-  //------------------------------
-  // JSX 렌더링
-  //------------------------------
+      setIsEditingProfile(false);
+    } catch (e) {
+      console.error("프로필 업데이트 실패", e);
+    }
+  };
+
+  //-------------------------------------
+  // 렌더링
+  //-------------------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      
-      {/* Header */}
+      {/* ---------------------- HEADER ---------------------- */}
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <button
@@ -159,228 +174,208 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
       </header>
 
       <div className="container mx-auto px-4 py-8">
+        {/* user가 아직 로딩 중일 때 */}
+        {!user ? (
+          <div className="text-white p-8 text-lg">불러오는 중...</div>
+        ) : (
+          <>
+            {/* ---------------------- 프로필 영역 ---------------------- */}
+            <div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-3xl p-8 mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <User className="w-6 h-6 text-purple-400" />
+                  프로필 정보
+                </h2>
 
-        {/*============== 프로필 섹션 ==============*/}
-        {/*======================================
-    프로필 섹션 (보기 모드 / 편집 모드 전환)
-=======================================*/}
-<div className="bg-white/5 border border-white/20 backdrop-blur-xl rounded-3xl p-8 mb-6">
+                {!isEditingProfile ? (
+                  <Button
+                    onClick={() => setIsEditingProfile(true)}
+                    className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    편집
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() =>
+                        handleProfileUpdate({
+                          nickname: editForm.nickname,
+                          email: editForm.email,
+                        })
+                      }
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                    >
+                      저장
+                    </Button>
 
-  {/* ===================== 제목 + 버튼 ===================== */}
-  <div className="flex items-center justify-between mb-6">
-    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-      <User className="w-6 h-6 text-purple-400" />
-      프로필 정보
-    </h2>
+                    <Button
+                      onClick={() => setIsEditingProfile(false)}
+                      className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    >
+                      취소
+                    </Button>
+                  </div>
+                )}
+              </div>
 
-    {!isEditingProfile ? (
-      <Button
-        onClick={() => setIsEditingProfile(true)}
-        className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-      >
-        <Edit2 className="w-4 h-4 mr-2" />
-        편집
-      </Button>
-    ) : (
-      <div className="flex gap-2">
-        <Button
-          onClick={() => handleProfileUpdate({ nickname: user.nickname, email: user.email })}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-        >
-          저장
-        </Button>
+              {/* -------------------- 보기 모드 -------------------- */}
+              {!isEditingProfile && (
+                <div className="flex items-start gap-6 translate-x-[20px]">
+                  <div className="relative mt-4">
+                    <ProfileAvatar
+                      avatarUrl={resolveImage(user.avatarIcon)}
+                      frameUrl={resolveImage(user.profileFrame)}
+                      size={100}
+                    />
+                  </div>
 
-        <Button
-          onClick={() => setIsEditingProfile(false)}
-          className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
-        >
-          취소
-        </Button>
-      </div>
-    )}
-  </div>
+                  <div className="flex-1 translate-x-5">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-3xl font-bold text-white mb-2">
+                        {user.nickname}
+                      </h1>
 
-  {/* ===================== 보기 모드 ===================== */}
-  {!isEditingProfile && (
-    <div className="flex items-start gap-6 translate-x-[20px]">
+                      {user.profileBadge &&
+                        (user.profileBadge.startsWith("http") ? (
+                          <img
+                            src={resolveImage(user.profileBadge)}
+                            alt="badge"
+                            className="w-8 h-8 object-contain"
+                          />
+                        ) : (
+                          <span className="text-5xl leading-none -translate-y-[4px] inline-block">
+                            {user.profileBadge}
+                          </span>
+                        ))}
+                    </div>
 
+                    {user.email && (
+                      <div className="flex items-center gap-2 text-gray-400 mb-4">
+                        <Mail className="w-4 h-4" />
+                        <span>{user.email}</span>
+                      </div>
+                    )}
 
-      {/* 프로필 이미지 */}
-      <div className="relative mt-4">
-      <ProfileAvatar
-        avatarUrl={resolveImage(user.avatarIcon)}
-        frameUrl={resolveImage(user.profileFrame)}
-        size={100}
-      />
-      </div>
-      {/* 텍스트 정보 */}
-        <div className="flex-1 translate-x-5">
-          
-          {/* 닉네임 + 뱃지 */}
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {user.nickname}
-            </h1>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
+                        <Coins className="w-5 h-5 text-white" />
+                        <span className="text-white font-bold">
+                          {user.points.toLocaleString()} P
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
-          {/* 프로필 뱃지 표시 */}
-          {user.profileBadge && (
-            user.profileBadge.startsWith("http") ? (
-              <img
-                src={resolveImage(user.profileBadge)}
-                alt="badge"
-                className="w-8 h-8 object-contain"
-              />
-            ) : (
-              <span className="text-5xl leading-none -translate-y-[4px] inline-block">{user.profileBadge}</span>
-            )
-          )}
+              {/* -------------------- 편집 모드 -------------------- */}
+              {isEditingProfile && (
+                <div className="flex items-start gap-6">
+                  <div className="relative translate-x-9 translate-y-9 gap-1">
+                    <ProfileAvatar
+                      avatarUrl={resolveImage(user.avatarIcon)}
+                      frameUrl={resolveImage(user.profileFrame)}
+                      size={150}
+                    />
+                  </div>
 
-          
-        </div>
-        
-        {/* 이메일 */}
-        {user.email && (
-          <div className="flex items-center gap-2 text-gray-400 mb-4">
-            <Mail className="w-4 h-4" />
-            <span>{user.email}</span>
-          </div>
+                  <div className="flex-1 space-y-4 max-w-md ml-20">
+                    <div>
+                      <label className="text-gray-300 text-sm">닉네임</label>
+                      <input
+                        type="text"
+                        className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px]"
+                        value={editForm.nickname}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, nickname: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-gray-300 text-sm">이메일</label>
+                      <input
+                        type="email"
+                        className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px] mb-[16px]"
+                        value={editForm.email}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, email: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-5">
+                      <Button
+                        onClick={() => setIsEditingPhoto(true)}
+                        className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg"
+                      >
+                        프로필 사진 변경
+                      </Button>
+
+                      <Button
+                        onClick={() => setIsEditingAppearance(true)}
+                        className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg"
+                      >
+                        프로필 테두리 & 뱃지 설정하기
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ---------------------- 활동 섹션 ---------------------- */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white/5 border border-white/20 rounded-3xl p-6 backdrop-blur-xl">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-purple-400" />
+                  최근 커뮤니티 활동
+                </h2>
+
+                {communityActivities.length === 0 ? (
+                  <p className="text-gray-400">아직 활동이 없어요.</p>
+                ) : (
+                  communityActivities.map((a) => (
+                    <div
+                      key={a.activityId}
+                      className="p-4 bg-white/5 border border-white/10 rounded-xl mb-3"
+                    >
+                      <p className="text-white font-medium">{a.postTitle}</p>
+                      <p className="text-gray-400 text-sm">
+                        {a.contentPreview}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="bg-white/5 border border-white/20 rounded-3xl p-6 backdrop-blur-xl">
+                <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                  <Calendar className="w-6 h-6 text-purple-400" />
+                  최근 투표 활동
+                </h2>
+
+                {voteActivities.length === 0 ? (
+                  <p className="text-gray-400">아직 투표 기록이 없어요.</p>
+                ) : (
+                  voteActivities.map((v) => (
+                    <div
+                      key={v.voteUserId}
+                      className="p-4 bg-white/5 border border-white/10 rounded-xl mb-3"
+                    >
+                      <p className="text-white font-medium">{v.voteTitle}</p>
+                      <p className="text-gray-400 text-sm">{v.choiceText} 선택</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </>
         )}
-
-        {/* 포인트 */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full">
-            <Coins className="w-5 h-5 text-white" />
-            <span className="text-white font-bold">
-              {user.points.toLocaleString()} P
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )}
-
-  {/* ===================== 편집 모드 ===================== */}
-  {isEditingProfile && (
-    <div className="flex items-start gap-6">
-
-      {/* 이미지 + 프레임 편집 버튼 */}
-      <div className="relative">
-        <div className="relative flex items-center justify-center">
-          <ProfileAvatar
-            avatarUrl={resolveImage(user.avatarIcon)}
-            frameUrl={resolveImage(user.profileFrame)}
-            size={96}
-          />
-        
-          
-        </div>
       </div>
 
-      {/* 편집 입력창 */}
-      <div className="flex-1 space-y-4 max-w-md ml-6">
-
-        {/* 닉네임 */}
-        <div>
-          <label className="text-gray-300 text-sm">닉네임</label>
-          <input
-            type="text"
-            className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px]"
-            value={user.nickname}
-            onChange={(e) =>
-              setUser(prev => prev ? { ...prev, nickname: e.target.value } : prev)
-            }
-          />
-        </div>
-
-        {/* 이메일 */}
-        <div>
-          <label className="text-gray-300 text-sm">이메일</label>
-          <input
-            type="email"
-            className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px] mb-[16px]"
-            value={user.email ?? ""}
-            onChange={(e) =>
-              setUser(prev => prev ? { ...prev, email: e.target.value } : prev)
-            }
-          />
-        </div>
-            {/* 프레임 & 뱃지 편집 버튼 */}
-
-        <div className="mt-4 flex items-center gap-5" >
-          {/* 테두리 & 뱃지 설정 */}
-          {/* 프로필 사진 변경 */}
-          <Button
-            onClick={() => setIsEditingPhoto(true)}
-            className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg"
-          >
-            프로필 사진 변경
-          </Button>
-          <Button
-            onClick={() => setIsEditingAppearance(true)}
-            className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg"
-          >
-            프로필 테두리 & 뱃지 설정하기
-          </Button>
-                  
-        </div>
-      </div>
-    </div>
-  )}
-</div>
-
-        {/*============== 활동 섹션 ==============*/}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* community */}
-          <div className="bg-white/5 border border-white/20 rounded-3xl p-6 backdrop-blur-xl">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-400" />
-              최근 커뮤니티 활동
-            </h2>
-
-            {communityActivities.length === 0 && (
-              <p className="text-gray-400">아직 활동이 없어요.</p>
-            )}
-
-            {communityActivities.map((a) => (
-              <div
-                key={a.activityId}
-                className="p-4 bg-white/5 border border-white/10 rounded-xl mb-3"
-              >
-                <p className="text-white font-medium">{a.postTitle}</p>
-                <p className="text-gray-400 text-sm">{a.contentPreview}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* vote */}
-          <div className="bg-white/5 border border-white/20 rounded-3xl p-6 backdrop-blur-xl">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-400" />
-              최근 투표 활동
-            </h2>
-
-            {voteActivities.length === 0 && (
-              <p className="text-gray-400">아직 투표 기록이 없어요.</p>
-            )}
-
-            {voteActivities.map((v) => (
-              <div
-                key={v.voteUserId}
-                className="p-4 bg-white/5 border border-white/10 rounded-xl mb-3"
-              >
-                <p className="text-white font-medium">{v.voteTitle}</p>
-                <p className="text-gray-400 text-sm">{v.choiceText} 선택</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/*============== 모달 ==============*/}
-
-
-      {/* 프로필 이미지 편집 */}
+      {/* 모달들 */}
       {isEditingPhoto && (
         <ProfileImageEditor
           onCancel={() => setIsEditingPhoto(false)}
@@ -388,7 +383,7 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
         />
       )}
 
-      {isEditingAppearance && (
+      {isEditingAppearance && user && (
         <ProfileEditorModal
           user={user}
           onClose={() => setIsEditingAppearance(false)}
@@ -398,7 +393,6 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
           }}
         />
       )}
-
     </div>
   );
 }
