@@ -155,6 +155,7 @@ const PostBody = memo(function PostBody({
         style={{
           wordBreak: "break-word",
           lineHeight: "1.6",
+          whiteSpace: "pre-wrap"
         }}
         dangerouslySetInnerHTML={{ __html: sanitizedContent }}
       />

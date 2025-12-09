@@ -62,7 +62,7 @@ const PostPreview = memo(function PostPreview({ html }: PostPreviewProps) {
   return (
     <div
       className="bg-black/30 border border-white/10 rounded-xl p-4 min-h-[200px] prose prose-invert max-w-none"
-      style={{ wordBreak: "break-word", lineHeight: 1.6 }}
+      style={{ wordBreak: "break-word", lineHeight: 1.6, whiteSpace: "pre-wrap" }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
