@@ -11,7 +11,7 @@ WORKDIR /app
 # ==========================
 # 3️⃣ 종속성 설치
 # ==========================
-COPY requirements.txt .
+COPY generateIssueCard/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
