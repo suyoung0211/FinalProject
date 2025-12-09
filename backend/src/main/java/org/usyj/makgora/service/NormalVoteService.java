@@ -351,6 +351,18 @@ private NormalVoteParticipateResponse toParticipateResponse(VoteUserEntity vu) {
         return "NORMAL_VOTE_CANCELLED";
     }
 
+     /* ============================================================
+       8) 투표 취소(관리자용)
+       ============================================================ */
+    @Transactional
+public void cancelVoteAdmin(Integer normalVoteId) {
+    NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
+            .orElseThrow(() -> new RuntimeException("Vote not found"));
+
+    vote.setStatus(NormalVoteEntity.Status.CANCELLED);  // ENUM 변경
+    normalVoteRepository.save(vote);
+}
+
     /* ============================================================
        9) 내가 참여한 투표 조회
        ============================================================ */

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
+import { Header } from "../components/layout/Header";
 
 // API
 import { fetchVoteDetailFull, participateVote } from "../api/voteApi";
@@ -233,26 +234,11 @@ export function VoteDetailPage({
   // ====================================================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* HEADER */}
-      <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Button onClick={onBack} variant="ghost" className="text-white hover:bg-white/10">
-            <ArrowLeft className="w-5 h-5 mr-2" /> 뒤로
-          </Button>
-
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-white">
-              <Share2 />
-            </Button>
-            <Button variant="ghost" className="text-white">
-              <Bookmark />
-            </Button>
-          </div>
-        </div>
-      </header>
+      {/* ---------------- HEADER ---------------- */}
+      <Header activeMenu="VoteDetailPage" />
 
       {/* BODY */}
-      <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-4 py-8 mt-20 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
           {loading || !data ? (

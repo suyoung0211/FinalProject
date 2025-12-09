@@ -2,6 +2,7 @@ package org.usyj.makgora.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
@@ -139,4 +140,13 @@ public ResponseEntity<?> participate(
                 normalVoteService.getResult(id)
         );
     }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+@PostMapping("/{id}/cancel")
+public ResponseEntity<?> cancelNormalVote(
+        @PathVariable Integer normalVoteId
+) {
+    normalVoteService.cancelVoteAdmin(normalVoteId);
+    return ResponseEntity.ok("Normal vote canceled");
+}
 }

@@ -1,7 +1,10 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.response.voteDetails.*;
@@ -9,6 +12,7 @@ import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,8 +37,10 @@ public class VoteListService {
      * ======================================================= */
     public VoteDetailMainResponse getVoteDetail(Integer voteId, Integer userId) {
 
-        VoteEntity vote = voteRepository.findById(voteId)
-                .orElseThrow(() -> new RuntimeException("Vote not found"));
+       VoteEntity vote = voteRepository.findById(voteId)
+        .orElseThrow(() ->
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Vote not found: " + voteId)
+        );
 
         // 각각 서브 DTO 로딩
         VoteDetailArticleResponse article = loadArticle(vote);
@@ -173,25 +179,51 @@ public class VoteListService {
      * ======================================================= */
     private VoteDetailOddsResponse loadOdds(Integer voteId) {
 
-        List<VoteOptionEntity> options = voteOptionRepository.findByVoteId(voteId.longValue());
+    List<VoteOptionEntity> options =
+            voteOptionRepository.findByVoteId(voteId.longValue());
 
-        List<VoteOptionChoiceEntity> allChoices = options.stream()
-                .flatMap(o -> o.getChoices().stream())
-                .collect(Collectors.toList());
+    List<VoteOptionChoiceEntity> choices = options.stream()
+            .flatMap(o -> o.getChoices().stream())
+            .toList();
 
-        List<VoteDetailOddsResponse.OddsItem> oddsItems = allChoices.stream()
-                .map(c -> VoteDetailOddsResponse.OddsItem.builder()
+    // 🔥 1) 각 선택지 Pool 계산 (0 → 1로 보정)
+    Map<Long, Long> poolMap = choices.stream()
+            .collect(Collectors.toMap(
+                    VoteOptionChoiceEntity::getId,
+                    c -> Math.max(1L, c.getPointsTotal() == null ? 0L : c.getPointsTotal())
+            ));
+
+    // 🔥 2) 전체 Pool
+    long totalPool = poolMap.values().stream().mapToLong(Long::longValue).sum();
+
+    // 🔥 3) 배당률 계산
+    List<VoteDetailOddsResponse.OddsItem> oddsItems = choices.stream()
+            .map(c -> {
+
+                long poolC = poolMap.get(c.getId());
+
+                // raw odds
+                double rawOdds = (totalPool * 1.0) / poolC;
+
+                // 하한선 적용 (1.10x)
+                double finalOdds = Math.max(rawOdds, 1.10);
+
+                // 소수점 2자리
+                finalOdds = Math.round(finalOdds * 100.0) / 100.0;
+
+                return VoteDetailOddsResponse.OddsItem.builder()
                         .choiceId(c.getId().intValue())
                         .text(c.getChoiceText())
-                        .odds(c.getOdds() != null ? c.getOdds() : 1.0)
-                        .build())
-                .toList();
+                        .odds(finalOdds)
+                        .build();
+            })
+            .toList();
 
-        return VoteDetailOddsResponse.builder()
-                .voteId(voteId)
-                .odds(oddsItems)
-                .build();
-    }
+    return VoteDetailOddsResponse.builder()
+            .voteId(voteId)
+            .odds(oddsItems)
+            .build();
+}
 
 
     /* =======================================================
