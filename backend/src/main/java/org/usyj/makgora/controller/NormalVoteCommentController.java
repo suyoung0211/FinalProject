@@ -1,6 +1,7 @@
 package org.usyj.makgora.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,6 +41,30 @@ public List<VoteDetailCommentResponse> getComments(
                 req.getParentId()
         );
     }
+
+    @PutMapping("/{id}")
+public ResponseEntity<?> updateComment(
+        @PathVariable Long id,
+        @RequestBody Map<String, Object> req,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    if (user == null) {
+        return ResponseEntity.status(401).body("로그인이 필요합니다.");
+    }
+
+    String newContent = (String) req.get("content");
+    if (newContent == null || newContent.trim().isEmpty()) {
+        return ResponseEntity.badRequest().body("수정할 내용을 입력하세요.");
+    }
+
+    return ResponseEntity.ok(
+            normalCommentService.updateComment(
+                    id,
+                    user.getId(),
+                    newContent.trim()
+            )
+    );
+}
 
     @PostMapping("/{id}/react")
     public VoteDetailCommentResponse react(

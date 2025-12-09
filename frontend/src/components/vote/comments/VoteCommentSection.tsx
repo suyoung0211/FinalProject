@@ -6,6 +6,7 @@ import {
   addVoteComment,
   reactVoteComment,
   deleteVoteComment,
+  updateVoteComment,
 } from "../../../api/votecommentsApi";
 
 import {
@@ -13,6 +14,7 @@ import {
   addNormalVoteComment,
   reactNormalVoteComment,
   deleteNormalVoteComment,
+  updateNormalVoteComment,
 } from "../../../api/normalVoteApi";
 
 import { VoteCommentItem } from "./VoteCommentItem";
@@ -34,6 +36,24 @@ export function VoteCommentSection({
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
+
+ /* ============================================
+ * 댓글 수정
+ * ============================================ */
+async function handleEdit(commentId: number, content: string) {
+  try {
+    if (targetType === "VOTE") {
+      await updateVoteComment(commentId, content);
+    } else {
+      await updateNormalVoteComment(commentId, content);
+    }
+    await load();
+  } catch (e) {
+    console.error(e);
+    alert("댓글 수정 실패");
+  }
+}
+
 
   /* ============================================
    * 댓글 목록 불러오기
@@ -156,14 +176,15 @@ export function VoteCommentSection({
       <div className="space-y-3">
         {comments.map((c: any) => (
           <VoteCommentItem
-            key={c.commentId}
-            comment={c}
-            depth={0}
-            onReply={(id) => setReplyTargetId(id)}
-            onReact={handleReact}
-            onDelete={handleDelete}
-            currentUserId={user?.id ?? null}
-          />
+  key={c.commentId}
+  comment={c}
+  depth={0}
+  onReply={(id) => setReplyTargetId(id)}
+  onReact={handleReact}
+  onDelete={handleDelete}
+  onEdit={handleEdit}   // ← 추가됨
+  currentUserId={user?.id ?? null}
+/>
         ))}
       </div>
 

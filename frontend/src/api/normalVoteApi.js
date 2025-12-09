@@ -63,3 +63,7 @@ export const reactNormalVoteComment = (commentId, like) =>
 
 export const deleteNormalVoteComment = (commentId) =>
   api.delete(`/normal-votes/comments/${commentId}`);
+
+// 🔹 댓글 수정  ⭐ 수정된 부분
+export const updateNormalVoteComment = (commentId, content) =>
+  api.put(`/normal-votes/comments/${commentId}`, { content });

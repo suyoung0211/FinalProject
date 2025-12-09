@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.VoteDetailCommentService;
+import org.usyj.makgora.service.VoteDetailService;
 
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import java.util.Map;
 public class VoteCommentController {
 
     private final VoteDetailCommentService voteCommentService;
+    private final VoteDetailService voteDetailService;
 
     /* ============================================
        🔥 1) 댓글 조회 (AI Vote 전용)
@@ -78,6 +80,33 @@ public class VoteCommentController {
                 voteCommentService.reactComment(id, user.getId(), like)
         );
     }
+
+    /* ============================================
+   🔥 5) 댓글 수정
+   ============================================ */
+@PutMapping("/{id}")
+public ResponseEntity<?> updateComment(
+        @PathVariable Long id,
+        @RequestBody Map<String, Object> req,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    if (user == null) {
+        return ResponseEntity.status(401).body("로그인이 필요합니다.");
+    }
+
+    String newContent = (String) req.get("content");
+    if (newContent == null || newContent.trim().isEmpty()) {
+        return ResponseEntity.badRequest().body("수정할 내용을 입력하세요.");
+    }
+
+    return ResponseEntity.ok(
+            voteDetailService.updateComment(
+                    id,
+                    user.getId(),
+                    newContent.trim()
+            )
+    );
+}
 
     /* ============================================
        🔥 4) 댓글 삭제 (Soft Delete)

@@ -146,6 +146,8 @@ public class NormalVoteCommentService {
         commentRepository.save(c);
     }
 
+    
+
     /* =========================================================
        🔵 5) 엔티티 → DTO 변환 (재귀)
        ========================================================= */
@@ -181,6 +183,29 @@ public class NormalVoteCommentService {
             .createdAt(c.getCreatedAt())
             .updatedAt(c.getUpdatedAt())
             .build();
+}
+/* =========================================================
+   🔵 6) 댓글 수정
+   ========================================================= */
+public VoteDetailCommentResponse updateComment(Long commentId, Integer userId, String newContent) {
+
+    NormalVoteCommentEntity comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new RuntimeException("댓글 없음"));
+
+    if (!Objects.equals(comment.getUser().getId(), userId)) {
+        throw new RuntimeException("댓글 수정 권한 없음");
+    }
+
+    if (Boolean.TRUE.equals(comment.getIsDeleted())) {
+        throw new RuntimeException("삭제된 댓글은 수정할 수 없습니다.");
+    }
+
+    comment.setContent(newContent);
+    comment.setUpdatedAt(LocalDateTime.now());
+
+    commentRepository.save(comment);
+
+    return convertComment(comment, userId);
 }
 
 }

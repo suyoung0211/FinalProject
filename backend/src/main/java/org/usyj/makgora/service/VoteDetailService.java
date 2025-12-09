@@ -425,6 +425,25 @@ private List<VoteDetailCommentResponse> loadComments(Integer voteId) {
             .toList();
 }
 
+@Transactional
+public VoteDetailCommentResponse updateComment(Long commentId, Integer userId, String newContent) {
+
+    VoteCommentEntity comment = voteCommentRepository.findById(commentId)
+            .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
+
+    // 본인 댓글인지 확인
+    if (!comment.getUser().getId().equals(userId)) {
+        throw new RuntimeException("본인 댓글만 수정할 수 있습니다.");
+    }
+
+    comment.setContent(newContent);
+    comment.setUpdatedAt(LocalDateTime.now());
+
+    voteCommentRepository.save(comment);
+
+    return convertCommentTree(comment); // 기존 트리 변환 DTO 재사용
+}
+
     private VoteDetailCommentResponse convertCommentTree(VoteCommentEntity c) {
 
     List<VoteDetailCommentResponse> childDtos =

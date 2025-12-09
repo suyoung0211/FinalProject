@@ -384,6 +384,21 @@ NormalVoteCommentEntity 추가(normalvote랑 AIvote쪽이랑 충돌남...)
 voteuserentity에 normal_vote_id, vote_id, choice_id, option_id  nullable=true로 변경
 안그러면 vote랑 normal_vote쪽이랑 충돌남
 
+옵션 1개당 1회 참여에서 방식 투표1개에 1회 참여 가능으로 바꿈
+name = "Vote_Users",
+    uniqueConstraints = {
+        // ⭐ AI 투표: 유저는 같은 vote_id에 대해 1번만 참여 가능
+        @UniqueConstraint(
+                name = "unique_ai_vote_user",
+                columnNames = {"vote_id", "user_id"}
+        ),
+        // ⭐ Normal 투표: 유저는 같은 normal_vote_id에 대해 1번만 참여 가능
+        @UniqueConstraint(
+                name = "unique_normal_vote_user",
+                columnNames = {"normal_vote_id", "user_id"}
+                        )
+    }
+
 @Builder.Default
     @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
     private List<VoteCommentEntity> children = new ArrayList<>();
