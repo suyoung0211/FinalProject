@@ -111,4 +111,20 @@ public class CommunityPostController {
 
         return ResponseEntity.ok(response);
     }
+
+    // ⭐ 게시글 삭제 (작성자만)
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        System.out.println("🗑️ 게시글 삭제 요청 도착, id = " + postId);
+        System.out.println("   - 요청자: " + userDetails.getUser().getNickname()
+                + " (ID: " + userDetails.getUser().getId() + ")");
+
+        communityPostService.deletePost(postId, userDetails.getUser());
+
+        System.out.println("✅ 게시글 삭제 완료, id = " + postId);
+        return ResponseEntity.noContent().build();
+    }
 }

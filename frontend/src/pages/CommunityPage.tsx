@@ -314,11 +314,6 @@ useEffect(() => {
                     )}
                   </div>
 
-                  {/* Content preview */}
-                  <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                    {post.content}
-                  </p>
-
                   {/* Tags */}
                   {post.tags && post.tags.length > 0 && (
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
