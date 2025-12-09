@@ -138,7 +138,7 @@ export function VoteListPage() {
       <div className="container mx-auto px-4 py-8 pt-24">
 
         {/* TITLE */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 mt-15">
           <div>
             <h1 className="text-4xl font-bold text-white">이슈 투표</h1>
             <p className="text-gray-400">AI 예측 투표와 일반 투표를 참여해보세요</p>

@@ -1,6 +1,9 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
@@ -36,10 +39,12 @@ public class NormalVoteParticipateService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // 중복 참여 방지
-        VoteUserEntity existing = voteUserRepository
-                .findByNormalVote_IdAndUser_Id(normalVoteId, userId);
+        Optional<VoteUserEntity> existing = 
+    voteUserRepository.findByNormalVote_IdAndUser_Id(normalVoteId, userId);
 
-        if (existing != null) throw new RuntimeException("이미 참여한 투표입니다.");
+if (existing.isPresent()) {
+    throw new RuntimeException("이미 참여한 투표입니다.");
+}
 
         // 참여 저장
         VoteUserEntity voteUser = VoteUserEntity.builder()
