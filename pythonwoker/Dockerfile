@@ -13,7 +13,7 @@ WORKDIR /app
 # 3️⃣ 종속성 복사
 # requirements.txt 먼저 복사 → 캐시 활용
 # ============================
-COPY requirements.txt .
+COPY pythonworker/requirements.txt .
 
 # ============================
 # 4️⃣ 패키지 설치
