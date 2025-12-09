@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.request.StoreItemPurchaseRequest;
 import org.usyj.makgora.security.JwtTokenProvider;
+import org.usyj.makgora.store.service.StoreAdminService;
 import org.usyj.makgora.store.service.StoreService;
 import org.usyj.makgora.request.ApplyItemRequest;
 
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class StoreController {
 
     private final StoreService storeService;
+    private final StoreAdminService storeAdminService;
     private final JwtTokenProvider jwtTokenProvider;
 
     /** 아이템 목록 */
@@ -40,7 +42,7 @@ public class StoreController {
 
     @GetMapping("/frames")
     public Object getFrameImages() {
-    return storeAdminService.getImagesByFolder("frame");
+    return storeAdminService.getImagesByFolder("frames");
 }
     
     /** 구매 */
