@@ -2,23 +2,18 @@
 import { Button } from "../../components/ui/button";
 
 export function VoteModal({
-  mode,
+  choiceId,
   amount,
-  yesOdds,
-  noOdds,
-  yesPercent,
-  noPercent,
+  odds,
+  percent,
   onClose,
   onConfirm,
 }: any) {
-  const percent = mode === "YES" ? yesPercent : noPercent;
-  const odds = mode === "YES" ? yesOdds : noOdds;
-
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
       <div className="bg-slate-900 p-8 rounded-2xl border border-white/20 w-full max-w-md">
 
-        <h2 className="text-white text-2xl font-bold mb-6">{mode} 투표 확인</h2>
+        <h2 className="text-white text-2xl font-bold mb-6">투표 확인</h2>
 
         <div className="bg-white/5 rounded-xl p-4 mb-6">
           <div className="text-gray-400 text-sm">배팅 포인트</div>
@@ -41,7 +36,12 @@ export function VoteModal({
           <Button variant="outline" className="flex-1" onClick={onClose}>
             취소
           </Button>
-          <Button className="flex-1 bg-purple-600 text-white" onClick={() => onConfirm(mode)}>
+
+          {/* 🔥 핵심: mode 버리고 choiceId 를 직접 넘김 */}
+          <Button
+            className="flex-1 bg-purple-600 text-white"
+            onClick={() => onConfirm(choiceId)}
+          >
             투표 확정
           </Button>
         </div>

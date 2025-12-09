@@ -12,6 +12,7 @@ import org.usyj.makgora.response.voteDetails.NormalVoteResultResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -208,47 +209,50 @@ public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest
        4) 투표 참여
        ============================================================ */
     @Transactional
-public NormalVoteResponse participate(Integer voteId, Integer userId, Integer choiceId) {
-
-    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
-
-    if (vote.getStatus() != NormalVoteEntity.Status.ONGOING)
-        throw new RuntimeException("이미 종료된 투표입니다.");
+public NormalVoteParticipateResponse participate(Integer voteId, Integer choiceId, Integer userId) {
 
     NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
         .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
 
-NormalVoteOptionEntity option = choice.getNormalOption();
+    NormalVoteOptionEntity option = choice.getNormalOption();
+    NormalVoteEntity vote = option.getNormalVote();
 
-// 🔥 선택지가 해당 투표에 속하는지 검증
-Long voteIdOfChoice = option.getNormalVote().getId();
+    // 안전한 타입 비교
+    if (!Objects.equals(vote.getId(), Long.valueOf(voteId))) {
+        throw new RuntimeException("선택지가 해당 투표에 속하지 않습니다.");
+    }
 
-if (!voteIdOfChoice.equals(voteId.longValue())) {
-    throw new RuntimeException("선택지가 해당 투표에 속하지 않습니다.");
-}
+    UserEntity user = userRepository.findById(userId)
+        .orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
 
-    // 중복참여 방지
-    VoteUserEntity existing = voteUserRepository.findByNormalVote_IdAndUser_Id(voteId, userId);
-    if (existing != null)
-        throw new RuntimeException("이미 참여한 투표입니다.");
+    VoteUserEntity vu = VoteUserEntity.builder()
+        .user(user)
+        .normalVote(vote)
+        .normalOption(option)
+        .normalChoice(choice)
+        .isCancelled(false)
+        .createdAt(LocalDateTime.now())
+        .updatedAt(LocalDateTime.now())
+        .build();
 
-    // 저장
-    voteUserRepository.save(
-            VoteUserEntity.builder()
-                    .normalVote(vote)
-                    .normalChoice(choice)
-                    .user(userRepository.getReferenceById(userId))
-                    .isCancelled(false)
-                    .build()
-    );
+    voteUserRepository.save(vu);
 
-    // count 증가
     choice.setParticipantsCount(choice.getParticipantsCount() + 1);
-    vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+    choiceRepository.save(choice);
 
-    return toResponse(vote);
+    return toParticipateResponse(vu);
 }
+
+private NormalVoteParticipateResponse toParticipateResponse(VoteUserEntity vu) {
+    return NormalVoteParticipateResponse.builder()
+            .voteId(vu.getNormalVote().getId())
+            .optionId(vu.getNormalOption().getId())
+            .choiceId(vu.getNormalChoice().getId())
+            .userId(vu.getUser().getId())
+            .participantsCount(vu.getNormalChoice().getParticipantsCount())
+            .build();
+}
+
 
     /* ============================================================
        5) 전체 조회

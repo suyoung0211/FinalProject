@@ -45,15 +45,11 @@ public VoteDetailMainResponse getVoteDetail(Integer voteId, Integer userId) {
     VoteDetailStatisticsResponse statistics = loadStatistics(voteId);
     VoteDetailParticipationResponse myParticipation = loadMyParticipation(voteId, userId);
     List<VoteDetailCommentResponse> comments = loadComments(voteId);
-
+        
     // 2) 전체 포인트/참여자 합계
-    long totalPoints = options.stream()
-            .mapToLong(o -> o.getTotalPoints() != null ? o.getTotalPoints() : 0L)
-            .sum();
+    long totalPoints = vote.getTotalPoints() != null ? vote.getTotalPoints() : 0L;
+    int totalParticipants = vote.getTotalParticipants() != null ? vote.getTotalParticipants() : 0;
 
-    int totalParticipants = options.stream()
-            .mapToInt(o -> o.getTotalParticipants() != null ? o.getTotalParticipants() : 0)
-            .sum();
 
     // 3) 정답 정보
     Integer correctChoiceId = (vote.getCorrectChoice() != null)

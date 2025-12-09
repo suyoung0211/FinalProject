@@ -29,9 +29,9 @@ import { UnifiedSidebar } from "../components/voteDetail/UnifiedSidebar";
 
 type VoteType = "AI" | "NORMAL";
 
-// =====================================
-//  WRAPPER
-// =====================================
+// ====================================================================
+//  Route Wrapper
+// ====================================================================
 export function VoteDetailRouteWrapper() {
   const navigate = useNavigate();
   const { voteId } = useParams();
@@ -48,9 +48,9 @@ export function VoteDetailRouteWrapper() {
   );
 }
 
-// =====================================
-//  MAIN DETAIL PAGE
-// =====================================
+// ====================================================================
+//  MAIN PAGE
+// ====================================================================
 export function VoteDetailPage({
   onBack,
   marketId,
@@ -73,15 +73,16 @@ export function VoteDetailPage({
   const [selectedTab, setSelectedTab] = useState<"chart" | "discussion">("chart");
   const [selectedAmount, setSelectedAmount] = useState(100);
 
-  const [showVoteModal, setShowVoteModal] = useState<null | "YES" | "NO">(null);
+  // 모달은 now choiceId 를 저장한다
+  const [showVoteModal, setShowVoteModal] = useState<number | null>(null);
   const [voteComplete, setVoteComplete] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [adminCorrectChoiceId, setAdminCorrectChoiceId] = useState<number | null>(null);
 
-  // =====================================
+  // ====================================================================
   //  LOAD DATA
-  // =====================================
+  // ====================================================================
   useEffect(() => {
     load();
   }, [marketId, voteType]);
@@ -104,28 +105,29 @@ export function VoteDetailPage({
     }
   }
 
-  // NORMAL vote percent 계산함수
+  // ====================================================================
+  //  NORMAL Percent
+  // ====================================================================
   const getNormalChoicePercent = useCallback((choice: any, option: any) => {
     const total = option.choices?.reduce(
       (sum: number, c: any) => sum + (c.participantsCount ?? 0),
       0
     );
-
-    if (!total || total === 0) return 0;
+    if (!total) return 0;
     return Math.round(((choice.participantsCount ?? 0) / total) * 100);
   }, []);
 
-  // ======================================
-  //  OWNER CHECK —— Normal만 사용
-  // ======================================
+  // ====================================================================
+  //  OWNER CHECK
+  // ====================================================================
   const isOwner = useMemo(() => {
     if (!isNormalVote || !data || !user) return false;
     return (data.ownerId ?? data.userId) === user.id;
   }, [isNormalVote, data, user]);
 
-  // ======================================
+  // ====================================================================
   //  CHART DATA
-  // ======================================
+  // ====================================================================
   const chartData = useMemo(() => {
     if (!isAIVote || !data?.statistics?.changes) return [];
     return data.statistics.changes.map((ch: any) => ({
@@ -138,41 +140,27 @@ export function VoteDetailPage({
     }));
   }, [isAIVote, data]);
 
-  // ======================================
-//  PARTICIPATE — AI
-// ======================================
-async function handleParticipateAI(mode: "YES" | "NO") {
-  if (!user) return alert("로그인 필요");
+  // ====================================================================
+  //  PARTICIPATE AI — ⭐ 핵심 리팩토링 완료
+  // ====================================================================
+  async function handleParticipateAI(choiceId: number) {
+    if (!user) return alert("로그인 필요");
 
-  const yes = data.options[0].choices.find((c: any) => c.text === "YES");
-  const no = data.options[0].choices.find((c: any) => c.text === "NO");
-  const choiceId = mode === "YES" ? yes.choiceId : no.choiceId;
+    try {
+      await participateVote(data.voteId, choiceId, selectedAmount);
 
-  try {
-    await participateVote(data.voteId, choiceId, selectedAmount);
-
-    // 🔥 성공 처리
-    setShowVoteModal(null);     // 모달 닫기
-    setVoteComplete(true);      // 성공 모달 띄우기
-    load();                     // 최신 데이터 다시 로드
-
-  } catch (err: any) {
-    const code = err.response?.data?.errorCode;
-
-    if (code === "POINT_NOT_ENOUGH") {
-      return alert("포인트가 부족합니다. 충전 후 이용해주세요!");
+      setShowVoteModal(null);
+      setVoteComplete(true);
+      load();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message ?? "투표 실패");
     }
-    if (code === "ALREADY_CHOICE" || code === "ALREADY_OPTION") {
-      return alert("이미 이 선택지에 투표했습니다!");
-    }
-
-    alert(err.response?.data?.message ?? "알 수 없는 오류 발생");
   }
-}
 
-  // ======================================
-  //  PARTICIPATE — NORMAL
-  // ======================================
+  // ====================================================================
+  //  PARTICIPATE NORMAL
+  // ====================================================================
   async function handleParticipateNormal(optionId: number, choiceId: number) {
     if (!user) return alert("로그인 필요");
 
@@ -185,9 +173,9 @@ async function handleParticipateAI(mode: "YES" | "NO") {
     }
   }
 
-  // ======================================
-  //  ADMIN — Resolve / Settle
-  // ======================================
+  // ====================================================================
+  //  ADMIN 처리
+  // ====================================================================
   async function handleAdminResolve(alsoSettle: boolean) {
     if (!adminCorrectChoiceId) return alert("정답 선택 필요");
 
@@ -228,15 +216,23 @@ async function handleParticipateAI(mode: "YES" | "NO") {
     }
   }
 
-  // ======================================
-  //  UI RENDER
-  // ======================================
-  const yesChoice = data?.options?.[0]?.choices?.find((c: any) => c.text === "YES");
-  const noChoice = data?.options?.[0]?.choices?.find((c: any) => c.text === "NO");
+  // ====================================================================
+  //  SELECTED CHOICE (now safe)
+  // ====================================================================
+  const selectedChoice = useMemo(() => {
+    if (!data || showVoteModal === null) return null;
 
+    const allChoices = data.options?.flatMap((o: any) => o.choices ?? []);
+    return (
+      allChoices?.find((c: any) => (c.choiceId ?? c.id) === showVoteModal) ?? null
+    );
+  }, [data, showVoteModal]);
+
+  // ====================================================================
+  //  RENDER
+  // ====================================================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-
       {/* HEADER */}
       <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -257,13 +253,10 @@ async function handleParticipateAI(mode: "YES" | "NO") {
 
       {/* BODY */}
       <div className="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-
         {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
-          {(loading || !data) ? (
-            <div className="text-white p-8">
-              {loading ? "로딩중..." : "데이터 없음"}
-            </div>
+          {loading || !data ? (
+            <div className="text-white p-8">{loading ? "로딩중..." : "데이터 없음"}</div>
           ) : (
             <>
               <VoteInfoCard
@@ -300,30 +293,25 @@ async function handleParticipateAI(mode: "YES" | "NO") {
           data={data}
           selectedAmount={selectedAmount}
           setSelectedAmount={setSelectedAmount}
-          setShowVoteModal={setShowVoteModal}
+          setShowVoteModal={setShowVoteModal} // now choiceId 전달
           handleParticipateNormal={handleParticipateNormal}
         />
       </div>
 
       {/* MODALS */}
-      {isAIVote && showVoteModal && data && (
+      {isAIVote && showVoteModal !== null && data && (
         <VoteModal
-          mode={showVoteModal}
+          choiceId={showVoteModal}
           amount={selectedAmount}
-          yesOdds={yesChoice?.odds ?? 1}
-          noOdds={noChoice?.odds ?? 1}
-          yesPercent={yesChoice?.percent ?? 0}
-          noPercent={noChoice?.percent ?? 0}
+          odds={selectedChoice?.odds ?? 1}
+          percent={selectedChoice?.percent ?? 0}
           onClose={() => setShowVoteModal(null)}
           onConfirm={handleParticipateAI}
         />
       )}
 
       {isAIVote && voteComplete && (
-        <VoteCompleteModal
-          amount={selectedAmount}
-          onClose={() => setVoteComplete(false)}
-        />
+        <VoteCompleteModal amount={selectedAmount} onClose={() => setVoteComplete(false)} />
       )}
     </div>
   );

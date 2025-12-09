@@ -131,7 +131,10 @@ public VoteDetailMainResponse participateVote(Integer voteId, VoteParticipateReq
     if (voteUserRepository.existsByUserIdAndOptionId(userId, choice.getOption().getId())) {
         throw new VoteException("ALREADY_VOTED", "이미 이 옵션에서 투표했습니다.");
     }
-
+    // 🔥 URL의 voteId 와 choice 가 속한 vote 가 다르면 에러
+    if (vote.getId() != voteId.longValue()) {
+    throw new VoteException("INVALID_CHOICE_FOR_VOTE", "이 투표에 속하지 않는 선택지입니다.");
+}
     // 🔥 2. 투표가 ONGOING 인지 체크
     if (vote.getStatus() != VoteEntity.Status.ONGOING) {
         throw new VoteException("VOTE_CLOSED", "이미 종료된 투표입니다.");
