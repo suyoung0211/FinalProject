@@ -128,6 +128,44 @@ public VoteDetailMainResponse getVoteDetail(Integer voteId, Integer userId) {
             .build();
 }
 
+/* =======================================================
+ *  Odds 계산 (AI Vote 전용)
+ * ======================================================= */
+private Map<Long, Double> calculateOdds(List<VoteOptionChoiceEntity> choices) {
+
+    // 총 포인트
+    long totalPool = choices.stream()
+            .mapToLong(c -> c.getPointsTotal() == null ? 0L : c.getPointsTotal())
+            .sum();
+
+    // 아무도 배팅 안 했으면 모든 배당 = 1.0
+    if (totalPool == 0) {
+        return choices.stream()
+                .collect(Collectors.toMap(
+                        c -> c.getId(),
+                        c -> 1.0
+                ));
+    }
+
+    Map<Long, Double> oddsMap = new HashMap<>();
+
+    for (VoteOptionChoiceEntity c : choices) {
+
+        long points = (c.getPointsTotal() == null ? 0L : c.getPointsTotal());
+        long safePoints = Math.max(points, 1); // division by zero 방지
+
+        double rawOdds = (double) totalPool / safePoints;
+
+        // 상한선 (+ 소수점 보정)
+        double finalOdds = Math.min(rawOdds, 10.0);
+        finalOdds = Math.round(finalOdds * 100) / 100.0;
+
+        oddsMap.put(c.getId(), finalOdds);
+    }
+
+    return oddsMap;
+}
+
 
     /* =======================================================
      * 1) Article 정보 로딩
@@ -169,78 +207,71 @@ public VoteDetailMainResponse getVoteDetail(Integer voteId, Integer userId) {
      * ======================================================= */
     private List<VoteDetailOptionResponse> loadOptions(Integer voteId, Integer userId) {
 
-        List<VoteOptionEntity> options =
-                voteOptionRepository.findByVoteId(voteId.longValue());
+    List<VoteOptionEntity> options =
+            voteOptionRepository.findByVoteId(voteId.longValue());
 
-        // 유저가 어떤 choice에 참여했는지 추적
-        AtomicReference<Long> myChoiceRef = new AtomicReference<>(null);
+    // 모든 choice 모음
+    List<VoteOptionChoiceEntity> allChoices =
+            options.stream().flatMap(o -> o.getChoices().stream()).toList();
 
-        if (userId != null) {
-            voteUserRepository.findByUserIdAndVoteId(userId, voteId)
-                    .ifPresent(vu -> myChoiceRef.set(vu.getChoice().getId()));
-        }
+    // 🔥 odds 계산
+    Map<Long, Double> oddsMap = calculateOdds(allChoices);
 
-        return options.stream().map(opt -> {
-
-            List<VoteOptionChoiceEntity> choiceEntities = opt.getChoices();
-
-            int optionTotalParticipants = choiceEntities.stream()
-                    .mapToInt(c -> c.getParticipantsCount() == null ? 0 : c.getParticipantsCount())
-                    .sum();
-
-            long optionTotalPoints = choiceEntities.stream()
-                    .mapToLong(c -> c.getPointsTotal() == null ? 0L : c.getPointsTotal())
-                    .sum();
-
-            // -------- 선택지 리스트 구성 --------
-            List<VoteDetailChoiceResponse> choices = choiceEntities.stream()
-                    .map(c -> {
-
-                        int participants = c.getParticipantsCount() == null ? 0 : c.getParticipantsCount();
-                        long points = c.getPointsTotal() == null ? 0L : c.getPointsTotal();
-
-                        // marketShare = 포인트 비율
-                        double marketShare = 0.0;
-                        if (optionTotalPoints > 0) {
-                            marketShare =
-                                    Math.round(points * 1000.0 / optionTotalPoints) / 10.0; // 소수점 1자리
-                        }
-
-                        // 퍼센트 = 참여자 기준
-                        double percent = calcPercentByParticipants(c, choiceEntities);
-
-                        // odds 기본값 처리
-                        double odds = (c.getOdds() != null && c.getOdds() > 0)
-                                ? c.getOdds()
-                                : 1.0;
-
-                        return VoteDetailChoiceResponse.builder()
-                                .choiceId(c.getId().intValue())
-                                .text(c.getChoiceText())
-                                .participantsCount(participants)
-                                .pointsTotal(points)
-                                .percent(percent)
-                                .marketShare(marketShare)
-                                .odds(odds)
-                                .isMyChoice(
-                                        myChoiceRef.get() != null &&
-                                        myChoiceRef.get().equals(c.getId())
-                                )
-                                .build();
-                    })
-                    .toList();
-
-            return VoteDetailOptionResponse.builder()
-                    .optionId(opt.getId().intValue())
-                    .title(opt.getOptionTitle())
-                    .totalParticipants(optionTotalParticipants)
-                    .totalPoints(optionTotalPoints)
-                    .choices(choices)
-                    .build();
-
-        }).toList();
+    AtomicReference<Long> myChoiceRef = new AtomicReference<>(null);
+    if (userId != null) {
+        voteUserRepository.findByUserIdAndVoteId(userId, voteId)
+                .ifPresent(vu -> myChoiceRef.set(vu.getChoice().getId()));
     }
 
+    return options.stream().map(opt -> {
+
+        List<VoteOptionChoiceEntity> choiceEntities = opt.getChoices();
+
+        int optionTotalParticipants = choiceEntities.stream()
+                .mapToInt(c -> c.getParticipantsCount() == null ? 0 : c.getParticipantsCount())
+                .sum();
+
+        long optionTotalPoints = choiceEntities.stream()
+                .mapToLong(c -> c.getPointsTotal() == null ? 0L : c.getPointsTotal())
+                .sum();
+
+        List<VoteDetailChoiceResponse> choices = choiceEntities.stream()
+                .map(c -> {
+
+                    int participants = c.getParticipantsCount() == null ? 0 : c.getParticipantsCount();
+                    long points = c.getPointsTotal() == null ? 0L : c.getPointsTotal();
+
+                    double percent = calcPercentByParticipants(c, choiceEntities);
+
+                    // ⭐ 계산된 odds 적용
+                    double odds = oddsMap.getOrDefault(c.getId(), 1.0);
+
+                    return VoteDetailChoiceResponse.builder()
+                            .choiceId(c.getId().intValue())
+                            .text(c.getChoiceText())
+                            .participantsCount(participants)
+                            .pointsTotal(points)
+                            .percent(percent)
+                            .marketShare(percent)
+                            .odds(odds)    // 🔥 여기 핵심!
+                            .isMyChoice(
+                                    myChoiceRef.get() != null &&
+                                    myChoiceRef.get().equals(c.getId())
+                            )
+                            .build();
+                })
+                .toList();
+
+        return VoteDetailOptionResponse.builder()
+                .optionId(opt.getId().intValue())
+                .title(opt.getOptionTitle())
+                .totalParticipants(optionTotalParticipants)
+                .totalPoints(optionTotalPoints)
+                .choices(choices)
+                .build();
+
+    }).toList();
+}
     /* 인원 기준 percent 계산 */
     private double calcPercentByParticipants(
             VoteOptionChoiceEntity choice,
@@ -262,26 +293,29 @@ public VoteDetailMainResponse getVoteDetail(Integer voteId, Integer userId) {
      * ======================================================= */
     private VoteDetailOddsResponse loadOdds(Integer voteId) {
 
-        List<VoteOptionEntity> options = voteOptionRepository.findByVoteId(voteId.longValue());
+    List<VoteOptionEntity> options = voteOptionRepository.findByVoteId(voteId.longValue());
 
-        List<VoteOptionChoiceEntity> allChoices = options.stream()
-                .flatMap(o -> o.getChoices().stream())
-                .collect(Collectors.toList());
+    List<VoteOptionChoiceEntity> allChoices = options.stream()
+            .flatMap(o -> o.getChoices().stream())
+            .toList();
 
-        List<VoteDetailOddsResponse.OddsItem> oddsItems = allChoices.stream()
-                .map(c -> VoteDetailOddsResponse.OddsItem.builder()
-                        .choiceId(c.getId().intValue())
-                        .text(c.getChoiceText())
-                        .odds(c.getOdds() != null && c.getOdds() > 0 ? c.getOdds() : 1.0)
-                        .history(List.of()) // history는 나중에 trend 기반으로 채워도 됨
-                        .build())
-                .toList();
+    // 🔥 계산식 재사용
+    Map<Long, Double> oddsMap = calculateOdds(allChoices);
 
-        return VoteDetailOddsResponse.builder()
-                .voteId(voteId)
-                .odds(oddsItems)
-                .build();
-    }
+    List<VoteDetailOddsResponse.OddsItem> oddsItems = allChoices.stream()
+            .map(c -> VoteDetailOddsResponse.OddsItem.builder()
+                    .choiceId(c.getId().intValue())
+                    .text(c.getChoiceText())
+                    .odds(oddsMap.get(c.getId()))
+                    .history(List.of())
+                    .build())
+            .toList();
+
+    return VoteDetailOddsResponse.builder()
+            .voteId(voteId)
+            .odds(oddsItems)
+            .build();
+}
 
     /* =======================================================
      * 4) Trend Graph (통계 변화)

@@ -4,6 +4,5 @@ import lombok.Data;
 
 @Data
 public class NormalVoteParticipateRequest {
-    private Integer optionId;
     private Integer choiceId;
 }

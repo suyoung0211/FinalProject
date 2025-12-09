@@ -24,6 +24,7 @@ public class NormalVoteService {
     private final NormalVoteStatusHistoryRepository normalVoteStatusHistoryRepository;
     private final UserRepository userRepository;
     private final VoteUserRepository voteUserRepository;
+    
     // 🔥 댓글 분리 → VoteCommentRepository 제거
 
     /* ============================================================

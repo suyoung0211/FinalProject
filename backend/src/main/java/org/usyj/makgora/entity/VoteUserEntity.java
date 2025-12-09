@@ -8,12 +8,16 @@ import java.time.LocalDateTime;
 @Table(
     name = "Vote_Users",
     uniqueConstraints = {
-        // 옵션별 중복 투표 방지: 하나의 사용자가 하나의 옵션에 대해 1회만 투표 가능
-        @UniqueConstraint(name = "unique_ai_vote_user_option",
-                  columnNames = {"vote_id", "user_id", "option_id"}),
-
-@UniqueConstraint(name = "unique_normal_vote_user_option",
-                  columnNames = {"normal_vote_id", "user_id"})
+        // ⭐ AI 투표: 유저는 같은 vote_id에 대해 1번만 참여 가능
+        @UniqueConstraint(
+                name = "unique_ai_vote_user",
+                columnNames = {"vote_id", "user_id"}
+        ),
+        // ⭐ Normal 투표: 유저는 같은 normal_vote_id에 대해 1번만 참여 가능
+        @UniqueConstraint(
+                name = "unique_normal_vote_user",
+                columnNames = {"normal_vote_id", "user_id"}
+        )
     }
 )
 @Getter
@@ -28,10 +32,12 @@ public class VoteUserEntity {
     @Column(name = "vote_user_id")
     private Long id;
 
+    // AI Vote
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", nullable = true)
     private VoteEntity vote;
-    
+
+    // Normal Vote
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "normal_vote_id", nullable = true)
     private NormalVoteEntity normalVote;
@@ -40,21 +46,22 @@ public class VoteUserEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
+    // === AI Vote 옵션/선택지 ===
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "option_id", nullable = true)
+    @JoinColumn(name = "option_id")
     private VoteOptionEntity option;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "choice_id", nullable = true)
+    @JoinColumn(name = "choice_id")
     private VoteOptionChoiceEntity choice;
 
+    // === Normal Vote 옵션/선택지 ===
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "normal_choice_id", nullable = true)
+    @JoinColumn(name = "normal_choice_id")
     private NormalVoteChoiceEntity normalChoice;
 
-    // ★ 추가되는 부분
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "normal_option_id", nullable = true)
+    @JoinColumn(name = "normal_option_id")
     private NormalVoteOptionEntity normalOption;
 
     @Column(name = "points_bet")
@@ -63,7 +70,7 @@ public class VoteUserEntity {
 
     @Column(name = "is_cancelled")
     @Builder.Default
-    private Boolean isCancelled = false; // 투표 취소 여부
+    private Boolean isCancelled = false;
 
     @Column(name = "created_at")
     @Builder.Default

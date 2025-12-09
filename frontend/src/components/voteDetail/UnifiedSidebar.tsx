@@ -100,39 +100,49 @@ export function UnifiedSidebar({
             <p className="text-white font-semibold mb-3">{opt.optionTitle}</p>
 
             {opt.choices.map((c: any) => {
-              const finalChoiceId = c.finalChoiceId;
+  const finalChoiceId = c.finalChoiceId;
 
-              const isSelected =
-                myParticipation?.choiceId === finalChoiceId;
+  const isSelected =
+    myParticipation?.choiceId === finalChoiceId;
 
-              const color =
-                c.normalized === "YES"
-                  ? "bg-green-600/60 hover:bg-green-600/80"
-                  : c.normalized === "NO"
-                  ? "bg-red-600/60 hover:bg-red-600/80"
-                  : "bg-gray-500/50 hover:bg-gray-500/70";
+  const color =
+    c.normalized === "YES"
+      ? "bg-green-600/60 hover:bg-green-600/80"
+      : c.normalized === "NO"
+      ? "bg-red-600/60 hover:bg-red-600/80"
+      : "bg-gray-500/50 hover:bg-gray-500/70";
 
-              return (
-                <button
-                  key={finalChoiceId}
-                  onClick={() =>
-                    isAIVote
-                      ? setShowVoteModal(finalChoiceId)
-                      : handleParticipateNormal(finalChoiceId)
-                  }
-                  className={`
-                    w-full flex justify-between items-center rounded-lg px-3 py-3 mb-2 text-sm text-white
-                    ${color}
-                    ${isSelected ? "ring-2 ring-yellow-400 scale-[1.02]" : ""}
-                  `}
-                >
-                  <span>{c.label}</span>
-                  <span className="text-xs opacity-80">
-                    {c.participantsCount}명 ({c.percent ?? 0}%)
-                  </span>
-                </button>
-              );
-            })}
+  return (
+    <button
+  key={finalChoiceId}
+  onClick={() =>
+    isAIVote
+      ? setShowVoteModal(finalChoiceId)
+      : handleParticipateNormal(finalChoiceId)
+  }
+  className={`
+    w-full flex justify-between items-center rounded-lg px-3 py-3 mb-2 text-sm text-white
+    ${color}
+    ${isSelected ? "ring-2 ring-yellow-400 scale-[1.02]" : ""}
+  `}
+>
+  {/* LEFT: Label */}
+  <span>{c.label}</span>
+
+  {/* CENTER: Odds (AI만) */}
+  {isAIVote && c.odds && (
+    <span className="text-xs opacity-80 mr-2">
+      배당률 : {c.odds.toFixed(2)}x
+    </span>
+  )}
+
+  {/* RIGHT: Participants */}
+  <span className="text-xs opacity-80">
+    {c.participantsCount}명 ({c.percent ?? 0}%)
+  </span>
+</button>
+  );
+})}
 
             {/* Progress Bar */}
             <div className="mt-3 w-full h-3 rounded-full overflow-hidden flex bg-white/10">

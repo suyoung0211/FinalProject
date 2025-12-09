@@ -73,7 +73,6 @@ export function VoteDetailPage({
   const [selectedTab, setSelectedTab] = useState<"chart" | "discussion">("chart");
   const [selectedAmount, setSelectedAmount] = useState(100);
 
-  // 모달은 now choiceId 를 저장한다
   const [showVoteModal, setShowVoteModal] = useState<number | null>(null);
   const [voteComplete, setVoteComplete] = useState(false);
 
@@ -106,7 +105,7 @@ export function VoteDetailPage({
   }
 
   // ====================================================================
-  //  NORMAL Percent
+  //  NORMAL Percent 계산
   // ====================================================================
   const getNormalChoicePercent = useCallback((choice: any, option: any) => {
     const total = option.choices?.reduce(
@@ -126,7 +125,7 @@ export function VoteDetailPage({
   }, [isNormalVote, data, user]);
 
   // ====================================================================
-  //  CHART DATA
+  //  AI 차트 데이터
   // ====================================================================
   const chartData = useMemo(() => {
     if (!isAIVote || !data?.statistics?.changes) return [];
@@ -141,7 +140,7 @@ export function VoteDetailPage({
   }, [isAIVote, data]);
 
   // ====================================================================
-  //  PARTICIPATE AI — ⭐ 핵심 리팩토링 완료
+  //  PARTICIPATE — AI
   // ====================================================================
   async function handleParticipateAI(choiceId: number) {
     if (!user) return alert("로그인 필요");
@@ -159,17 +158,20 @@ export function VoteDetailPage({
   }
 
   // ====================================================================
-  //  PARTICIPATE NORMAL
+  //  PARTICIPATE — NORMAL
   // ====================================================================
-  async function handleParticipateNormal(optionId: number, choiceId: number) {
+  async function handleParticipateNormal(choiceId: number) {
     if (!user) return alert("로그인 필요");
+
+    console.log("🔥 NormalVote 참여 요청:", { choiceId });
 
     try {
       await participateNormalVote(marketId, choiceId);
-      alert("투표 완료");
+      alert("투표 완료!");
       load();
-    } catch {
-      alert("실패");
+    } catch (err) {
+      console.error("⚠ NormalVote 실패:", err);
+      alert("일반 투표 참여 실패");
     }
   }
 
@@ -217,15 +219,13 @@ export function VoteDetailPage({
   }
 
   // ====================================================================
-  //  SELECTED CHOICE (now safe)
+  //  선택된 choice
   // ====================================================================
   const selectedChoice = useMemo(() => {
     if (!data || showVoteModal === null) return null;
 
     const allChoices = data.options?.flatMap((o: any) => o.choices ?? []);
-    return (
-      allChoices?.find((c: any) => (c.choiceId ?? c.id) === showVoteModal) ?? null
-    );
+    return allChoices?.find((c: any) => (c.choiceId ?? c.id) === showVoteModal) ?? null;
   }, [data, showVoteModal]);
 
   // ====================================================================
@@ -293,12 +293,12 @@ export function VoteDetailPage({
           data={data}
           selectedAmount={selectedAmount}
           setSelectedAmount={setSelectedAmount}
-          setShowVoteModal={setShowVoteModal} // now choiceId 전달
+          setShowVoteModal={setShowVoteModal}
           handleParticipateNormal={handleParticipateNormal}
         />
       </div>
 
-      {/* MODALS */}
+      {/* AI Vote Modal */}
       {isAIVote && showVoteModal !== null && data && (
         <VoteModal
           choiceId={showVoteModal}
@@ -310,6 +310,7 @@ export function VoteDetailPage({
         />
       )}
 
+      {/* AI 완료 Modal */}
       {isAIVote && voteComplete && (
         <VoteCompleteModal amount={selectedAmount} onClose={() => setVoteComplete(false)} />
       )}
