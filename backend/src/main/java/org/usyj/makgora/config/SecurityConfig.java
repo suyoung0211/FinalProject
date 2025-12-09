@@ -20,6 +20,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
+import java.util.Arrays;
+
 @EnableAsync
 @Configuration
 @EnableWebSecurity
@@ -40,80 +42,36 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
             .authorizeHttpRequests(auth -> auth
-        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
-        // 인증 없이 허용되는 API
-        .requestMatchers(
-                "/api/auth/login",
-                "/api/auth/register",
-                "/api/auth/refresh",
-                "/api/email/**",
-                "/api/home/**",
-                "/api/issues/recommended",
-                "/api/issues/latest",
-                "/api/store/items"
-        ).permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/rankings/**").permitAll()
+                .requestMatchers(
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/refresh",
+                        "/api/email/**",
+                        "/api/home/**",
+                        "/api/issues/recommended",
+                        "/api/issues/latest",
+                        "/api/store/items"
+                ).permitAll()
 
-        // ⭐ 이슈 전체 GET 허용 (핵심)
-        .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
-        // ⭐ 기사 조회 허용
-        .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
-        // ⭐ 기사 카테고리 허용
-        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
-        // 댓글 조회는 모두 허용
-        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
-
-        // 댓글 작성 / 수정 / 삭제는 로그인 필요
-        .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()
-        .requestMatchers(HttpMethod.DELETE, "/api/comments/**").authenticated()
-
-        // 투표 GET 허용
-        .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
-        .requestMatchers(HttpMethod.POST, "/api/votes/ai-create").permitAll()
-        .requestMatchers(HttpMethod.POST, "/api/votes/**").authenticated()
-        .requestMatchers(HttpMethod.PUT, "/api/votes/**").authenticated()
-        .requestMatchers(HttpMethod.DELETE, "/api/votes/**").authenticated()
-
-        .requestMatchers(HttpMethod.GET, "/api/normal-votes/comments/**").permitAll()
-        .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
-        .requestMatchers(HttpMethod.POST, "/api/normal-votes/**").authenticated()
-        .requestMatchers(HttpMethod.PUT, "/api/normal-votes/**").authenticated()
-        .requestMatchers(HttpMethod.DELETE, "/api/normal-votes/**").authenticated()
-
-        // 커뮤니티 조회 허용
-        .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
-
-        // ⭐ 업로드된 파일 접근 허용 (모든 사용자)
-        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-
-        // ⭐ 커뮤니티 파일 업로드/삭제는 인증 필요
-        .requestMatchers(HttpMethod.POST, "/api/community/posts/*/files").authenticated()
-        .requestMatchers(HttpMethod.DELETE, "/api/community/posts/*/files/**").authenticated()
-        
-
-        // 아래는 인증 필요한 API (GET 제외)
-        .requestMatchers(HttpMethod.POST, "/api/issues/articles/**").authenticated()
-        .requestMatchers(HttpMethod.PUT, "/api/issues/articles/**").authenticated()
-        .requestMatchers(HttpMethod.DELETE, "/api/issues/articles/**").authenticated()
-
-        .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
-        .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()
-        .requestMatchers(HttpMethod.DELETE, "/api/community/posts/**").authenticated()
-        .requestMatchers(HttpMethod.POST, "/api/community/posts/*/reactions").authenticated()
-        // .requestMatchers(HttpMethod.POST, "/api/articles/comments/**").authenticated()
-
-        .requestMatchers("/api/user/**").authenticated()
-        .requestMatchers("/api/comment/**").authenticated()
-        .requestMatchers("/api/store/**").authenticated()
-        .requestMatchers("/api/admin/**").authenticated()
-        .anyRequest().permitAll()
-)
+                // 인증 필요한 API
+                .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/**").authenticated()
+                .anyRequest().permitAll()
+            )
 
             .logout(logout -> logout.disable())
-
-            // JWT 필터 삽입
             .addFilterBefore(
                 new JwtAuthFilter(jwtTokenProvider, userDetailsService),
                 UsernamePasswordAuthenticationFilter.class
@@ -135,7 +93,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOriginPattern("*");
+
+        // 로컬과 배포용 프론트 도메인 허용
+        config.setAllowedOrigins(Arrays.asList(
+                "http://localhost:5173",          // 로컬 개발용
+                "https://your-frontend-domain.com" // 배포용
+        ));
+
         config.setAllowCredentials(true);
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");

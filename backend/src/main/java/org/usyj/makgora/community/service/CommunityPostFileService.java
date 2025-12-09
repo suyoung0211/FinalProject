@@ -1,13 +1,9 @@
 package org.usyj.makgora.community.service;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +15,14 @@ import org.usyj.makgora.entity.CommunityPostEntity;
 import org.usyj.makgora.entity.CommunityPostFileEntity;
 import org.usyj.makgora.entity.UserEntity;
 
-import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,10 @@ public class CommunityPostFileService {
 
     private final CommunityPostFileRepository fileRepository;
     private final CommunityPostRepository postRepository;
+    private final Cloudinary cloudinary;
+
+    @Value("${spring.profiles.active:dev}") // 기본 dev
+    private String activeProfile;
 
     // 허용된 이미지 확장자
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS = List.of("jpg", "jpeg", "png", "gif", "webp");
@@ -54,39 +61,50 @@ public class CommunityPostFileService {
         // 3) 파일 타입 판별
         CommunityPostFileEntity.FileType fileType = determineFileType(file.getOriginalFilename());
 
-        // 4) 저장 디렉토리 생성
-        String uploadDir = "uploads/community/" + (fileType == CommunityPostFileEntity.FileType.IMAGE ? "images" : "videos") + "/";
-        Files.createDirectories(Paths.get(uploadDir));
+        String fileUrl;
+        String storedPath;
 
-        // 5) 파일명 생성 (중복 방지)
-        String originalFilename = file.getOriginalFilename();
-        String extension = getFileExtension(originalFilename);
-        String filename = "post_" + postId + "_" + System.currentTimeMillis() + "_" + sanitizeFilename(originalFilename);
-        Path filePath = Paths.get(uploadDir + filename);
+        if ("prod".equals(activeProfile)) {
+            // 배포: Cloudinary 업로드
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
+                    ObjectUtils.asMap("resource_type", "auto"));
+            fileUrl = uploadResult.get("secure_url").toString();
+            storedPath = fileUrl; // DB에 URL 저장
+        } else {
+            // 로컬: 프로젝트 내부 uploads/ 폴더 저장
+            String uploadDir = "uploads/community/" + (fileType == CommunityPostFileEntity.FileType.IMAGE ? "images" : "videos") + "/";
+            Files.createDirectories(Paths.get(uploadDir));
 
-        // 6) 파일 저장
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            String originalFilename = file.getOriginalFilename();
+            String extension = getFileExtension(originalFilename);
+            String filename = "post_" + postId + "_" + System.currentTimeMillis() + "_" + sanitizeFilename(originalFilename);
+            Path filePath = Paths.get(uploadDir + filename);
 
-        // 7) DB에 파일 정보 저장
-        String relativePath = uploadDir + filename;
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            fileUrl = "/" + uploadDir + filename; // 프론트에서 접근할 URL
+            storedPath = uploadDir + filename;
+        }
+
+        // 4) DB에 파일 정보 저장
         CommunityPostFileEntity fileEntity = CommunityPostFileEntity.builder()
                 .post(post)
                 .fileType(fileType)
-                .filePath(relativePath)
-                .fileName(originalFilename)
+                .filePath(storedPath)
+                .fileName(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .build();
 
         fileRepository.save(fileEntity);
 
-        // 8) 응답 생성
+        // 5) 응답 생성
         return FileUploadResponse.builder()
                 .fileId(fileEntity.getFileId())
                 .postId(postId)
                 .fileType(fileType.name())
-                .fileUrl("/" + relativePath)  // 프론트엔드에서 접근할 URL
-                .fileName(originalFilename)
+                .fileUrl(fileUrl)
+                .fileName(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .createdAt(fileEntity.getCreatedAt())
@@ -99,13 +117,13 @@ public class CommunityPostFileService {
     @Transactional(readOnly = true)
     public List<FileUploadResponse> getFilesByPostId(Long postId) {
         List<CommunityPostFileEntity> files = fileRepository.findByPost_PostIdOrderByCreatedAtAsc(postId);
-        
+
         return files.stream()
                 .map(file -> FileUploadResponse.builder()
                         .fileId(file.getFileId())
                         .postId(file.getPost().getPostId())
                         .fileType(file.getFileType().name())
-                        .fileUrl("/" + file.getFilePath())
+                        .fileUrl(file.getFilePath()) // prod: Cloudinary URL, dev: /uploads/ 경로
                         .fileName(file.getFileName())
                         .fileSize(file.getFileSize())
                         .mimeType(file.getMimeType())
@@ -121,18 +139,19 @@ public class CommunityPostFileService {
         CommunityPostFileEntity file = fileRepository.findById(fileId)
                 .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다. id=" + fileId));
 
-        // 권한 확인
         if (!file.getPost().getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("작성자만 파일을 삭제할 수 있습니다.");
         }
 
-        // 파일 시스템에서 삭제
-        Path filePath = Paths.get(file.getFilePath());
-        if (Files.exists(filePath)) {
-            Files.delete(filePath);
+        if (!"prod".equals(activeProfile)) {
+            // 로컬: 파일 시스템에서 삭제
+            Path filePath = Paths.get(file.getFilePath());
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+            }
         }
+        // prod: Cloudinary는 삭제 API 호출 가능 (선택 구현)
 
-        // DB에서 삭제
         fileRepository.delete(file);
     }
 
@@ -177,7 +196,6 @@ public class CommunityPostFileService {
     }
 
     private String sanitizeFilename(String filename) {
-        // 경로 탐색 공격 방지 및 특수문자 제거
         return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 }
