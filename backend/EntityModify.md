@@ -403,3 +403,5 @@ name = "Vote_Users",
     @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
     private List<VoteCommentEntity> children = new ArrayList<>();
 댓글 부모자식관계 fetch = FetchType.EAGER 붙여줌
+
+ALTERTABLE필수! 그냥 create로
