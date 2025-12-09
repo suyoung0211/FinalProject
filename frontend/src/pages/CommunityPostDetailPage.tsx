@@ -82,6 +82,7 @@ type PostBodyProps = {
   onLike: () => void;
   onDislike: () => void;
   onEdit: () => void;
+  onDelete: () => void;
 };
 
 const PostBody = memo(function PostBody({
@@ -90,6 +91,7 @@ const PostBody = memo(function PostBody({
   onLike,
   onDislike,
   onEdit,
+  onDelete,
 }: PostBodyProps) {
   // 🔥 post.content가 바뀔 때에만 DOMPurify 실행
   const sanitizedContent = useMemo(
@@ -183,16 +185,24 @@ const PostBody = memo(function PostBody({
           비추천 {post.dislikeCount ?? 0}
         </button>
 
-        {/* 게시글 수정 버튼 (본인 게시글일 때만) */}
+        {/* 게시글 수정/삭제 버튼 (본인 게시글일 때만) */}
         {currentUserId &&
           post.authorId &&
           currentUserId === Number(post.authorId) && (
-            <button
-              onClick={onEdit}
-              className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:text-blue-400 hover:border-blue-400"
-            >
-              수정
-            </button>
+            <>
+              <button
+                onClick={onEdit}
+                className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:text-blue-400 hover:border-blue-400"
+              >
+                수정
+              </button>
+              <button
+                onClick={onDelete}
+                className="px-4 py-2 border border-gray-500 text-gray-300 rounded-lg hover:text-red-400 hover:border-red-400"
+              >
+                삭제
+              </button>
+            </>
           )}
       </div>
     </>
@@ -298,6 +308,21 @@ export function CommunityPostDetailPage() {
   const handleEditPost = useCallback(() => {
     if (!postId) return;
     navigate(`/community/posts/${postId}/edit`);
+  }, [navigate, postId]);
+
+  // 게시글 삭제
+  const handleDeletePost = useCallback(async () => {
+    if (!postId) return;
+    if (!window.confirm("게시글을 삭제하시겠습니까? 삭제된 게시글은 복구할 수 없습니다.")) return;
+
+    try {
+      await api.delete(`/community/posts/${postId}`);
+      // 삭제 성공 시 커뮤니티 목록으로 이동
+      navigate("/community");
+    } catch (e: any) {
+      console.error("게시글 삭제 실패", e);
+      alert(e.response?.data?.message || "게시글 삭제에 실패했습니다.");
+    }
   }, [navigate, postId]);
 
   // 🔥 댓글 추천
@@ -483,7 +508,8 @@ export function CommunityPostDetailPage() {
           currentUserId={currentUserId}
           onLike={handleLikePost}
           onDislike={handleDislikePost}
-          onEdit={handleEditPost}
+              onEdit={handleEditPost}
+              onDelete={handleDeletePost}
         />
 
         {/* (주석 유지) 첨부 파일 섹션
