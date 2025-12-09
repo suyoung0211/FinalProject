@@ -18,6 +18,9 @@ public class RedisQueueStarter {
     // 안전 종료 플래그
     private volatile boolean running = true;
 
+    // 큐 이름 상수화
+    private static final String ISSUE_QUEUE = "issue_queue";
+
     @EventListener(ApplicationReadyEvent.class)
     public void startConsumer() {
 
@@ -26,33 +29,32 @@ public class RedisQueueStarter {
 
             while (running) {
                 try {
-                    // Redis가 이미 종료되었으면 탈출
-                    if (!running) break;
-
                     // 큐에서 데이터 읽기 (1초 블로킹)
                     String item = redisTemplate.opsForList()
-                            .rightPop("issue_queue", Duration.ofSeconds(1));
+                            .rightPop(ISSUE_QUEUE, Duration.ofSeconds(1));
 
                     if (item != null) {
                         System.out.println("🔍 큐 처리됨: " + item);
 
-                        // 여기서 AI 서비스 호출
+                        // TODO: 실제 AI 서비스 호출
                         // issueAnalysisService.process(item);
                     }
 
                 } catch (Exception e) {
-                    // Redis가 죽은 경우 → 루프 완전 종료
-                    System.out.println("⚠ Redis Consumer 오류 발생 → 종료: " + e.getMessage());
-                    running = false;
+                    // Redis 연결 실패 시 로그 출력 후 재시도
+                    System.out.println("⚠ Redis Consumer 오류 발생: " + e.getMessage() + " → 5초 후 재시도");
 
-                    try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                    try {
+                        Thread.sleep(5000);  // 5초 후 재시도
+                    } catch (InterruptedException ignored) {}
                 }
             }
 
             System.out.println("🔻 Redis Queue Consumer 스레드 종료됨");
         });
 
-        consumerThread.setDaemon(true); // ✔ 서버 종료 시 자동 종료
+        // 서버 종료 시 자동 종료
+        consumerThread.setDaemon(true);
         consumerThread.start();
     }
 

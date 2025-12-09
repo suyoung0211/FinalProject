@@ -38,6 +38,11 @@ public class StoreController {
         return storeService.getItem(id);
     }
 
+    @GetMapping("/frames")
+    public Object getFrameImages() {
+    return storeAdminService.getImagesByFolder("frame");
+}
+    
     /** 구매 */
     @PostMapping("/purchase")
     public Object purchase(

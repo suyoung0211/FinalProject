@@ -1,0 +1,9 @@
+# ============================
+# AI 제목 생성 API (FastAPI)
+# ============================
+ai_titles: gunicorn pythonworker.generate_ai_titles_api:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+
+# ============================
+# Issue/Vote 생성 서버 (Redis Worker)
+# ============================
+issue_card_worker: python pythonworker.generateIssueCard.generateIssueCard

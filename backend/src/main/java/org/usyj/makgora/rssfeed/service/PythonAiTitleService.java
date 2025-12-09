@@ -2,6 +2,7 @@ package org.usyj.makgora.rssfeed.service;
 
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PythonAiTitleService {
 
-    private static final String PYTHON_API_URL = "http://localhost:8000/generate-ai-titles";
+    // 환경변수에서 API URL을 가져오도록 변경
+    @Value("${python.api.url:http://localhost:8000}")
+    private String pythonApiUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -36,7 +39,7 @@ public class PythonAiTitleService {
             // exchange 메서드 사용 → POST 요청 + 응답 타입 안전 처리
             ResponseEntity<Map<String, Object>> responseEntity =
                     restTemplate.exchange(
-                            PYTHON_API_URL,
+                            pythonApiUrl,
                             HttpMethod.POST,
                             null,       // 본문 없음
                             typeRef
