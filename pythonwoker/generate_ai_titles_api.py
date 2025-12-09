@@ -55,9 +55,31 @@ def generate_ai_titles():
     # run_generate_ai_titles()는 dict를 반환함!
     result = run_generate_ai_titles()
 
-    summary = result.get("summary", {})
-    failed_articles = result.get("failed_articles", [])
+    # 🔹 문자열이 섞여 들어오는 경우 대비 변환
+    normalized_results = []
+    for r in results:
+        if isinstance(r, dict):
+            normalized_results.append(r)
+        else:
+            # 문자열이면 임시 실패 처리하여 구조 통일
+            normalized_results.append({
+                "article_id": None,  # 필요 시 수정 가능
+                "status": str(r),
+                "error": str(r)
+            })
 
+    # 2) 성공/실패/건너뜀 집계
+    success_count = sum(1 for r in normalized_results if r.get("status") == "SUCCESS")
+    failed_articles = [r for r in normalized_results if r.get("status") in ["FAILED", "DB_COMMIT_FAILED", "PROCESS_ERROR"]]
+    failed_count = len(failed_articles)
+    skipped_count = sum(1 for r in normalized_results if r.get("status") in ["ALREADY_EXISTS", "SKIPPED_MAX_TRY"])
+
+    # 3) 로그 출력
+    logger.info(f"AI 제목 생성 완료: SUCCESS={success_count}, FAILED={failed_count}, SKIPPED={skipped_count}")
+    for r in failed_articles:
+        logger.error(f"[FAILED] article_id={r.get('article_id')} error={r.get('error')}")
+
+    # 4) API 응답
     return {
         "status": "completed",
         "message": "AI 제목 생성 완료",
@@ -66,7 +88,10 @@ def generate_ai_titles():
             "failed_count": summary.get("failed_count", 0),
             "skipped_count": summary.get("skipped_count", 0),
         },
-        "failed_articles": failed_articles
+        "failed_articles": [
+            {"article_id": r.get("article_id"), "error": r.get("error")}
+            for r in failed_articles
+        ],
     }
 
 # # 3) AI 제목 전체 생성
