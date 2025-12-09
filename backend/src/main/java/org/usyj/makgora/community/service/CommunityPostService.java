@@ -121,4 +121,24 @@ public class CommunityPostService {
                 postReactionService.getDislikeCount(postId)
         );
     }
+
+    /** 게시글 삭제 */
+    @Transactional
+    public void deletePost(Long postId, UserEntity currentUser) {
+        CommunityPostEntity post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다. id=" + postId));
+
+        if (!post.getUser().getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("작성자만 게시글을 삭제할 수 있습니다.");
+        }
+
+        // Redis 데이터 삭제
+        redis.delete("cp:" + postId + ":view");
+        redis.delete("cp:" + postId + ":comment");
+        redis.delete("cp:" + postId + ":like");
+        redis.delete("cp:" + postId + ":dislike");
+
+        // DB에서 게시글 삭제 (댓글과 파일은 CASCADE로 자동 삭제됨)
+        communityPostRepository.delete(post);
+    }
 }

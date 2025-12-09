@@ -89,7 +89,10 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 flex-1 overflow-auto p-6 relative">
+    <div
+      className="space-y-6 flex flex-col overflow-hidden p-6 relative"
+      style={{ height: "calc(100vh - 64px)" }} // 상단 Navbar 높이 제외
+    >
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
@@ -156,7 +159,7 @@ export function Dashboard() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl flex flex-col flex-1 min-h-0">
         <div className="p-6 pr-14 border-b border-white/10 flex items-center justify-between">
           <div>
             <h3 className="font-bold text-white text-lg md:text-xl">전체 사용자 목록</h3>
@@ -174,7 +177,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto flex-1 scrollbar-hide">
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>

@@ -34,6 +34,16 @@ body {
 /* ===========================================================
    Makgora Custom Scrollbar (RankingNews 전용)
    =========================================================== */
+/* 스크롤바 완전히 숨기기 (Webkit 기반 브라우저) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Firefox 숨기기 */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 10px;
 }
