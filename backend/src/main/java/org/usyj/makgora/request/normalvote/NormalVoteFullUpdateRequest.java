@@ -13,12 +13,12 @@ public class NormalVoteFullUpdateRequest {
     private LocalDateTime endAt;
 
     private List<OptionUpdateDto> options;      // 수정 or 신규만 포함
-    private List<Long> deletedOptionIds;        // 명시적 삭제
-    private List<Long> deletedChoiceIds;        // 명시적 삭제
+    private List<Integer> deletedOptionIds;        // 명시적 삭제
+    private List<Integer> deletedChoiceIds;        // 명시적 삭제
 
     @Data
     public static class OptionUpdateDto {
-        private Long optionId;  // null → 신규 추가
+        private Integer optionId;  // null → 신규 추가
         private String optionTitle;
 
         private List<ChoiceUpdateDto> choices;  // 수정 or 신규만 포함
@@ -26,7 +26,7 @@ public class NormalVoteFullUpdateRequest {
 
     @Data
     public static class ChoiceUpdateDto {
-        private Long choiceId; // null → 신규 추가
+        private Integer choiceId; // null → 신규 추가
         private String choiceText;
     }
 }

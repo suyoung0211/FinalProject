@@ -11,4 +11,5 @@ public class NormalVoteListResponse {
 
     private List<NormalVoteListItemResponse> votes; // 목록
     private int totalCount;                         // 전체 개수
+    
 }

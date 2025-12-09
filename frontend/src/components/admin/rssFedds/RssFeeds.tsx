@@ -259,7 +259,8 @@ export const RssFeeds: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden flex flex-col"
+             style={{ height: "calc(100vh - 64px)" }}>
         <div className="p-6 border-b border-white/10 flex items-center justify-between">
           {/* 좌측 제목 */}
           <h3 className="font-bold text-white text-lg md:text-xl">RSS 피드 목록</h3>

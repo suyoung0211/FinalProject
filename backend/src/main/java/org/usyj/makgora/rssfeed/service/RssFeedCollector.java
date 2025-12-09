@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class RssFeedCollector {
 
     // 🔹 FeedArticleService 주입: RSS 기사 수집 기능 담당
-    private final FeedArticleService feedArticleService;
+    private final RssFeedcollectAndSaveService feedArticleService;
 
     // 🔹 RestTemplate: 외부 API 호출용
     // 여기서는 Python AI 제목 생성 API 호출에 사용
@@ -46,8 +46,8 @@ public class RssFeedCollector {
             // 1️⃣ RSS 기사 수집
             // FeedArticleService.collectAllFeeds() 호출
             // 활성화된 모든 RSS 피드 수집
-            var result = feedArticleService.collectAllFeeds();
-            System.out.println("RSS 전체 수집 완료: 저장 " + result.saved() + " | 스킵 " + result.skipped());
+            feedArticleService.collectAndSaveAllFeeds();
+
 
             // 2️⃣ Python AI 제목 생성 API 호출
             // 수집 완료 기사 기반으로 AI 제목 생성

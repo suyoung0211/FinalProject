@@ -31,4 +31,8 @@ public class CommunityCommentResponse {
     private boolean dislikedByMe;  // 👎 내가 비추천 눌렀는지
 
     private List<CommunityCommentResponse> replies; // 대댓글
+
+    private String avatarIcon;
+    private String profileFrame;
+    private String profileBadge;
 }

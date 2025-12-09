@@ -2,6 +2,7 @@ package org.usyj.makgora.issue.service;
 
 import java.time.LocalDateTime;
 
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.IssueEntity;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 public class IssueStatusService {
 
     private final IssueRepository issueRepository;
+    private final StringRedisTemplate redisTemplate;
 
     /**
      * 🔹 이슈 승인/거절 + 시간 기록 후 IssueResponse 반환
@@ -29,6 +31,10 @@ public class IssueStatusService {
             issue.setStatus(IssueEntity.Status.APPROVED);  // Enum이면 이렇게
             issue.setApprovedAt(LocalDateTime.now());
             issue.setRejectedAt(null);
+            // 🔥 Redis 트리거
+            String triggerKey = "issueApprove:" + issue.getId();
+            redisTemplate.opsForList().leftPush("ISSUE_TRIGGER_QUEUE", triggerKey);
+            System.out.println("🔥 Issue 승인 트리거 푸시 완료 → " + triggerKey);
         } else if ("REJECTED".equalsIgnoreCase(request.getStatus())) {
             issue.setStatus(IssueEntity.Status.REJECTED);
             issue.setRejectedAt(LocalDateTime.now());

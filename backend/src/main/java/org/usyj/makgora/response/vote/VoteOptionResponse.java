@@ -9,5 +9,6 @@ import lombok.*;
 public class VoteOptionResponse {
     private Long id;
     private String label;
+    private Integer totalParticipants;
     private List<VoteChoiceResponse> choices;
 }

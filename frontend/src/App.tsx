@@ -14,7 +14,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { AdminPage22 } from "./components/AdminPage22";
 
 import { VoteListPage } from './pages/VoteListPage';
-import { VoteDetailPage } from './pages/VoteDetailPage';
+import { VoteDetailRouteWrapper } from './pages/VoteDetailPage';
 
 import { PointsShopPage } from './pages/PointsShopPage';
 import { LeaderboardPage } from "./pages/LeaderboardPage";
@@ -62,7 +62,7 @@ export default function App() {
               <Route path="/community/posts/:postId/edit" element={<CommunityEditPageContainer />} />
 
               <Route path="/vote" element={<VoteListPage />} />
-              <Route path="/vote/:voteId" element={<VoteDetailPage />} />
+              <Route path="/vote/:voteId" element={<VoteDetailRouteWrapper />} />
 
               <Route path="/store" element={<PointsShopPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />

@@ -6,6 +6,8 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
+
 @Data
 @Builder
 public class NormalVoteDetailResponse {
@@ -20,8 +22,10 @@ public class NormalVoteDetailResponse {
     private LocalDateTime createdAt;
 
     private Integer totalParticipants; // 모든 choice participantsCount 합계
+    private Long myChoiceId;
 
     private List<OptionDetail> options;
+    private List<VoteDetailCommentResponse> comments;
 
     @Data
     @Builder
@@ -37,5 +41,6 @@ public class NormalVoteDetailResponse {
         private Long choiceId;
         private String choiceText;
         private Integer participantsCount;
+        private Double percent;
     }
 }

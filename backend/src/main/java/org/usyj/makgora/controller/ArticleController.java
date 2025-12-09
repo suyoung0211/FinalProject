@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.repository.ArticleListRepository;
+import org.usyj.makgora.repository.ArticleRepository;
 import org.usyj.makgora.request.article.ArticleCommentRequest;
 import org.usyj.makgora.response.article.ArticleCommentResponse;
 import org.usyj.makgora.response.article.ArticleReactionResponse;
@@ -43,7 +43,7 @@ public class ArticleController {
     private final ArticleCommentService commentService;
     private final ArticleReactionService reactionService;
     private final ArticleViewService viewService;
-    private final ArticleListRepository articleRepo;
+    private final ArticleRepository articleRepo;
     private final ArticleAiTitleRepository aiTitleRepo;
     private final ArticleDetailService articleDetailService;
 

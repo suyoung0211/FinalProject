@@ -25,3 +25,45 @@ export const updateNormalVote = (voteId, data) =>
 // 🔹 투표 삭제 (DELETE /api/normal-votes/{id})
 export const deleteNormalVote = (voteId) =>
   api.delete(`/normal-votes/${voteId}`);
+
+// 🔹 일반투표 참여
+export const participateNormalVote = (voteId, choiceId) =>
+  api.post(`/normal-votes/${voteId}/participate`, {
+    choiceId,
+    points: 0
+  });
+
+export const finishNormalVote = (voteId) =>
+  api.patch(`/normal-votes/${voteId}/finish`);
+
+export const cancelNormalVote = (voteId) =>
+  api.patch(`/normal-votes/${voteId}/cancel`);
+
+export const fetchMyNormalVotes = () =>
+  api.get(`/normal-votes/my`);
+
+export const fetchNormalVoteResult = (voteId) =>
+  api.get(`/normal-votes/${voteId}/result`);
+
+/* ============================================
+ * Normal Vote 댓글
+ * ============================================ */
+
+export const fetchNormalVoteComments = (normalVoteId) =>
+  api.get(`/normal-votes/comments`, { params: { normalVoteId } });
+
+export const addNormalVoteComment = (body) =>
+  api.post(`/normal-votes/comments`, body);
+// body = { normalVoteId, content, parentId }
+
+export const reactNormalVoteComment = (commentId, like) =>
+  api.post(`/normal-votes/comments/${commentId}/react`, null, {
+    params: { like },
+  });
+
+export const deleteNormalVoteComment = (commentId) =>
+  api.delete(`/normal-votes/comments/${commentId}`);
+
+// 🔹 댓글 수정  ⭐ 수정된 부분
+export const updateNormalVoteComment = (commentId, content) =>
+  api.put(`/normal-votes/comments/${commentId}`, { content });

@@ -8,6 +8,7 @@
             "mainClass": "org.usyj.makgora.MakgoraApplication",
             "projectName": "makgora",
             "args": "",
+            "vmArgs": "-Dspring.profiles.active=dev",
             "envFile": "${workspaceFolder}/.env"
         }
     ]

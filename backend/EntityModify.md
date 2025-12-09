@@ -301,10 +301,72 @@ DB 다시 한번 업데이트해야함
 3. python 쪽 flask 패키지 추가 안될 경우 pip install flask 실행
 -------------------------------
 
-CommentReactionEntity 추가
+CommentReactionEntity 추가 (기사댓글추천/비추천)
+VoteTrendHistoryEntity 추가 (투표상세 차트)
 JwtAuthFilter 안에
 (method.equals("GET") && path.startsWith("/api/articles")) 주석처리
 기사 상세 모달추가 + APP.tsx에 전역모달 추가
+
+----------------------------
+12/07
+VoteUserEntity에 normalChoice 필드를 추가
+
+@ManyToOne(fetch = FetchType.LAZY)
+@JoinColumn(name = "normal_choice_id")
+private NormalVoteChoiceEntity normalChoice;
+
+VoteCommentEntity에 좋아요/싫어요/선택id 추가
+    @Column(name = "like_count")
+    private Integer likeCount;
+
+    @Column(name = "dislike_count")
+    private Integer dislikeCount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "choice_id")
+    private VoteOptionChoiceEntity choice;
+
+관리자 투표관리쪽 추가
+// 🔥 관리자: 정답 선택만
+export const adminResolveVote = (voteId, body) =>
+  api.post(`/admin/votes/${voteId}/resolve`, body);
+
+// 🔥 관리자: 정답 선택 + 즉시 정산
+export const adminResolveAndSettleVote = (voteId, body) =>
+  api.post(`/admin/votes/${voteId}/resolve-and-settle`, body);
+
+// 🔥 관리자: 이미 정답 선택된 투표 다시 정산
+export const adminSettleVote = (voteId) =>
+  api.post(`/admin/votes/${voteId}/settle`);
+
+  generate_ai_titles_api aititle부분 오류로 인해 일시적으로 주석처리
+  현재 오류나서 일단 gpt코드 이식함 나중에 물어보고 다시 바꾸던지할듯
+  + 현재 당장은 gpt코드 이식 버전으로 실행가능함
+
+VoteUserEntity에 normalvoteoption 추가
+  // ★ 추가되는 부분
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "normal_option_id", nullable = true)
+    private NormalVoteOptionEntity normalOption;
+
+    VoteCommentEntity에 소프트 삭제 추가
+    @Column(name = "is_deleted")
+    @Builder.Default
+    private Boolean deleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+public void softDelete() {
+    this.deleted = true;
+    this.content = "[삭제된 댓글입니다]";
+    this.deletedAt = LocalDateTime.now();
+}
+NormalVoteCommentEntity 추가(normalvote랑 AIvote쪽이랑 충돌남...)
+
+
+
+  
 ---------------------------------
 2025-12-08
 
@@ -317,3 +379,29 @@ JwtAuthFilter 안에
     private List<CommunityPostFileEntity> files = new ArrayList<>();
 
 ⚠️ DB 새로 업데이트 필요함!
+
+-----------------------------------
+voteuserentity에 normal_vote_id, vote_id, choice_id, option_id  nullable=true로 변경
+안그러면 vote랑 normal_vote쪽이랑 충돌남
+
+옵션 1개당 1회 참여에서 방식 투표1개에 1회 참여 가능으로 바꿈
+name = "Vote_Users",
+    uniqueConstraints = {
+        // ⭐ AI 투표: 유저는 같은 vote_id에 대해 1번만 참여 가능
+        @UniqueConstraint(
+                name = "unique_ai_vote_user",
+                columnNames = {"vote_id", "user_id"}
+        ),
+        // ⭐ Normal 투표: 유저는 같은 normal_vote_id에 대해 1번만 참여 가능
+        @UniqueConstraint(
+                name = "unique_normal_vote_user",
+                columnNames = {"normal_vote_id", "user_id"}
+                        )
+    }
+
+@Builder.Default
+    @OneToMany(mappedBy = "parent", fetch = FetchType.EAGER)
+    private List<VoteCommentEntity> children = new ArrayList<>();
+댓글 부모자식관계 fetch = FetchType.EAGER 붙여줌
+
+ALTERTABLE필수! 그냥 create로

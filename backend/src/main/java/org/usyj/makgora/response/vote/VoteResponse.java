@@ -7,6 +7,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.usyj.makgora.entity.VoteOptionChoiceEntity;
+
 @Getter
 @Setter
 @Builder
@@ -44,7 +46,7 @@ public class VoteResponse {
         private Integer participantsCount;
         private Double odds;
 
-        public static ChoiceResponse fromEntity(org.usyj.makgora.entity.VoteOptionChoiceEntity e) {
+        public static ChoiceResponse fromEntity(VoteOptionChoiceEntity e) {
             return ChoiceResponse.builder()
                     .choiceId(e.getId())
                     .choiceText(e.getChoiceText())

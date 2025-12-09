@@ -54,6 +54,17 @@ export const updateAdminRssFeedApi = (feedId, body) => api.put(`/admin/rss-feeds
 export const getCategories = () =>
   api.get("/admin/rss-feeds/categories");
 
+// 🔥 관리자: 정답 선택만
+export const adminResolveVote = (voteId, body) =>
+  api.post(`/admin/votes/${voteId}/resolve`, body);
+
+// 🔥 관리자: 정답 선택 + 즉시 정산
+export const adminResolveAndSettleVote = (voteId, body) =>
+  api.post(`/admin/votes/${voteId}/resolve-and-settle`, body);
+
+// 🔥 관리자: 이미 정답 선택된 투표 다시 정산
+export const adminSettleVote = (voteId) =>
+  api.post(`/admin/votes/${voteId}/settle`);
 /**
  * 🔹 RSS Feed 생성 (관리자)
  */
