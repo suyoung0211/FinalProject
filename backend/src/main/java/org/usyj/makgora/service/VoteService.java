@@ -1,12 +1,16 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
+import org.usyj.makgora.exception.VoteException;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.vote.*;
 import org.usyj.makgora.response.vote.*;
+import org.usyj.makgora.response.voteDetails.VoteDetailMainResponse;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,6 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VoteService {
 
+    @Autowired
+    private RankingRepository rankingRepo;
     private final VoteRepository voteRepository;
     private final IssueRepository issueRepository;
     private final VoteOptionRepository optionRepository;
@@ -24,6 +30,7 @@ public class VoteService {
     private final UserRepository userRepository;
     private final VoteRuleRepository voteRuleRepository;
     private final VotesStatusHistoryRepository historyRepository;
+    private final VoteDetailService voteDetailService;
 
     /* ===============================
        🔹 공용: 상태 히스토리 기록
@@ -59,86 +66,6 @@ private Double calculateOdds(VoteOptionChoiceEntity choice, VoteEntity vote) {
 
     return (double) totalPool / (double) choice.getPointsTotal();
 }
-
-
-    /* ===============================
-       🔹 2. 투표 상세 조회
-       =============================== */
-    @Transactional(readOnly = true)
-public VoteDetailResponse getVoteDetail(Integer voteId) {
-    System.out.println("🔥 [BACKEND] getVoteDetail() 요청 들어옴 voteId=" + voteId);
-
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("Vote not found"));
-
-    System.out.println("➡️ Vote title=" + vote.getTitle() + ", status=" + vote.getStatus());
-    System.out.println("➡️ Issue summary=" + vote.getIssue().getAiSummary());
-    
-    IssueEntity issue = vote.getIssue();
-    RssArticleEntity article = issue.getArticle();
-    String category = "기타";
-    String thumbnail = null;
-    if (article != null) {
-        category = article.getFeed() != null ? article.getFeed().getSourceName() : "뉴스";
-        thumbnail = article.getThumbnailUrl();
-    } else if (issue.getCommunityPost() != null) {
-        category = "커뮤니티";
-    }
-
-    // rule 가져오기
-    VoteRuleEntity rule = voteRuleRepository.findByVote(vote).orElse(null);
-
-    // ==== 옵션 + 선택지 구성 ====
-    List<VoteDetailResponse.OptionResponse> options =
-            vote.getOptions().stream()
-                    .map(option ->
-                            VoteDetailResponse.OptionResponse.builder()
-                                    .optionId(option.getId())
-                                    .title(option.getOptionTitle())
-                                    .choices(
-                                            option.getChoices().stream()
-                                                    .map(ch -> VoteDetailResponse.ChoiceResponse.builder()
-                                                            .choiceId(ch.getId())
-                                                            .text(ch.getChoiceText())
-                                                            .pointsTotal(ch.getPointsTotal())
-                                                            .participantsCount(ch.getParticipantsCount())
-                                                            .odds(calculateOdds(ch, vote))
-                                                            .build()
-                                                    ).toList()
-                                    )
-                                    .build()
-                    ).toList();
-
-    return VoteDetailResponse.builder()
-            .voteId(vote.getId())
-            .issueId(issue.getId())
-            .title(vote.getTitle())
-            .description(issue.getAiSummary())
-            .category(category)
-            .thumbnail(thumbnail)
-            .status(vote.getStatus().name())
-            .createdAt(vote.getCreatedAt())
-            .endAt(vote.getEndAt())
-
-            .stats(
-                    VoteDetailResponse.Stats.builder()
-                            .totalPoints(vote.getTotalPoints())
-                            .totalParticipants(vote.getTotalParticipants())
-                            .build()
-            )
-
-            .rule(rule != null ?
-                    VoteDetailResponse.Rule.builder()
-                            .type(rule.getRuleType())
-                            .description(rule.getRuleDescription())
-                            .build() : null
-            )
-
-            .options(options)
-            .build();
-}
-
-
 
     /* ===============================
        🔹 3. 배당률 계산
@@ -183,51 +110,87 @@ public VoteDetailResponse getVoteDetail(Integer voteId) {
 
 
     /* ===============================
-       🔹 4. 투표 참여
-       =============================== */
-    @Transactional
-    public VoteDetailResponse participateVote(Integer voteId, VoteParticipateRequest req, Integer userId) {
+   🔹 4. 투표 참여 (최종본)
+   =============================== */
+@Transactional
+public VoteDetailMainResponse participateVote(Integer voteId, VoteParticipateRequest req, Integer userId) {
 
-        VoteOptionChoiceEntity choice = choiceRepository.findById(req.getChoiceId())
-                .orElseThrow(() -> new RuntimeException("선택지 없음"));
+    VoteOptionChoiceEntity choice = choiceRepository.findById(req.getChoiceId())
+            .orElseThrow(() -> new VoteException("CHOICE_NOT_FOUND", "선택지를 찾을 수 없습니다."));
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("user 없음"));
+    VoteEntity vote = choice.getOption().getVote();
+    UserEntity user = userRepository.findById(userId)
+            .orElseThrow(() -> new VoteException("USER_NOT_FOUND", "유저 정보를 찾을 수 없습니다."));
 
-        // 같은 choice에 대해 이미 참여했는지 확인
-if (voteUserRepository.existsByUserIdAndChoiceId(userId, req.getChoiceId())) {
-    throw new RuntimeException("이미 이 선택지에 참여했습니다.");
-}
-
-// 같은 option에 대해 이미 참여했는지 확인
-Long optionId = choice.getOption().getId();
-if (voteUserRepository.existsByUserIdAndOptionId(userId, optionId)) {
-    throw new RuntimeException("이미 이 옵션에 참여했습니다.");
-}
-
-        VoteUserEntity vu = VoteUserEntity.builder()
-                .vote(choice.getOption().getVote())
-                .user(user)
-                .option(choice.getOption())
-                .choice(choice)
-                .pointsBet(req.getPoints())
-                .build();
-
-        voteUserRepository.save(vu);
-
-        // 선택지 업데이트
-        choice.setPointsTotal(choice.getPointsTotal() + req.getPoints());
-        choice.setParticipantsCount(choice.getParticipantsCount() + 1);
-        choiceRepository.save(choice);
-
-        // 투표 전체 풀 업데이트
-        VoteEntity vote = choice.getOption().getVote();
-        vote.setTotalPoints(vote.getTotalPoints() + req.getPoints());
-        vote.setTotalParticipants(vote.getTotalParticipants() + 1);
-        voteRepository.save(vote);
-
-        return getVoteDetail(voteId);
+    // 🔥 0. 포인트 부족
+    if (user.getPoints() < req.getPoints()) {
+        throw new VoteException("NOT_ENOUGH_POINTS", "포인트가 부족합니다.");
     }
+
+    // 🔥 1. 투표 전체에 이미 참여했는지 확인
+if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
+    throw new VoteException("ALREADY_VOTED", "이미 이 투표에 참여했습니다.");
+}
+    // 🔥 URL의 voteId 와 choice 가 속한 vote 가 다르면 에러
+    if (vote.getId() != voteId.longValue()) {
+    throw new VoteException("INVALID_CHOICE_FOR_VOTE", "이 투표에 속하지 않는 선택지입니다.");
+}
+    // 🔥 2. 투표가 ONGOING 인지 체크
+    if (vote.getStatus() != VoteEntity.Status.ONGOING) {
+        throw new VoteException("VOTE_CLOSED", "이미 종료된 투표입니다.");
+    }
+
+    // ========== 참여 저장 ==========
+    VoteUserEntity vu = VoteUserEntity.builder()
+            .vote(vote)
+            .user(user)
+            .option(choice.getOption())
+            .choice(choice)
+            .pointsBet(req.getPoints())
+            .build();
+    voteUserRepository.save(vu);
+
+    // 🔥 유저 포인트 차감
+    user.setPoints(user.getPoints() - req.getPoints());
+    userRepository.save(user);
+
+    // 🔥 선택지 통계 증가
+    choice.setPointsTotal(choice.getPointsTotal() + req.getPoints());
+    choice.setParticipantsCount(choice.getParticipantsCount() + 1);
+    choiceRepository.save(choice);
+
+    // 🔥 투표 전체 통계 증가
+    vote.setTotalPoints(vote.getTotalPoints() + req.getPoints());
+    vote.setTotalParticipants(vote.getTotalParticipants() + 1);
+    voteRepository.save(vote);
+
+    // ======================================================
+    // 🔥 배당률 실시간 재계산 — 모든 선택지에 대해 Odds 업데이트
+    // ======================================================
+    int totalPool = vote.getOptions().stream()
+            .flatMap(opt -> opt.getChoices().stream())
+            .mapToInt(VoteOptionChoiceEntity::getPointsTotal)
+            .sum();
+
+    vote.getOptions().forEach(opt ->
+            opt.getChoices().forEach(ch -> {
+
+                double newOdds;
+                if (totalPool == 0 || ch.getPointsTotal() == 0) {
+                    newOdds = 1.0;
+                } else {
+                    newOdds = (double) totalPool / ch.getPointsTotal();
+                }
+
+                ch.setOdds(newOdds);
+                choiceRepository.save(ch);
+            })
+    );
+
+    // 🔥 최신 상세정보 반환 (프론트는 이것만 다시 받아서 갱신)
+    return voteDetailService.getVoteDetail(voteId, userId);
+}
+
 
 
     public List<VoteListItemResponse> getVoteList() {
@@ -316,19 +279,17 @@ if (voteUserRepository.existsByUserIdAndOptionId(userId, optionId)) {
 
 
 @Transactional
-public VoteDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
+public VoteDetailMainResponse cancelMyVote(Long voteUserId, Integer userId) {
 
     VoteUserEntity voteUser = voteUserRepository.findById(voteUserId)
             .orElseThrow(() -> new RuntimeException("베팅 정보를 찾을 수 없습니다."));
 
-    // 본인 확인
     if (!voteUser.getUser().getId().equals(userId)) {
         throw new RuntimeException("내 베팅만 취소할 수 있습니다.");
     }
 
     VoteEntity vote = voteUser.getVote();
 
-    // 상태 체크
     if (vote.getStatus() != VoteEntity.Status.ONGOING) {
         throw new RuntimeException("진행 중인 투표만 취소할 수 있습니다.");
     }
@@ -358,16 +319,16 @@ public VoteDetailResponse cancelMyVote(Long voteUserId, Integer userId) {
     voteUser.setUpdatedAt(LocalDateTime.now());
     voteUserRepository.save(voteUser);
 
-    return getVoteDetail(vote.getId());
+    // 🔥 여기 수정됨
+    return voteDetailService.getVoteDetail(voteUser.getVote().getId(), userId);
 }
 
 @Transactional
-public VoteDetailResponse cancelVote(Integer voteId, Integer userId) {
+public VoteDetailMainResponse cancelVote(Integer voteId, Integer userId) {
 
     VoteEntity vote = voteRepository.findById(voteId)
             .orElseThrow(() -> new RuntimeException("투표 없음"));
 
-    // 상태 체크
     if (vote.getStatus() != VoteEntity.Status.ONGOING) {
         throw new RuntimeException("진행 중인 투표만 취소할 수 있습니다.");
     }
@@ -400,7 +361,8 @@ public VoteDetailResponse cancelVote(Integer voteId, Integer userId) {
     vu.setUpdatedAt(LocalDateTime.now());
     voteUserRepository.save(vu);
 
-    return getVoteDetail(voteId);
+    // 🔥 여기 핵심 수정
+    return voteDetailService.getVoteDetail(vote.getId(), userId);
 }
 
 
@@ -707,11 +669,112 @@ public String resolveVote(Integer voteId, Long choiceId) {
     vote.setCorrectChoice(correct);
     vote.setStatus(VoteEntity.Status.RESOLVED);
     voteRepository.save(vote);
+    updateVoteResults(vote);
 
     logHistory(vote, VoteStatusHistoryEntity.Status.RESOLVED);
 
     return "정답이 확정되었습니다.";
 }
+
+private void updateVoteResults(VoteEntity vote) {
+
+    List<VoteUserEntity> bets = voteUserRepository.findByVoteId(vote.getId());
+
+    for (VoteUserEntity vu : bets) {
+
+        if (Boolean.TRUE.equals(vu.getIsCancelled())) continue;
+
+        Integer userId = vu.getUser().getId();
+
+        // 🔥 이 유저의 승률/연승 랭킹을 다시 계산해서 score 갱신
+        updateWinRate(userId);
+        updateStreak(userId);
+    }
+}
+
+/** 🔥 승률 업데이트 */
+@Transactional
+public void updateWinRate(Integer userId) {
+
+    // 1) 사용자의 전체 투표내역 조회
+    List<VoteUserEntity> records = voteUserRepository.findByUserId(userId).stream()
+            .filter(vu -> !Boolean.TRUE.equals(vu.getIsCancelled()))
+            .filter(vu -> vu.getVote() != null)
+            .filter(vu -> vu.getVote().getCorrectChoice() != null)
+            .toList();
+
+    int wins = 0;
+    int losses = 0;
+
+    for (VoteUserEntity vu : records) {
+        boolean win = vu.getChoice().getId().equals(vu.getVote().getCorrectChoice().getId());
+        if (win) wins++; else losses++;
+    }
+
+    int total = wins + losses;
+    int winRate = total > 0 ? (wins * 100 / total) : 0;
+
+    // 2) Ranking 엔티티에 저장
+    RankingEntity ranking = rankingRepo
+            .findByUser_IdAndRankingType(userId, RankingEntity.RankingType.WINRATE)
+            .orElse(RankingEntity.builder()
+                    .user(userRepository.findById(userId).orElseThrow())
+                    .rankingType(RankingEntity.RankingType.WINRATE)
+                    .ranking(0)
+                    .score(0)
+                    .build()
+            );
+
+    ranking.setScore(winRate);
+    rankingRepo.save(ranking);
+}
+
+/** 🔥 연승 업데이트 */
+@Transactional
+public void updateStreak(Integer userId) {
+
+    // 최근 종료된 투표 내역만
+    List<VoteUserEntity> records = voteUserRepository.findByUserId(userId).stream()
+        .filter(vu -> !Boolean.TRUE.equals(vu.getIsCancelled()))
+        .filter(vu -> vu.getVote() != null)
+        .filter(vu -> vu.getVote().getStatus() == VoteEntity.Status.REWARDED
+                   || vu.getVote().getStatus() == VoteEntity.Status.RESOLVED)
+        .sorted((a, b) -> b.getVote().getEndAt().compareTo(a.getVote().getEndAt()))
+        .toList();
+
+    int current = 0;
+    int max = 0;
+
+    for (VoteUserEntity vu : records) {
+
+        VoteEntity vote = vu.getVote();
+        if (vote.getCorrectChoice() == null) break;
+
+        boolean win = vu.getChoice().getId().equals(vote.getCorrectChoice().getId());
+        if (win) {
+            current++;
+            max = Math.max(max, current);
+        } else {
+            break;
+        }
+    }
+
+    RankingEntity ranking = rankingRepo
+            .findByUser_IdAndRankingType(userId, RankingEntity.RankingType.STREAK)
+            .orElse(RankingEntity.builder()
+                    .user(userRepository.findById(userId).orElseThrow())
+                    .rankingType(RankingEntity.RankingType.STREAK)
+                    .ranking(0)
+                    .score(0)
+                    .build()
+            );
+
+    ranking.setScore(current);   // 현재 연승만 저장
+    ranking.setRanking(max);     // 최고 연승 기록 저장(선택사항)
+
+    rankingRepo.save(ranking);
+}
+
 
 @Transactional
 public String rewardVote(Integer voteId) {

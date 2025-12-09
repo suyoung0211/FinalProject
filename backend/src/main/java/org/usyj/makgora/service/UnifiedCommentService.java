@@ -10,7 +10,7 @@ import org.usyj.makgora.community.repository.CommunityCommentRepository;
 import org.usyj.makgora.dto.UnifiedCommentResponse;
 import org.usyj.makgora.dto.UnifiedCommentResponse.CommentSource;
 import org.usyj.makgora.entity.ArticleCommentEntity;
-import org.usyj.makgora.entity.CommentEntity;
+import org.usyj.makgora.entity.VoteCommentEntity;
 import org.usyj.makgora.entity.CommunityCommentEntity;
 import org.usyj.makgora.repository.ArticleCommentRepository;
 import org.usyj.makgora.repository.CommentRepository;
@@ -37,8 +37,8 @@ public class UnifiedCommentService {
         List<UnifiedCommentResponse> result = new ArrayList<>();
 
         // 이슈 댓글들 가져오기
-        List<CommentEntity> issueComments = commentRepository.findAll();
-        for (CommentEntity c : issueComments) {
+        List<VoteCommentEntity> issueComments = commentRepository.findAll();
+        for (VoteCommentEntity c : issueComments) {
             result.add(convertToUnified(c, CommentSource.ISSUE));
         }
 
@@ -67,8 +67,8 @@ public class UnifiedCommentService {
         List<UnifiedCommentResponse> result = new ArrayList<>();
 
         // 이슈 댓글
-        List<CommentEntity> issueComments = commentRepository.findByUser_IdOrderByCreatedAtDesc(userId);
-        for (CommentEntity c : issueComments) {
+        List<VoteCommentEntity> issueComments = commentRepository.findByUser_IdOrderByCreatedAtDesc(userId);
+        for (VoteCommentEntity c : issueComments) {
             result.add(convertToUnified(c, CommentSource.ISSUE));
         }
 
@@ -93,7 +93,7 @@ public class UnifiedCommentService {
     /**
      * 이슈 댓글을 통합 DTO로 변환
      */
-    private UnifiedCommentResponse convertToUnified(CommentEntity entity, CommentSource source) {
+    private UnifiedCommentResponse convertToUnified(VoteCommentEntity entity, CommentSource source) {
         return UnifiedCommentResponse.builder()
                 .commentId(entity.getCommentId())
                 .content(entity.getContent())

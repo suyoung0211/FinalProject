@@ -4,39 +4,37 @@ import { Button } from '../components/ui/button';
 import { Header } from '../components/layout/Header';
 import { CreateVoteModal } from '../components/vote/CreateVoteModal';
 
-// 🔵 AI 투표 리스트 컴포넌트
 import { AiVoteList } from '../components/vote/AiVoteList';
-
-// 🟢 일반 투표 리스트 컴포넌트
 import { NormalVoteList } from '../components/vote/NormalVoteList';
 
 import { fetchVoteList } from "../api/voteApi";
 import { fetchNormalVoteList } from "../api/normalVoteApi";
 import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
-export function VoteListPage({ onBack, onMarketClick }: any) {
+export function VoteListPage() {
+  const navigate = useNavigate();
+
+  const onMarketClick = (id: number, type: "AI" | "NORMAL") => {
+    navigate(`/vote/${id}`, { state: { voteType: type } });
+  };
+
   const [aiVotes, setAiVotes] = useState<any[]>([]);
   const [normalVotes, setNormalVotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateVoteModal, setShowCreateVoteModal] = useState(false);
 
-  const [sortType, setSortType] = useState("latest");
   const { user } = useAuth();
 
-  const mapStatus = (status: string) => {
-    switch (status) {
-      case "ONGOING": return "진행중";
-      case "FINISHED":
-      case "RESOLVED":
-      case "REWARDED": return "종료";
-      case "CANCELLED": return "취소됨";
-      default: return "기타";
-    }
-  };
+  // 검색 및 정렬
+  const [aiSearch, setAiSearch] = useState("");
+  const [aiSort, setAiSort] = useState("latest");
+  const [normalSearch, setNormalSearch] = useState("");
+  const [normalSort, setNormalSort] = useState("latest");
 
-  /* ========================================================
-      🔥 AI + Normal 투표 각각 분리해서 불러오기
-  ======================================================== */
+  // 🔥 진행중 / 종료됨 버튼 상태
+  const [statusFilter, setStatusFilter] = useState<"ONGOING" | "FINISHED">("ONGOING");
+
   const loadVoteList = async () => {
     setLoading(true);
 
@@ -46,38 +44,33 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
         fetchNormalVoteList()
       ]);
 
-      /* AI 매핑 */
       const aiMapped = (aiRes.data || [])
-        .filter((v: any) => v.status !== "REVIEWING")
+        .filter((v: any) => v.status !== "REVIEWING" && v.status !== "CANCELLED")
         .map((v: any) => ({
           id: v.id,
           type: "AI",
-          category: v.category ?? "기타",
           title: v.title,
           description: v.description ?? "",
-          totalVolume: v.totalPoints,
           totalParticipants: v.totalParticipants,
-          deadline: String(v.endAt).slice(0, 10),
-          status: mapStatus(v.status),
+          endAt: v.endAt,
           createdAt: v.createdAt,
+          status: v.status,
           options: v.options,
         }));
 
-      /* NORMAL 매핑 */
-      const normalMapped = (normalRes.data.votes || []).map((v: any) => ({
-        id: v.id,
-        type: "NORMAL",
-        category: v.category ?? "기타",
-        title: v.title,
-        description: v.description ?? "",
-        totalVolume: v.totalPoints ?? 0,
-        totalParticipants: v.totalParticipants ?? 0,
-        deadline: v.endAt ? String(v.endAt).slice(0, 10) : "",
-        status: mapStatus(v.status),
-        createdAt: v.createdAt,
-        options: v.options ?? [],
-      }));
-      console.log("🔥 Normal Vote Data:", normalMapped);
+      const normalMapped = (normalRes.data.votes || [])
+        .filter((v: any) => v.status !== "REVIEWING" && v.status !== "CANCELLED")
+        .map((v: any) => ({
+          id: v.id,
+          type: "NORMAL",
+          title: v.title,
+          description: v.description ?? "",
+          totalParticipants: v.totalParticipants ?? 0,
+          endAt: v.endAt,
+          createdAt: v.createdAt,
+          status: v.status,
+          options: v.options ?? [],
+        }));
 
       setAiVotes(aiMapped);
       setNormalVotes(normalMapped);
@@ -93,29 +86,58 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
     loadVoteList();
   }, []);
 
-  /* 🔥 정렬 함수 (두 리스트 각각 적용) */
-  const sortVotes = (list: any[]) => {
-    const sorted = [...list];
+  // 🔥 상태 분류
+  const finishedStates = ["FINISHED", "RESOLVED", "REWARDED"];
 
-    if (sortType === "latest") {
-      return sorted.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const filterByStatus = (item: any) => {
+    if (statusFilter === "ONGOING") {
+      return item.status === "ONGOING";
     }
-
-    if (sortType === "popular") {
-      return sorted.sort((a, b) => (b.participants ?? 0) - (a.participants ?? 0));
+    if (statusFilter === "FINISHED") {
+      return finishedStates.includes(item.status);
     }
-
-    return sorted;
+    return false;
   };
 
-  const sortedAiVotes = sortVotes(aiVotes);
-  const sortedNormalVotes = sortVotes(normalVotes);
+  /* ========================================================
+      🔍 AI 검색 + 정렬 + 상태 필터링
+  ======================================================== */
+  const filteredAiVotes = aiVotes
+    .filter(filterByStatus)
+    .filter((v) => {
+      const t = aiSearch.toLowerCase();
+      return v.title.toLowerCase().includes(t) || v.description.toLowerCase().includes(t);
+    })
+    .sort((a, b) => {
+      if (aiSort === "latest") return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      if (aiSort === "popular") return (b.totalParticipants ?? 0) - (a.totalParticipants ?? 0);
+      if (aiSort === "end") return Date.parse(a.endAt ?? "") - Date.parse(b.endAt ?? "");
+      return 0;
+    });
+
+  /* ========================================================
+      🔍 Normal 검색 + 정렬 + 상태 필터링
+  ======================================================== */
+  const filteredNormalVotes = normalVotes
+    .filter(filterByStatus)
+    .filter((v) => {
+      const t = normalSearch.toLowerCase();
+      return v.title.toLowerCase().includes(t) || v.description.toLowerCase().includes(t);
+    })
+    .sort((a, b) => {
+      if (normalSort === "latest") return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      if (normalSort === "popular") return (b.totalParticipants ?? 0) - (a.totalParticipants ?? 0);
+      if (normalSort === "end") return Date.parse(a.endAt ?? "") - Date.parse(b.endAt ?? "");
+      return 0;
+    });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Header activeMenu="vote" />
 
       <div className="container mx-auto px-4 py-8 pt-24">
+
+        {/* TITLE */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white">이슈 투표</h1>
@@ -133,33 +155,90 @@ export function VoteListPage({ onBack, onMarketClick }: any) {
           )}
         </div>
 
-        {/* 정렬 */}
-        <div className="mb-6 flex items-center justify-end gap-3">
-          <select
-            value={sortType}
-            onChange={(e) => setSortType(e.target.value)}
-            className="bg-white/40 text-black px-3 py-2 rounded-lg"
+        {/* 🔥 진행중 / 종료됨 버튼 */}
+        <div className="flex gap-4 mb-8">
+          <button
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
+              statusFilter === "ONGOING"
+                ? "bg-purple-600 text-white"
+                : "bg-white/10 text-gray-300 hover:bg-white/20"
+            }`}
+            onClick={() => setStatusFilter("ONGOING")}
           >
-            <option value="latest">최신순</option>
-            <option value="popular">인기순</option>
-          </select>
+            진행중
+          </button>
+
+          <button
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
+              statusFilter === "FINISHED"
+                ? "bg-purple-600 text-white"
+                : "bg-white/10 text-gray-300 hover:bg-white/20"
+            }`}
+            onClick={() => setStatusFilter("FINISHED")}
+          >
+            종료됨
+          </button>
         </div>
 
         {loading ? (
           <div className="text-center text-white py-20">로딩 중...</div>
         ) : (
-          <div className="space-y-10">
-            
-            {/* 🔵 AI VOTE SECTION */}
+          <div className="space-y-16">
+
+            {/* 🔵 AI SECTION */}
             <div>
-              <h2 className="text-2xl font-bold text-white mb-4">AI 예측 마켓</h2>
-              <AiVoteList items={sortedAiVotes} onMarketClick={onMarketClick} />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white">AI 예측 마켓</h2>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    value={aiSearch}
+                    onChange={(e) => setAiSearch(e.target.value)}
+                    placeholder="AI 투표 검색"
+                    className="bg-white/40 text-black px-3 py-2 rounded-lg w-40 sm:w-60"
+                  />
+
+                  <select
+                    value={aiSort}
+                    onChange={(e) => setAiSort(e.target.value)}
+                    className="bg-white/40 text-black px-3 py-2 rounded-lg"
+                  >
+                    <option value="latest">최신순</option>
+                    <option value="popular">인기순</option>
+                    <option value="end">마감순</option>
+                  </select>
+                </div>
+              </div>
+
+              <AiVoteList items={filteredAiVotes} onMarketClick={onMarketClick} />
             </div>
 
-            {/* 🟢 NORMAL VOTE SECTION */}
+            {/* 🟢 NORMAL SECTION */}
             <div>
-              <h2 className="text-2xl font-bold text-white mb-4">일반 투표</h2>
-              <NormalVoteList items={sortedNormalVotes} onMarketClick={onMarketClick} />
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white">일반 투표</h2>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    value={normalSearch}
+                    onChange={(e) => setNormalSearch(e.target.value)}
+                    placeholder="일반 투표 검색"
+                    className="bg-white/40 text-black px-3 py-2 rounded-lg w-40 sm:w-60"
+                  />
+
+                  <select
+                    value={normalSort}
+                    onChange={(e) => setNormalSort(e.target.value)}
+                    className="bg-white/40 text-black px-3 py-2 rounded-lg"
+                  >
+                    <option value="latest">최신순</option>
+                    <option value="popular">인기순</option>
+                    <option value="end">마감순</option>
+                  </select>
+                </div>
+              </div>
+
+              <NormalVoteList items={filteredNormalVotes} onMarketClick={onMarketClick} />
             </div>
 
           </div>

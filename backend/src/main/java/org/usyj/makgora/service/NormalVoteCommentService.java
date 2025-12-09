@@ -1,0 +1,211 @@
+package org.usyj.makgora.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.entity.NormalVoteCommentEntity;
+import org.usyj.makgora.entity.NormalVoteEntity;
+import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.repository.NormalVoteCommentRepository;
+import org.usyj.makgora.repository.NormalVoteRepository;
+import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class NormalVoteCommentService {
+
+    private final NormalVoteCommentRepository commentRepository;
+    private final NormalVoteRepository normalVoteRepository;
+    private final UserRepository userRepository;
+
+    private final StringRedisTemplate redis;
+
+
+    /* =========================================================
+       🔵 1) 댓글 조회 (루트 댓글들만 + 트리 변환)
+       ========================================================= */
+    @Transactional(readOnly = true)
+    public List<VoteDetailCommentResponse> getComments(Integer normalVoteId, Integer userId) {
+
+        List<NormalVoteCommentEntity> roots =
+                commentRepository.findByNormalVote_IdAndParentIsNull(normalVoteId);
+
+        return roots.stream()
+                .map(root -> convertComment(root, userId))
+                .toList();
+    }
+
+    /* =========================================================
+       🔵 2) 댓글 등록
+       ========================================================= */
+    public VoteDetailCommentResponse addComment(
+            Integer normalVoteId,
+            Integer userId,
+            String content,
+            Long parentId
+    ) {
+
+        NormalVoteEntity normalVote = normalVoteRepository.findById(normalVoteId)
+                .orElseThrow(() -> new RuntimeException("NormalVote 없음"));
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User 없음"));
+
+        NormalVoteCommentEntity parent = null;
+        if (parentId != null) {
+            parent = commentRepository.findById(parentId)
+                    .orElseThrow(() -> new RuntimeException("부모 댓글 없음"));
+        }
+
+        NormalVoteCommentEntity comment = NormalVoteCommentEntity.builder()
+                .normalVote(normalVote)
+                .user(user)
+                .content(content)
+                .parent(parent)
+                .likeCount(0)
+                .dislikeCount(0)
+                .isDeleted(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        commentRepository.save(comment);
+
+        return convertComment(comment, userId);
+    }
+
+    /* =========================================================
+       🔵 3) 댓글 좋아요 / 싫어요 (Redis 기반)
+       ========================================================= */
+    public VoteDetailCommentResponse react(Long commentId, Integer userId, boolean like) {
+
+        NormalVoteCommentEntity comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("댓글 없음"));
+
+        String keyLike = "normalvote:comment:" + commentId + ":likes";
+        String keyDislike = "normalvote:comment:" + commentId + ":dislikes";
+        String setLike = "normalvote:comment:" + commentId + ":likes:users";
+        String setDislike = "normalvote:comment:" + commentId + ":dislikes:users";
+
+        String userStr = userId.toString();
+
+        boolean alreadyLike = Boolean.TRUE.equals(redis.opsForSet().isMember(setLike, userStr));
+        boolean alreadyDislike = Boolean.TRUE.equals(redis.opsForSet().isMember(setDislike, userStr));
+
+        if (like) {
+            if (alreadyLike) {
+                redis.opsForSet().remove(setLike, userStr);
+                redis.opsForValue().decrement(keyLike);
+            } else {
+                if (alreadyDislike) {
+                    redis.opsForSet().remove(setDislike, userStr);
+                    redis.opsForValue().decrement(keyDislike);
+                }
+                redis.opsForSet().add(setLike, userStr);
+                redis.opsForValue().increment(keyLike);
+            }
+        } else {
+            if (alreadyDislike) {
+                redis.opsForSet().remove(setDislike, userStr);
+                redis.opsForValue().decrement(keyDislike);
+            } else {
+                if (alreadyLike) {
+                    redis.opsForSet().remove(setLike, userStr);
+                    redis.opsForValue().decrement(keyLike);
+                }
+                redis.opsForSet().add(setDislike, userStr);
+                redis.opsForValue().increment(keyDislike);
+            }
+        }
+
+        return convertComment(comment, userId);
+    }
+
+    /* =========================================================
+       🔵 4) 댓글 삭제 (Soft Delete)
+       ========================================================= */
+    public void deleteComment(Long commentId, Integer userId) {
+
+        NormalVoteCommentEntity c = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("댓글 없음"));
+
+        if (!Objects.equals(c.getUser().getId(), userId))
+            throw new RuntimeException("댓글 삭제 권한 없음");
+
+        c.setIsDeleted(true);   // setDeleted() 아님!!
+        c.setContent("(삭제된 댓글입니다.)");
+        c.setUpdatedAt(LocalDateTime.now());
+
+        commentRepository.save(c);
+    }
+
+    
+
+    /* =========================================================
+       🔵 5) 엔티티 → DTO 변환 (재귀)
+       ========================================================= */
+    private VoteDetailCommentResponse convertComment(NormalVoteCommentEntity c, Integer userId) {
+
+    List<VoteDetailCommentResponse> children =
+            c.getChildren() == null ? List.of()
+                    : c.getChildren().stream()
+                      .map(child -> convertComment(child, userId))
+                      .toList();
+
+    return VoteDetailCommentResponse.builder()
+            .commentId(c.getId().intValue())
+            .normalVoteId(c.getNormalVote().getId().intValue())
+
+            .userId(c.getUser().getId())
+            .username(c.getUser().getNickname())
+
+            .content(Boolean.TRUE.equals(c.getIsDeleted())
+                    ? "(삭제된 댓글입니다.)"
+                    : c.getContent())
+
+            .likeCount(c.getLikeCount() != null ? c.getLikeCount() : 0)
+            .dislikeCount(c.getDislikeCount() != null ? c.getDislikeCount() : 0)
+
+            // NormalVoteCommentEntity에는 user reaction 리스트가 존재하지 않음 → 항상 false
+            .myLike(false)
+            .myDislike(false)
+
+            .parentId(c.getParent() != null ? c.getParent().getId().intValue() : null)
+            .children(children)
+
+            .createdAt(c.getCreatedAt())
+            .updatedAt(c.getUpdatedAt())
+            .build();
+}
+/* =========================================================
+   🔵 6) 댓글 수정
+   ========================================================= */
+public VoteDetailCommentResponse updateComment(Long commentId, Integer userId, String newContent) {
+
+    NormalVoteCommentEntity comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new RuntimeException("댓글 없음"));
+
+    if (!Objects.equals(comment.getUser().getId(), userId)) {
+        throw new RuntimeException("댓글 수정 권한 없음");
+    }
+
+    if (Boolean.TRUE.equals(comment.getIsDeleted())) {
+        throw new RuntimeException("삭제된 댓글은 수정할 수 없습니다.");
+    }
+
+    comment.setContent(newContent);
+    comment.setUpdatedAt(LocalDateTime.now());
+
+    commentRepository.save(comment);
+
+    return convertComment(comment, userId);
+}
+
+}

@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.repository.ArticleListRepository;
+import org.usyj.makgora.repository.ArticleRepository;
 import org.usyj.makgora.response.article.ArticleResponse;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
@@ -18,9 +18,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ArticleListService {
 
-    private final ArticleListRepository articleQueryRepo;
+    private final ArticleRepository articleQueryRepo;
     private final ArticleAiTitleRepository aiRepo;
-    private final ArticleListRepository listRepo;
+    private final ArticleRepository listRepo;
 
     public List<ArticleResponse> getLatestArticles() {
 

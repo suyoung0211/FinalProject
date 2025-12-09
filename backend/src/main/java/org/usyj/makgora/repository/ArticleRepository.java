@@ -11,7 +11,7 @@ import org.usyj.makgora.entity.RssArticleEntity;
 import java.util.List;
 
 @Repository
-public interface ArticleListRepository extends JpaRepository<RssArticleEntity, Integer> {
+public interface ArticleRepository extends JpaRepository<RssArticleEntity, Integer> {
 
     /** 최신 기사 20개 */
     List<RssArticleEntity> findTop20ByOrderByPublishedAtDesc();

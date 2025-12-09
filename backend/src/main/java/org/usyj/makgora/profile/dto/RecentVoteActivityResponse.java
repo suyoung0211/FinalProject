@@ -14,7 +14,7 @@ import lombok.Getter;
 public class RecentVoteActivityResponse {
 
     /** Vote_Users PK (한 번의 베팅 내역 ID) */
-    private Long voteUserId;
+    private Integer voteUserId;
 
     /** 투표 PK */
     private Integer voteId;

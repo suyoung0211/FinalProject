@@ -61,6 +61,13 @@ public class SecurityConfig {
         // ⭐ 기사 카테고리 허용
         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
 
+        // 댓글 조회는 모두 허용
+        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+
+        // 댓글 작성 / 수정 / 삭제는 로그인 필요
+        .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/comments/**").authenticated()
+
         // 투표 GET 허용
         .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/votes/my/**").authenticated()
@@ -69,6 +76,7 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.PUT, "/api/votes/**").authenticated()
         .requestMatchers(HttpMethod.DELETE, "/api/votes/**").authenticated()
 
+        .requestMatchers(HttpMethod.GET, "/api/normal-votes/comments/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/normal-votes/**").authenticated()
         .requestMatchers(HttpMethod.PUT, "/api/normal-votes/**").authenticated()
@@ -86,7 +94,9 @@ public class SecurityConfig {
         
 
         // 아래는 인증 필요한 API (GET 제외)
-        .requestMatchers("/api/issues/articles/**").authenticated() // ← 이 위치는 여기로
+        .requestMatchers(HttpMethod.POST, "/api/issues/articles/**").authenticated()
+        .requestMatchers(HttpMethod.PUT, "/api/issues/articles/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/api/issues/articles/**").authenticated()
 
         .requestMatchers(HttpMethod.POST, "/api/community/posts/**").authenticated()
         .requestMatchers(HttpMethod.PUT, "/api/community/posts/**").authenticated()

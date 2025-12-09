@@ -144,6 +144,7 @@ function CommentItem(props: CommentItemProps) {
     handleReplySubmit,
   } = props;
 
+  
   const indent = depth * 20;
 
   const dateText =
@@ -555,7 +556,9 @@ export function NewsDetailModal() {
              {/* 🔥 투표하러가기 버튼 (ONGOING일 때만) */}
 {article.connectedVoteId && article.connectedVoteStatus === "ONGOING" && (
   <button
-    onClick={() => window.open(`/vote/${article.connectedVoteId}`, "_blank")}
+    onClick={() =>
+  window.open(`/vote/${article.connectedVoteId}?type=AI`, "_blank")
+}
     className="flex items-center gap-2 px-4 py-2 border border-green-500 text-green-300 rounded-full hover:bg-green-900/40 transition"
   >
     🟢 투표하러 가기
