@@ -56,7 +56,7 @@ export const getCategories = () =>
 
 // 🔥 관리자: 정답 선택만
 export const adminResolveVote = (voteId, body) =>
-  api.post(`/admin/votes/${voteId}/resolve`, body);
+  api.post(`/admin/votes/${voteId}/finish`, body);
 
 // 🔥 관리자: 정답 선택 + 즉시 정산
 export const adminResolveAndSettleVote = (voteId, body) =>

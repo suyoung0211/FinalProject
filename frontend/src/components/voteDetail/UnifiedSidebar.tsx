@@ -58,6 +58,7 @@ export function UnifiedSidebar({
       ...opt,
       optionId: opt.optionId ?? opt.id,
       choices: normalizedChoices,
+      optionTitle: opt.title ?? opt.optionTitle, 
       yes,
       no,
       draw,
@@ -86,7 +87,7 @@ export function UnifiedSidebar({
   bg-white/5 border border-white/10 rounded-2xl 
   p-4 
   space-y-4 
-  max-h-[calc(85vh-8rem)] 
+  max-h-[calc(100vh-8rem)] 
   overflow-y-auto
 ">
                   {/* 🔥 참여 완료 배지 */}
@@ -112,9 +113,11 @@ export function UnifiedSidebar({
 
             {opt.choices.map((c: any) => {
   const finalChoiceId = c.finalChoiceId;
-
-  const isSelected =
-    myParticipation?.choiceId === finalChoiceId;
+  const isSelected = myParticipation?.choiceId === finalChoiceId;
+  const isFinished =
+  data?.status === "FINISHED" ||
+  data?.status === "RESOLVED" ||
+  data?.status === "REWARDED";
 
   const color =
     c.normalized === "YES"
@@ -125,42 +128,47 @@ export function UnifiedSidebar({
 
   return (
     <button
-  key={finalChoiceId}
-  onClick={() =>
-    isAIVote
-      ? setShowVoteModal(finalChoiceId)
-      : handleParticipateNormal(finalChoiceId)
-  }
-  className={`
-    w-full flex justify-between items-center rounded-lg px-3 py-3 mb-2 text-sm text-white
-    ${color}
-    ${isSelected ? "ring-2 ring-yellow-400 scale-[1.02]" : ""}
-  `}
->
-  {/* LEFT: Label */}
-  <span>{c.label}</span>
+      key={finalChoiceId}
+      disabled={isFinished}
+      onClick={() => {
+        if (isFinished) return; // 🔥 종료된 투표는 클릭 못함
+        isAIVote
+          ? setShowVoteModal(finalChoiceId)
+          : handleParticipateNormal(finalChoiceId);
+      }}
+      className={`
+        w-full flex justify-between items-center rounded-lg px-3 py-3 mb-2 text-sm text-white
+        ${color}
+        ${isSelected ? "ring-2 ring-yellow-400 scale-[1.02]" : ""}
+        ${isFinished ? "opacity-40 cursor-not-allowed hover:none" : ""}
+      `}
+    >
+      <span>{c.label}</span>
 
-  {/* CENTER: Odds (AI만) */}
-  {isAIVote && c.odds && (
-    <span className="text-xs opacity-80 mr-2">
-      배당률 : {c.odds.toFixed(2)}x
-    </span>
-  )}
+      {isAIVote && c.odds && (
+        <span className="text-xs opacity-80 mr-2">
+          배당률 : {c.odds.toFixed(2)}x
+        </span>
+      )}
 
-  {/* RIGHT: Participants */}
-  <span className="text-xs opacity-80">
-    {c.participantsCount}명 ({c.percent ?? 0}%)
-  </span>
-</button>
+      <span className="text-xs opacity-80">
+        {c.participantsCount}명 ({c.percent ?? 0}%)
+      </span>
+    </button>
   );
 })}
 
-            {/* Progress Bar */}
-            <div className="mt-3 w-full h-3 rounded-full overflow-hidden flex bg-white/10">
-              <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
-              <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
-              <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
-            </div>
+            {/* 🔥 Progress Bar Title (옵션 제목) */}
+<div className="mt-4 mb-1 text-white font-semibold text-sm opacity-80">
+  {opt.optionTitle}
+</div>
+
+{/* Progress Bar */}
+<div className="w-full h-3 rounded-full overflow-hidden flex bg-white/10">
+  <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
+  <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
+  <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
+</div>
           </div>
         );
       })}
@@ -195,6 +203,42 @@ export function UnifiedSidebar({
             }
             className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-white"
           />
+          {/* ---------------------------------------------------------------  
+    내가 이미 참여한 경우 표시
+--------------------------------------------------------------- */}
+{myParticipation?.hasParticipated && (
+  <div className="mt-4 bg-purple-600/20 border border-purple-400/30 rounded-lg p-3 text-white">
+    <div className="font-semibold mb-1 text-sm">내 참여 정보</div>
+
+    <div className="text-sm opacity-90">
+      • 선택한 옵션:{" "}
+      <span className="font-bold text-purple-300">
+        {
+          safeOptions
+            .flatMap((opt: any) => opt.choices)
+            .find((c: any) => (c.choiceId ?? c.id) === myParticipation.choiceId)
+            ?.label
+        }
+      </span>
+    </div>
+
+    <div className="text-sm opacity-90 mt-1">
+      • 배팅 금액:{" "}
+      <span className="font-bold text-purple-300">
+        {myParticipation.pointsBet?.toLocaleString()} pt
+      </span>
+    </div>
+
+    {myParticipation.expectedOdds && (
+      <div className="text-sm opacity-90 mt-1">
+        • 예상 보상:{" "}
+        <span className="font-bold text-green-300">
+          {(myParticipation.pointsBet * myParticipation.expectedOdds).toLocaleString()} pt
+        </span>
+      </div>
+    )}
+  </div>
+)}
         </>
       )}
     </div>

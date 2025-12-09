@@ -1,6 +1,7 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VoteService {
@@ -122,6 +124,9 @@ public VoteDetailMainResponse participateVote(Integer voteId, VoteParticipateReq
     UserEntity user = userRepository.findById(userId)
             .orElseThrow(() -> new VoteException("USER_NOT_FOUND", "유저 정보를 찾을 수 없습니다."));
 
+            log.info("🔥 PARTICIPATE userId={} choiceId={} voteId={} points={}",
+            user.getId(), voteId, choice.getId(), req.getPoints());
+
     // 🔥 0. 포인트 부족
     if (user.getPoints() < req.getPoints()) {
         throw new VoteException("NOT_ENOUGH_POINTS", "포인트가 부족합니다.");
@@ -149,6 +154,8 @@ if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
             .pointsBet(req.getPoints())
             .build();
     voteUserRepository.save(vu);
+    log.info("💾 저장됨 VoteUserEntity: voteId={} userId={} choiceId={}",
+        vote.getId(), user.getId(), choice.getId());
 
     // 🔥 유저 포인트 차감
     user.setPoints(user.getPoints() - req.getPoints());

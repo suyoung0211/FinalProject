@@ -21,12 +21,12 @@ public class AdminVoteController {
     private final VoteSettlementService voteSettlementService;
 
     /** ✔ 정답 선택만 */
-    @PostMapping("/{voteId}/resolve")
+    @PostMapping("/{voteId}/finish")
     public VoteDetailSettlementResponse resolve(
             @PathVariable Integer voteId,
             @RequestBody VoteDetailResolveRequest req
     ) {
-        return voteSettlementService.resolve(voteId, req);
+        return voteSettlementService.finished(voteId, req);
     }
 
     /** ✔ 정답 선택 + 즉시 정산 */
@@ -35,7 +35,7 @@ public class AdminVoteController {
             @PathVariable Integer voteId,
             @RequestBody VoteDetailResolveRequest req
     ) {
-        return voteSettlementService.resolveAndSettle(voteId, req);
+        return voteSettlementService.finishAndSettle(voteId, req);
     }
 
     /** ✔ 이미 정답 설정된 투표 정산만 */

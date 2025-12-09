@@ -105,6 +105,16 @@ export function VoteDetailPage({
     }
   }
 
+  function calcExpectedOdds(choicePoints: number, totalPool: number, amount: number) {
+  const newChoicePoints = (choicePoints ?? 0) + amount;
+  const newTotalPool = (totalPool ?? 0) + amount;
+
+  const safe = Math.max(newChoicePoints, 1);
+  const rawOdds = newTotalPool / safe;
+
+  return Math.min(Math.round(rawOdds * 100) / 100, 10);
+}
+
   // ====================================================================
   //  NORMAL Percent 계산
   // ====================================================================
@@ -180,34 +190,55 @@ export function VoteDetailPage({
   //  ADMIN 처리
   // ====================================================================
   async function handleAdminResolve(alsoSettle: boolean) {
-    if (!adminCorrectChoiceId) return alert("정답 선택 필요");
+  if (!adminCorrectChoiceId) return alert("정답 선택 필요");
 
-    try {
-      if (alsoSettle) {
-        await adminResolveAndSettleVote(data.voteId, {
-          correctChoiceId: adminCorrectChoiceId,
-        });
-      } else {
-        await adminResolveVote(data.voteId, {
-          correctChoiceId: adminCorrectChoiceId,
-        });
-      }
-      alert("처리 완료");
-      load();
-    } catch {
-      alert("실패");
+  try {
+    // 단일 AI투표는 option이 하나뿐
+    const optionId =
+      data.options?.[0]?.optionId ??
+      data.options?.[0]?.id ??
+      null;
+
+    if (!optionId) {
+      alert("옵션 ID를 찾을 수 없습니다.");
+      return;
     }
+
+    const payload = {
+      answers: [
+        {
+          optionId,
+          choiceId: adminCorrectChoiceId
+        }
+      ]
+    };
+
+    console.log("📤 Admin Resolve Payload:", payload);
+
+    if (alsoSettle) {
+      await adminResolveAndSettleVote(data.voteId, payload);
+    } else {
+      await adminResolveVote(data.voteId, payload);
+    }
+
+    alert("처리 완료");
+    load();
+  } catch (err) {
+    console.error(err);
+    alert("실패");
   }
+}
+
 
   async function handleAdminSettleOnly() {
-    try {
-      await adminSettleVote(data.voteId);
-      alert("정산 완료");
-      load();
-    } catch {
-      alert("정산 실패");
-    }
+  try {
+    await adminSettleVote(data.voteId);
+    alert("정산 완료");
+    load();
+  } catch {
+    alert("정산 실패");
   }
+}
 
   async function handleSaveEdit() {
     try {
