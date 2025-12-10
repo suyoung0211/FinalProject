@@ -140,29 +140,27 @@ export function VoteDetailPage({
   const chartData = useMemo(() => {
   if (!isAIVote || !data?.odds?.odds) return [];
 
-  // YES / NO / DRAW 등 모든 choice의 history를 합친다
-  const histories = data.odds.odds;
+  const choices = data.odds.odds;
 
-  // X축 기준: history.count
-  const maxCount = Math.max(
-    ...histories.map((c: any) => c.history?.length ?? 0)
+  // 가장 긴 history 길이
+  const maxLen = Math.max(
+    ...choices.map((c: any) => c.history?.length ?? 0)
   );
 
-  const result: any[] = [];
+  const rows = [];
 
-  for (let i = 0; i < maxCount; i++) {
-    const entry: any = { count: i + 1 };
+  for (let i = 0; i < maxLen; i++) {
+    const row: Record<string, number | null> = { count: i + 1 };
 
-    histories.forEach((c: any) => {
+    choices.forEach((c: any) => {
       const h = c.history?.[i];
-
-      entry[c.text] = h ? h.odds : null; // 없으면 null
+      row[c.text] = h?.odds ?? null;
     });
 
-    result.push(entry);
+    rows.push(row);
   }
 
-  return result;
+  return rows;
 }, [isAIVote, data]);
 
   // ====================================================================

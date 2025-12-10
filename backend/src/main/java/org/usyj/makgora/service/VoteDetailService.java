@@ -313,30 +313,46 @@ public class VoteDetailService {
      * ======================================================= */
     private VoteDetailOddsResponse loadOdds(Integer voteId) {
 
-        List<VoteOptionEntity> options = voteOptionRepository.findByVoteId(voteId.longValue());
+    List<VoteOptionEntity> options = voteOptionRepository.findByVoteId(voteId.longValue());
+    List<VoteOptionChoiceEntity> allChoices = options.stream()
+            .flatMap(o -> o.getChoices().stream())
+            .toList();
 
-        List<VoteOptionChoiceEntity> allChoices = options.stream()
-                .flatMap(o -> o.getChoices().stream())
-                .toList();
+    Map<Long, Double> oddsMap = calculateOdds(allChoices);
 
-        // 🔥 계산식 재사용
-        Map<Long, Double> oddsMap = calculateOdds(allChoices);
+    // 🔥 모든 트렌드 히스토리 로드
+    List<VoteTrendHistoryEntity> historyList = trendRepository.findByVoteId(voteId);
+    historyList.sort(Comparator.comparing(VoteTrendHistoryEntity::getRecordedAt));
 
-        List<VoteDetailOddsResponse.OddsItem> oddsItems = allChoices.stream()
-                .map(c -> VoteDetailOddsResponse.OddsItem.builder()
-                        .choiceId(c.getId().intValue())
-                        .text(c.getChoiceText())
-                        .odds(oddsMap.get(c.getId()))
-                        .history(List.of())
-                        .build())
-                .toList();
+    List<VoteDetailOddsResponse.OddsItem> oddsItems = allChoices.stream()
+            .map(choice -> {
 
-        return VoteDetailOddsResponse.builder()
-                .voteId(voteId)
-                .odds(oddsItems)
-                .build();
-    }
+                List<VoteDetailOddsResponse.OddsHistoryItem> history =
+                        historyList.stream()
+                                .filter(h -> h.getChoice().getId().equals(choice.getId()))
+                                .map(h -> VoteDetailOddsResponse.OddsHistoryItem.builder()
+                                        .odds(h.getOdds())
+                                        .percent(h.getPercent())
+                                        .totalPoints(h.getTotalPoints())
+                                        .timestamp(h.getRecordedAt().toString())
+                                        .build()
+                                )
+                                .toList();
 
+                return VoteDetailOddsResponse.OddsItem.builder()
+                        .choiceId(choice.getId().intValue())
+                        .text(choice.getChoiceText())
+                        .odds(oddsMap.get(choice.getId()))
+                        .history(history)
+                        .build();
+            })
+            .toList();
+
+    return VoteDetailOddsResponse.builder()
+            .voteId(voteId)
+            .odds(oddsItems)
+            .build();
+}
     /* =======================================================
      * 4) Trend Graph (통계 변화)
      * ======================================================= */

@@ -66,30 +66,43 @@ export function VoteTabs({
 }
 
 function ChartAI({ chartData, data }: any) {
-  if (!chartData || chartData.length === 0) {
+  if (!data?.odds?.odds) {
     return (
       <div className="text-gray-400 text-sm p-4 text-center">
-        📉 아직 배당 변동 데이터가 없습니다.
+        📉 배당률 정보가 없습니다.
       </div>
     );
   }
 
-  // 선택지 이름 수집 (YES, NO, DRAW...)
-  const choiceLabels = data.odds.odds.map((c: any) => c.text);
+  const choices = data.odds.odds;
+
+  let finalData = chartData;
+
+  // chartData 없으면 현재 배당률로 단일 데이터 생성
+  if (!chartData || chartData.length === 0) {
+    const single: Record<string, number> = { count: 1 };
+
+    choices.forEach((c: any) => {
+      single[c.text] = c.odds ?? 1.0;
+    });
+
+    finalData = [single];
+  }
 
   return (
     <div className="h-64 mb-6">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData}>
+        <AreaChart data={finalData}>
           <XAxis dataKey="count" stroke="#aaa" label={{ value: "투표자 수", dy: 10 }} />
           <YAxis stroke="#aaa" label={{ value: "배당률", angle: -90, dx: -10 }} />
           <Tooltip />
 
-          {choiceLabels.map((label: string, idx: number) => (
+          {/* 🔥 choiceId를 key로 사용 => 절대 중복되지 않음 */}
+          {choices.map((c: any, idx: number) => (
             <Area
-              key={label}
+              key={c.choiceId}
               type="monotone"
-              dataKey={label}
+              dataKey={c.text}
               stroke={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
               strokeWidth={2}
               fillOpacity={0.2}
@@ -101,6 +114,7 @@ function ChartAI({ chartData, data }: any) {
     </div>
   );
 }
+
 function ChartNormal({ data, getPercent }: any) {
   return (
     <div className="space-y-4">
