@@ -1,6 +1,7 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VoteService {
@@ -31,6 +33,7 @@ public class VoteService {
     private final VoteRuleRepository voteRuleRepository;
     private final VotesStatusHistoryRepository historyRepository;
     private final VoteDetailService voteDetailService;
+    private final VoteTrendHistoryRepository trendRepository;
 
     /* ===============================
        🔹 공용: 상태 히스토리 기록
@@ -66,6 +69,45 @@ private Double calculateOdds(VoteOptionChoiceEntity choice, VoteEntity vote) {
 
     return (double) totalPool / (double) choice.getPointsTotal();
 }
+
+@Transactional
+private void recordTrend(VoteEntity vote) {
+
+    // 전체 포인트 합
+    int totalPool = vote.getOptions().stream()
+            .flatMap(opt -> opt.getChoices().stream())
+            .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
+            .sum();
+
+    LocalDateTime now = LocalDateTime.now();
+
+    vote.getOptions().forEach(opt -> 
+        opt.getChoices().forEach(choice -> {
+
+            int myPoints = choice.getPointsTotal() == null ? 0 : choice.getPointsTotal();
+            int participants = choice.getParticipantsCount() == null ? 0 : choice.getParticipantsCount();
+
+            double percent = 0.0;
+            if (totalPool > 0 && myPoints > 0) {
+                percent = Math.round((myPoints * 1000.0 / totalPool)) / 10.0;
+            }
+
+            double odds = choice.getOdds() == null ? 1.0 : choice.getOdds();
+
+            VoteTrendHistoryEntity h = VoteTrendHistoryEntity.builder()
+                    .vote(vote)
+                    .choice(choice)
+                    .percent(percent)
+                    .odds(odds)
+                    .totalPoints(totalPool)
+                    .recordedAt(now)
+                    .build();
+
+            trendRepository.save(h);
+        })
+    );
+}
+
 
     /* ===============================
        🔹 3. 배당률 계산
@@ -122,25 +164,30 @@ public VoteDetailMainResponse participateVote(Integer voteId, VoteParticipateReq
     UserEntity user = userRepository.findById(userId)
             .orElseThrow(() -> new VoteException("USER_NOT_FOUND", "유저 정보를 찾을 수 없습니다."));
 
-    // 🔥 0. 포인트 부족
+    log.info("🔥 PARTICIPATE userId={} choiceId={} voteId={} points={}",
+            user.getId(), voteId, choice.getId(), req.getPoints());
+
+    // 포인트 부족
     if (user.getPoints() < req.getPoints()) {
         throw new VoteException("NOT_ENOUGH_POINTS", "포인트가 부족합니다.");
     }
 
-    // 🔥 1. 투표 전체에 이미 참여했는지 확인
-if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
-    throw new VoteException("ALREADY_VOTED", "이미 이 투표에 참여했습니다.");
-}
-    // 🔥 URL의 voteId 와 choice 가 속한 vote 가 다르면 에러
+    // 이미 참여했는지
+    if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
+        throw new VoteException("ALREADY_VOTED", "이미 이 투표에 참여했습니다.");
+    }
+
+    // 투표 매핑 오류
     if (vote.getId() != voteId.longValue()) {
-    throw new VoteException("INVALID_CHOICE_FOR_VOTE", "이 투표에 속하지 않는 선택지입니다.");
-}
-    // 🔥 2. 투표가 ONGOING 인지 체크
+        throw new VoteException("INVALID_CHOICE_FOR_VOTE", "이 투표에 속하지 않는 선택지입니다.");
+    }
+
+    // 투표 종료 여부
     if (vote.getStatus() != VoteEntity.Status.ONGOING) {
         throw new VoteException("VOTE_CLOSED", "이미 종료된 투표입니다.");
     }
 
-    // ========== 참여 저장 ==========
+    // 참여 저장
     VoteUserEntity vu = VoteUserEntity.builder()
             .vote(vote)
             .user(user)
@@ -150,23 +197,21 @@ if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
             .build();
     voteUserRepository.save(vu);
 
-    // 🔥 유저 포인트 차감
+    // 포인트 차감
     user.setPoints(user.getPoints() - req.getPoints());
     userRepository.save(user);
 
-    // 🔥 선택지 통계 증가
+    // 선택지 업데이트
     choice.setPointsTotal(choice.getPointsTotal() + req.getPoints());
     choice.setParticipantsCount(choice.getParticipantsCount() + 1);
     choiceRepository.save(choice);
 
-    // 🔥 투표 전체 통계 증가
+    // 투표 전체 통계 업데이트
     vote.setTotalPoints(vote.getTotalPoints() + req.getPoints());
     vote.setTotalParticipants(vote.getTotalParticipants() + 1);
     voteRepository.save(vote);
 
-    // ======================================================
-    // 🔥 배당률 실시간 재계산 — 모든 선택지에 대해 Odds 업데이트
-    // ======================================================
+    // 🔥 모든 odds 재계산
     int totalPool = vote.getOptions().stream()
             .flatMap(opt -> opt.getChoices().stream())
             .mapToInt(VoteOptionChoiceEntity::getPointsTotal)
@@ -174,20 +219,20 @@ if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
 
     vote.getOptions().forEach(opt ->
             opt.getChoices().forEach(ch -> {
-
                 double newOdds;
                 if (totalPool == 0 || ch.getPointsTotal() == 0) {
                     newOdds = 1.0;
                 } else {
                     newOdds = (double) totalPool / ch.getPointsTotal();
                 }
-
                 ch.setOdds(newOdds);
                 choiceRepository.save(ch);
             })
     );
 
-    // 🔥 최신 상세정보 반환 (프론트는 이것만 다시 받아서 갱신)
+    // 🔥🔥🔥 여기! history 기록 (전체 choice 기록됨)
+    recordTrend(vote);
+
     return voteDetailService.getVoteDetail(voteId, userId);
 }
 
@@ -268,7 +313,7 @@ if (voteUserRepository.existsByUserIdAndVoteId(userId, voteId)) {
                         .status(v.getStatus().name())
                         .totalPoints(v.getTotalPoints())
                         .totalParticipants(v.getTotalParticipants())
-
+                        
                         // 🔥 옵션 리스트 반드시 포함
                         .options(optionResponses)
 

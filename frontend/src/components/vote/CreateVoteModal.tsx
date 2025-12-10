@@ -211,25 +211,25 @@ const addOptionGroup = () => {
 </div>
 
             {options.map((opt, index) => (
-              <div key={index} className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+              <div key={index} className="p-4 bg-purple/5 border border-white/10 rounded-xl space-y-3">
                 
                 {/* 🔥 옵션 제목 */}
                 <Input
                   value={opt.optionTitle}
                   onChange={(e) => updateOptionTitle(index, e.target.value)}
                   placeholder="옵션 제목 (예: 승리팀 예측)"
-                  className="bg-white/10 border-white/20 text-white"
+                  className="bg-purple/10 border-white/20 text-white"
                 />
 
                 {/* 🔥 선택지 타입 선택 */}
                 <select
-                  value={opt.type}
-                  onChange={(e) => updateOptionType(index, e.target.value as any)}
-                  className="w-full bg-white/10 border-white/20 text-white p-2 rounded-lg"
-                >
-                  <option value="YESNO">YES / NO</option>
-                  <option value="YESNODRAW">YES / NO / DRAW</option>
-                </select>
+  value={opt.type}
+  onChange={(e) => updateOptionType(index, e.target.value as any)}
+  className="w-full bg-purple-700/40 border-purple-400/30 text-white p-2 rounded-lg placeholder-purple-200"
+>
+  <option className="text-black" value="YESNO">YES / NO</option>
+  <option className="text-black" value="YESNODRAW">YES / NO / DRAW</option>
+</select>
 
                 {/* 삭제 버튼 */}
                 <button
