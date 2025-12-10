@@ -128,7 +128,11 @@ public class CommunityPostService {
         CommunityPostEntity post = communityPostRepository.findById(postId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다. id=" + postId));
 
-        if (!post.getUser().getId().equals(currentUser.getId())) {
+        // 🔥 관리자(ADMIN, SUPER_ADMIN)는 작성자가 아니어도 삭제 가능
+        boolean isAdmin = currentUser.getRole() == UserEntity.Role.ADMIN 
+                || currentUser.getRole() == UserEntity.Role.SUPER_ADMIN;
+        
+        if (!isAdmin && !post.getUser().getId().equals(currentUser.getId())) {
             throw new AccessDeniedException("작성자만 게시글을 삭제할 수 있습니다.");
         }
 
@@ -137,6 +141,11 @@ public class CommunityPostService {
         redis.delete("cp:" + postId + ":comment");
         redis.delete("cp:" + postId + ":like");
         redis.delete("cp:" + postId + ":dislike");
+        redis.delete("cp:" + postId + ":score");
+        redis.delete("cp:" + postId + ":triggered");
+
+        // 🔥 게시글 반응(reactions) 먼저 삭제 (외래키 제약 조건 해결)
+        postReactionService.deleteAllReactionsByPostId(postId);
 
         // DB에서 게시글 삭제 (댓글과 파일은 CASCADE로 자동 삭제됨)
         communityPostRepository.delete(post);

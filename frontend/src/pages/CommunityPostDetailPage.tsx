@@ -528,7 +528,9 @@ export function CommunityPostDetailPage() {
 
         {/* 댓글 섹션 */}
         <div className="mt-10 bg-white/5 p-6 rounded-xl">
-          <h2 className="text-xl font-bold mb-6">댓글 {comments.length}</h2>
+          <h2 className="text-xl font-bold mb-6">
+            댓글 {comments.length + comments.reduce((sum, comment) => sum + (comment.replies?.length || 0), 0)}
+          </h2>
 
           {/* 댓글 작성 */}
           {user && (
