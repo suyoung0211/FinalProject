@@ -26,26 +26,26 @@ export function VoteModal({
           </div>
 
           {/* 현재 배당률 */}
-          <div className="mt-2 flex justify-between text-gray-400">
-            <span>현재 배당률</span>
-            <span className="text-green-300 font-semibold">
-              x{currentOdds?.toFixed(2)}
-            </span>
-          </div>
+<div className="mt-2 flex justify-between text-gray-400">
+  <span>현재 배당률</span>
+  <span className="text-green-300 font-semibold">
+    x{currentOdds?.toFixed(2)}
+  </span>
+</div>
 
-          {/* 예상 배당률 */}
-          <div className="mt-2 flex justify-between text-gray-400">
-            <span>예상 배당률 (배팅 후)</span>
-            <span className="text-blue-300 font-semibold">
-              x{expectedOdds?.toFixed(2)}
-            </span>
-          </div>
+{/* 예상 배당률 */}
+<div className="mt-2 flex justify-between text-gray-400">
+  <span>예상 배당률 (배팅 후)</span>
+  <span className="text-blue-300 font-semibold">
+    x{expectedOdds?.toFixed(2)}
+  </span>
+</div>
 
-          {/* 예상 보상 */}
-          <div className="mt-4 flex justify-between text-gray-400 border-t border-white/10 pt-3">
-            <span>예상 보상</span>
-            <span className="text-yellow-300 font-bold">{expectedReward} pt</span>
-          </div>
+{/* 예상 보상 */}
+<div className="mt-4 flex justify-between text-gray-400 border-t border-white/10 pt-3">
+  <span>예상 보상</span>
+  <span className="text-yellow-300 font-bold">{expectedReward} pt</span>
+</div>
         </div>
 
         <div className="flex gap-3">

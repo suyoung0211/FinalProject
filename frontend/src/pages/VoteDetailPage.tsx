@@ -20,7 +20,7 @@ import {
   adminResolveAndSettleVote,
   adminSettleVote,
 } from "../api/adminAPI";
-
+  
 // Components
 import { VoteTabs } from "../components/voteDetail/VoteTabs";
 import { VoteModal } from "../components/voteDetail/VoteModal";
@@ -109,10 +109,9 @@ export function VoteDetailPage({
   const newChoicePoints = (choicePoints ?? 0) + amount;
   const newTotalPool = (totalPool ?? 0) + amount;
 
-  const safe = Math.max(newChoicePoints, 1);
-  const rawOdds = newTotalPool / safe;
+  if (newChoicePoints <= 0) return 1;
 
-  return Math.min(Math.round(rawOdds * 100) / 100, 10);
+  return Math.round((newTotalPool / newChoicePoints) * 100) / 100;
 }
 
   // ====================================================================
@@ -139,16 +138,32 @@ export function VoteDetailPage({
   //  AI 차트 데이터
   // ====================================================================
   const chartData = useMemo(() => {
-    if (!isAIVote || !data?.statistics?.changes) return [];
-    return data.statistics.changes.map((ch: any) => ({
-      date: new Date(ch.time).toLocaleDateString("ko-KR", {
-        month: "2-digit",
-        day: "2-digit",
-      }),
-      yes: ch.yesPercent,
-      no: ch.noPercent,
-    }));
-  }, [isAIVote, data]);
+  if (!isAIVote || !data?.odds?.odds) return [];
+
+  // YES / NO / DRAW 등 모든 choice의 history를 합친다
+  const histories = data.odds.odds;
+
+  // X축 기준: history.count
+  const maxCount = Math.max(
+    ...histories.map((c: any) => c.history?.length ?? 0)
+  );
+
+  const result: any[] = [];
+
+  for (let i = 0; i < maxCount; i++) {
+    const entry: any = { count: i + 1 };
+
+    histories.forEach((c: any) => {
+      const h = c.history?.[i];
+
+      entry[c.text] = h ? h.odds : null; // 없으면 null
+    });
+
+    result.push(entry);
+  }
+
+  return result;
+}, [isAIVote, data]);
 
   // ====================================================================
   //  PARTICIPATE — AI
@@ -318,13 +333,30 @@ export function VoteDetailPage({
       {/* AI Vote Modal */}
       {isAIVote && showVoteModal !== null && data && (
         <VoteModal
-          choiceId={showVoteModal}
-          amount={selectedAmount}
-          odds={selectedChoice?.odds ?? 1}
-          percent={selectedChoice?.percent ?? 0}
-          onClose={() => setShowVoteModal(null)}
-          onConfirm={handleParticipateAI}
-        />
+  choiceId={showVoteModal}
+  amount={selectedAmount}
+  currentOdds={selectedChoice?.odds ?? 1}
+
+  expectedOdds={calcExpectedOdds(
+    selectedChoice?.pointsTotal ?? 0,
+    data.totalPoints ?? 0,
+    selectedAmount
+  )}
+
+  expectedReward={
+    selectedAmount *
+    calcExpectedOdds(
+      selectedChoice?.pointsTotal ?? 0,
+      data.totalPoints ?? 0,
+      selectedAmount
+    )
+  }
+
+  percent={selectedChoice?.percent ?? 0}
+
+  onClose={() => setShowVoteModal(null)}
+  onConfirm={handleParticipateAI}
+/>
       )}
 
       {/* AI 완료 Modal */}

@@ -49,7 +49,7 @@ export function VoteTabs({
               </div>
 
               {/* 기존 차트 */}
-              <ChartAI chartData={chartData} />
+              <ChartAI chartData={chartData} data={data} />
             </>
           ) : (
             <ChartNormal data={data} getPercent={getNormalChoicePercent} />
@@ -65,16 +65,37 @@ export function VoteTabs({
   );
 }
 
-function ChartAI({ chartData }: any) {
+function ChartAI({ chartData, data }: any) {
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="text-gray-400 text-sm p-4 text-center">
+        📉 아직 배당 변동 데이터가 없습니다.
+      </div>
+    );
+  }
+
+  // 선택지 이름 수집 (YES, NO, DRAW...)
+  const choiceLabels = data.odds.odds.map((c: any) => c.text);
+
   return (
     <div className="h-64 mb-6">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={chartData}>
-          <XAxis dataKey="date" stroke="#aaa" />
-          <YAxis stroke="#aaa" />
+          <XAxis dataKey="count" stroke="#aaa" label={{ value: "투표자 수", dy: 10 }} />
+          <YAxis stroke="#aaa" label={{ value: "배당률", angle: -90, dx: -10 }} />
           <Tooltip />
-          <Area type="monotone" dataKey="yes" stroke="#22c55e" strokeWidth={2} fillOpacity={0.3} fill="#22c55e" />
-          <Area type="monotone" dataKey="no" stroke="#ef4444" strokeWidth={2} fillOpacity={0.3} fill="#ef4444" />
+
+          {choiceLabels.map((label: string, idx: number) => (
+            <Area
+              key={label}
+              type="monotone"
+              dataKey={label}
+              stroke={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
+              strokeWidth={2}
+              fillOpacity={0.2}
+              fill={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
+            />
+          ))}
         </AreaChart>
       </ResponsiveContainer>
     </div>

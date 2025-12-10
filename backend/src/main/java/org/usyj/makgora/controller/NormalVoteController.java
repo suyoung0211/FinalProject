@@ -63,9 +63,12 @@ public ResponseEntity<?> participate(
        4. 상세 조회
      ----------------------------------------------------- */
     @GetMapping("/{id}")
-    public ResponseEntity<NormalVoteDetailResponse> getDetail(@PathVariable Integer id) {
-        return ResponseEntity.ok(normalVoteDetailService.getDetail(id));
-    }
+public ResponseEntity<?> getDetail(
+        @PathVariable Integer id,
+        @AuthenticationPrincipal(expression = "id") Integer userId
+) {
+    return ResponseEntity.ok(normalVoteDetailService.getDetail(id, userId));
+}
 
     /* -----------------------------------------------------
        5. 통합 수정

@@ -26,6 +26,10 @@ export function VoteInfoCard({
   console.log("🔥 [ADMIN] adminCorrectChoiceId:", adminCorrectChoiceId);
   console.log("🔥 [ADMIN] raw options:", data?.options);
 
+  const maxOdds = isAIVote
+  ? Math.max(...(data?.odds?.odds?.map((o: any) => o.odds) ?? [0]))
+  : null;
+
   // ⚡ 옵션을 문자열 id로 통일
   const parsedOptions =
   data?.options?.flatMap((opt: any) =>
@@ -102,7 +106,15 @@ export function VoteInfoCard({
           <StatCard label="총 포인트" value={data.totalPoints ?? 0} />
         )}
 
-        <StatCard label="상태" value={data.status} />
+        {/* 🔥 상태 대신 최대 배당 표시 */}
+  {isAIVote ? (
+    <StatCard
+      label="최대 배당률"
+      value={maxOdds ? `x${maxOdds.toFixed(2)}` : "-"}
+    />
+  ) : (
+    <StatCard label="상태" value={data.status} />
+  )}
 
         <StatCard
           label="마감일"
