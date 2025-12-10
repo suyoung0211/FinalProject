@@ -1,0 +1,50 @@
+# 빌드 출력물 - Docker 이미지 빌드 시 로컬 빌드 산출물을 컨텍스트에 포함시키지 않음
+# (만약 Dockerfile에서 로컬에서 빌드한 jar를 복사한다면 target/ 제거하지 마십시오)
+target/
+*.jar
+*.war
+
+# Git 메타데이터 — 이미지에 필요 없음
+.git
+.gitignore
+
+# IDE/편집기 파일들 — 개인 설정 제외
+.idea/
+*.iml
+.vscode/
+
+# 로그, 임시파일
+*.log
+tmp/
+temp/
+logs/
+
+# 로컬 환경설정 파일(비밀키 포함 가능) - 절대 이미지에 포함시키지 않을 것
+.env
+.env.*
+secrets/
+*.keystore
+*.jks
+
+# OS/유틸리티 잔재
+.DS_Store
+Thumbs.db
+
+# 노드 모듈(프로젝트에 프론트엔드가 있다면 빌드 시 필요 없는 경우 제외)
+node_modules/
+
+# 배포/CI 도구 관련 캐시들
+.cache/
+npm-debug.log*
+yarn-error.log*
+
+# Maven wrapper 파일은 보통 이미지 빌드(도커 내부에서 mvn wrapper 사용) 시 필요하므로
+# 제거하지 않는 편이 안전합니다. 만약 로컬에서 빌드한 결과만 복사할 계획이면
+# 아래 두 줄을 주석 해제해서 제외할 수 있습니다.
+# .mvn/
+# mvnw
+
+# 필요없는 파일
+uploads/
+준우ReadMe.md
+EntityModify.md
