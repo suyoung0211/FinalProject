@@ -14,8 +14,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        // target: "http://192.168.0.21:8080",   // ⭐ 백엔드 스프링부트 주소
-        target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소
+        target: "https://finalproject-backend-9rdo.onrender.com",   // ⭐ 백엔드 스프링부트 주소
+        // target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소
         changeOrigin: true,
         secure: false,
       },
