@@ -29,7 +29,7 @@ requests==2.32.0
 tenacity==9.1.2
 
 # Redis
-redis==5.2.0  # Python용 Redis 클라이언트
+redis==7.1.0  # Python용 Redis 클라이언트
 
 # 기타 유틸
 python-dotenv==1.2.1
