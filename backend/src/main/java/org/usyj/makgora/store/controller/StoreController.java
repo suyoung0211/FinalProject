@@ -41,7 +41,7 @@ public class StoreController {
 
     @GetMapping("/frames")
     public Object getFrameImages() {
-    return storeAdminService.getImagesByFolder("frames");
+    return storeAdminService.getImagesByFolder("frame");
 }
     
     /** 구매 */

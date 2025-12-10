@@ -405,5 +405,3 @@ name = "Vote_Users",
 댓글 부모자식관계 fetch = FetchType.EAGER 붙여줌
 
 ALTERTABLE필수! 그냥 create로
-
-VoteTrendHistoryEntity에 odds컬럼 추가 (db 업데이트)

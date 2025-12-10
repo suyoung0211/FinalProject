@@ -85,17 +85,6 @@ export function Store() {
     }
   };
 
-  const deleteItem = async (itemId: number) => {
-  if (!window.confirm("정말 삭제하시겠습니까?")) return;
-     try {
-    await api.delete(`/admin/store/items/${itemId}`);
-    alert("삭제 완료!");
-    loadItems(); // 목록 갱신
-  } catch (err) {
-    console.error("아이템 삭제 실패:", err);
-    alert("삭제 중 오류가 발생했습니다.");
-  }
-};
   return (
     <div className="space-y-10 text-white">
 
@@ -242,10 +231,7 @@ export function Store() {
                 </td>
 
                 <td className="px-6 py-4">
-                  <button
-                    onClick={() => deleteItem(item.id)}
-                    className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
-                  >
+                  <button className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
                     삭제
                   </button>
                 </td>
