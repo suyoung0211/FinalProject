@@ -23,7 +23,6 @@ public class StoreController {
     private final StoreService storeService;
     private final StoreAdminService storeAdminService;
     private final JwtTokenProvider jwtTokenProvider;
-    private final StoreAdminService storeAdminService;
 
     /** 아이템 목록 */
     @GetMapping("/items")
