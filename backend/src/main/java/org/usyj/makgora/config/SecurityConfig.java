@@ -99,8 +99,8 @@ public class SecurityConfig {
         // 로컬과 배포용 프론트 도메인 허용
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",          // 로컬 개발용
-                "https://your-frontend-domain.com" // 배포용
-
+                "https://your-frontend-domain.com", // 배포용
+                "http://192.168.0.23:5173/"
         ));
 
         config.setAllowCredentials(true);
