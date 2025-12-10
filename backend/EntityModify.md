@@ -407,3 +407,12 @@ name = "Vote_Users",
 ALTERTABLE필수! 그냥 create로
 
 VoteTrendHistoryEntity에 odds컬럼 추가 (db 업데이트)
+
+
+application-dev.properties에 spring.redis.host=였던거 
+spring.data.redis.host=
+spring.data.redis.port=
+spring.data.redis.password=
+로 바꿔줌(최신버전은 이렇게 써야한다함)
+
+python.api.url= 뒤에 /generate-ai-titles 붙여야 작동함
