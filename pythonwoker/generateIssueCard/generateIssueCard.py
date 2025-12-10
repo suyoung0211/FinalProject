@@ -43,6 +43,10 @@ BACKEND_VOTE_URL = os.getenv(
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = os.getenv("REDIS_PORT")
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+
 engine = create_engine(DB_URL, echo=False, future=True)
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -665,7 +669,17 @@ def run_vote_for_issue(session, issue_id):
 #    - issue:{id}:voteCreated
 # ============================================================
 
-r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+
+# ---------------------------------------------
+# Redis 클라이언트 생성 (Cloud 연결)
+# ---------------------------------------------
+r = redis.Redis(
+    host=REDIS_HOST,       # Cloud host 적용
+    port=int(REDIS_PORT),  # Cloud port 적용
+    password=REDIS_PASSWORD,  # 반드시 비밀번호 입력해야 접속됨
+    db=0,
+    decode_responses=True
+)
 QUEUE = "ISSUE_TRIGGER_QUEUE"
 
 def worker():
