@@ -1,8 +1,6 @@
 package org.usyj.makgora.controller;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +16,7 @@ import org.usyj.makgora.service.VoteSettlementService;
 import org.usyj.makgora.request.vote.UserVoteCreateRequest;
 import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 
-@Slf4j
+
 @RestController
 @RequestMapping("/api/votes")
 @RequiredArgsConstructor
@@ -134,20 +132,18 @@ public ResponseEntity<?> getMyVotes(@AuthenticationPrincipal CustomUserDetails u
     return ResponseEntity.ok(voteService.getMyVotes(user.getId()));
 }
 
-/** 🔥 투표 상세 정보 전체 조회 (FULL) */
-@GetMapping("/{voteId}/detail")
-public ResponseEntity<VoteDetailMainResponse> getVoteDetailFull(
-        @PathVariable Integer voteId,
-        @AuthenticationPrincipal CustomUserDetails user
-) {
-    Integer userId = (user != null) ? user.getId() : null;
+/** 투표 상세 정보 전체 조회 */
+    @GetMapping("/{voteId}/detail")
+    public ResponseEntity<VoteDetailMainResponse> getVoteDetail(
+            @PathVariable Integer voteId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Integer userId = (user != null) ? user.getId() : null;
 
-    // 🔥 votelistService → voteDetailService 로 변경!!
-    VoteDetailMainResponse response = voteDetailService.getVoteDetail(voteId, userId);
-    log.info("🔥 [CONTROLLER] 인증된 사용자 userId={}", userId);
+        VoteDetailMainResponse response = votelistService.getVoteDetail(voteId, userId);
 
-    return ResponseEntity.ok(response);
-}
+        return ResponseEntity.ok(response);
+    }
 
     /** 내 참여 정보만 조회 */
 @GetMapping("/{voteId}/my")
@@ -178,7 +174,7 @@ public ResponseEntity<?> getMyParticipation(
         request.setAdminUserId(adminUserId);
 
         VoteDetailSettlementResponse result =
-                voteSettlementService.finishAndSettle(voteId, request);
+                voteSettlementService.resolveAndSettle(voteId, request);
 
         return ResponseEntity.ok(result);
     }

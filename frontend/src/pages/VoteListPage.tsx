@@ -56,11 +56,6 @@ export function VoteListPage() {
           createdAt: v.createdAt,
           status: v.status,
           options: v.options,
-          myParticipation: v.myParticipation ?? null,
-          expectedOdds: v.expectedOdds ?? null,
-          expectedReward: v.expectedReward ?? null,
-          settlementSummary: v.settlementSummary ?? null,
-          correctChoiceId: v.correctChoiceId ?? null,
         }));
 
       const normalMapped = (normalRes.data.votes || [])

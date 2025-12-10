@@ -18,9 +18,6 @@ public class VoteTrendHistoryEntity {
     @Column(name = "trend_id")
     private Long id;
 
-    @Column(name = "odds", nullable = false)
-    private Double odds;
-
     /** 📌 어떤 투표(AI 또는 NormalVote 포함)인지 */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", nullable = false)
