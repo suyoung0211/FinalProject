@@ -2,18 +2,28 @@
 
 import os
 from datetime import datetime
-from dotenv import load_dotenv
-from openai import OpenAI
+from collections import Counter
+import logging
+
+from fastapi import FastAPI
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-from collections import Counter
+from dotenv import load_dotenv
+from openai import OpenAI
+
 
 # ===============================
 # 환경변수 로드
 # ===============================
 load_dotenv()
-DB_URL = os.getenv("DB_URL")
+DB_URL = os.getenv("MYSQL_PUBLIC_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# ===============================
+# 로깅 세팅
+# ===============================
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ===============================
 # DB 세팅
@@ -73,7 +83,9 @@ class ArticleAiTitleEntity(Base):
 # ===============================
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-
+# ===============================
+# AI 제목 생성 함수
+# ===============================
 def generate_ai_title(title, content):
     """
     주어진 제목과 내용으로 AI 제목 생성
@@ -98,14 +110,11 @@ def generate_ai_title(title, content):
 
     return response.choices[0].message.content.strip()
 
-
 # ===============================
 # AI 제목 생성 실행 함수
 # ===============================
 MAX_TRY = 3
 MAX_TITLE_LENGTH = 50
-
-
 
 # 🔹 AI 제목 생성 메인 로직
 def run_generate_ai_titles():
@@ -241,3 +250,41 @@ def run_generate_ai_titles():
         "summary": summary,
         "failed_summary": failed_summary
     }
+
+# ===============================
+# FastAPI 서버
+# ===============================
+app = FastAPI()
+
+@app.post("/generate-ai-titles")
+def generate_ai_titles_api():
+    result_data = run_generate_ai_titles()
+    summary = result_data.get("summary", {})
+    failed_summary = result_data.get("failed_summary", [])
+
+    success_count = summary.get("success_count", 0)
+    failed_count = summary.get("failed_count", 0)
+    skipped_count = summary.get("skipped_count", 0)
+
+    failed_articles = [{"reason": f["reason"], "count": f["count"]} for f in failed_summary]
+
+    logger.info(f"AI 제목 생성 완료: SUCCESS={success_count}, FAILED={failed_count}, SKIPPED={skipped_count}")
+    for f in failed_articles:
+        logger.error(f"[FAILED] reason={f['reason']} count={f['count']}")
+
+    return {
+        "status": "completed",
+        "message": "AI 제목 생성 완료",
+        "summary": {
+            "success_count": success_count,
+            "failed_count": failed_count,
+            "skipped_count": skipped_count,
+        },
+        "failed_articles": failed_articles,
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

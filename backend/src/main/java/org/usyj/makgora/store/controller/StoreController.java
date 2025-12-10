@@ -11,7 +11,6 @@ import org.usyj.makgora.request.StoreItemPurchaseRequest;
 import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.store.service.StoreAdminService;
 import org.usyj.makgora.store.service.StoreService;
-import org.usyj.makgora.request.ApplyItemRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

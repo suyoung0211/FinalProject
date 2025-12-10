@@ -751,6 +751,8 @@ def trigger_vote():
 
 
 if __name__ == "__main__":
+    import os
+
     print("🚀 Starting Makgora Unified Python Server (Flask + Worker)...")
 
     # 🔥 Redis Worker 스레드 실행
@@ -758,4 +760,6 @@ if __name__ == "__main__":
     worker_thread.start()
 
     # 🔥 Flask 서버 실행
-    app.run(host="0.0.0.0", port=5001)
+    # 배포 환경에서는 PORT 환경변수를 사용, 없으면 로컬용 기본값 5001
+    port = int(os.getenv("PORT", 5001))
+    app.run(host="0.0.0.0", port=port)

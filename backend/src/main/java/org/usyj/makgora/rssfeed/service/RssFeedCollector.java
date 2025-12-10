@@ -23,7 +23,8 @@ public class RssFeedCollector {
     private final RestTemplate restTemplate = new RestTemplate();
 
     // 🔹 Python AI 제목 생성 API URL
-    private static final String PYTHON_API_URL = "http://localhost:8000/generate-ai-titles";
+    @Value("${python.api.url:http://localhost:8000}")
+    private String pythonApiUrl;
 
     // 🔹 application.properties 또는 application.yml에서 값 주입
     // 서버 시작 시 RSS 수집을 실행할지 여부 결정
@@ -67,7 +68,7 @@ public class RssFeedCollector {
      */
     public void runPythonAiTitleGeneration() {
         try {
-            String response = restTemplate.postForObject(PYTHON_API_URL, null, String.class);
+            String response = restTemplate.postForObject(pythonApiUrl, null, String.class);
             System.out.println("Python AI 제목 생성 API 응답: " + response);
         } catch (Exception e) {
             // 호출 실패 시 오류 메시지 출력
