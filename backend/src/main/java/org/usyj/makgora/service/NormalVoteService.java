@@ -84,6 +84,7 @@ public class NormalVoteService {
         return toResponse(vote);
     }
 
+    
     /* ============================================================
        2) 상세 조회
        ============================================================ */
@@ -104,104 +105,23 @@ public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest
     NormalVoteEntity vote = normalVoteRepository.findById(voteId)
             .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
 
-    // 🔥 관리자 권한이면 수정 허용
+    // 🔥 관리자 권한 확인
     UserEntity user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
 
     boolean isAdmin = user.getRole() == UserEntity.Role.ADMIN
             || user.getRole() == UserEntity.Role.SUPER_ADMIN;
 
-    // 🔥 owner가 아니고 관리자도 아니면 수정 금지
     if (!isAdmin && !vote.getUser().getId().equals(userId)) {
-        throw new RuntimeException("본인이 생성한 투표만 수정 가능합니다.");
+        throw new RuntimeException("본인이 생성한 투표만 수정할 수 있습니다.");
     }
 
-    // 기본 정보 수정
-    vote.setTitle(req.getTitle());
-    vote.setDescription(req.getDescription());
-    vote.setEndAt(req.getEndAt());
-    vote.setCategory(NormalVoteEntity.NormalCategory.valueOf(req.getCategory()));
+    // 🔥 수정 가능한 항목 = 제목, 내용 ONLY
+    if (req.getTitle() != null) vote.setTitle(req.getTitle());
+    if (req.getDescription() != null) vote.setDescription(req.getDescription());
 
-    /* ============================================================
-       ✔ 옵션 삭제 처리 — 안전하게 검증 후 삭제
-       ============================================================ */
-    if (req.getDeletedOptionIds() != null) {
-    for (Integer optionIdLong : req.getDeletedOptionIds()) {
-
-        Integer optionId = optionIdLong.intValue(); // 🔥 Long → Integer 변환
-
-        NormalVoteOptionEntity option = optionRepository.findById(optionId)
-                .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
-
-        if (!option.getNormalVote().getId().equals(voteId.longValue())) {
-            throw new RuntimeException("해당 옵션은 이 투표에 속하지 않습니다.");
-        }
-
-        optionRepository.delete(option);
-    }
-}
-
-    /* ============================================================
-       ✔ 선택지 삭제 처리 — 안전하게 검증 후 삭제
-       ============================================================ */
-    if (req.getDeletedChoiceIds() != null) {
-    for (Integer choiceIdLong : req.getDeletedChoiceIds()) {
-
-        Integer choiceId = choiceIdLong.intValue(); // 🔥 Long → Integer 변환
-
-        NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
-                .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
-
-        if (!choice.getNormalOption().getNormalVote().getId().equals(voteId.longValue())) {
-            throw new RuntimeException("해당 선택지는 이 투표에 속하지 않습니다.");
-        }
-
-        choiceRepository.delete(choice);
-    }
-}
-
-    /* ============================================================
-       ✔ 옵션 + 선택지 수정 및 추가 처리
-       ============================================================ */
-    for (NormalVoteFullUpdateRequest.OptionUpdateDto dto : req.getOptions()) {
-
-        NormalVoteOptionEntity option;
-
-        // 옵션 수정
-        if (dto.getOptionId() != null) {
-            option = optionRepository.findById(dto.getOptionId())
-                    .orElseThrow(() -> new RuntimeException("옵션을 찾을 수 없습니다."));
-            option.setOptionTitle(dto.getOptionTitle());
-
-        } else {
-            // 옵션 추가
-            option = NormalVoteOptionEntity.builder()
-                    .normalVote(vote)
-                    .optionTitle(dto.getOptionTitle())
-                    .build();
-            optionRepository.save(option);
-        }
-
-        // 선택지 추가/수정
-        for (NormalVoteFullUpdateRequest.ChoiceUpdateDto c : dto.getChoices()) {
-
-            if (c.getChoiceId() != null) {
-                // 기존 선택지 수정
-                NormalVoteChoiceEntity choice = choiceRepository.findById(c.getChoiceId())
-                        .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
-                choice.setChoiceText(c.getChoiceText());
-
-            } else {
-                // 선택지 추가
-                choiceRepository.save(
-                        NormalVoteChoiceEntity.builder()
-                                .normalOption(option)
-                                .choiceText(c.getChoiceText())
-                                .build()
-                );
-            }
-        }
-    }
+    vote.setUpdatedAt(LocalDateTime.now());
+    normalVoteRepository.save(vote);
 
     return toResponse(vote);
 }

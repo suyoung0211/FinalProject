@@ -40,6 +40,7 @@ export function Votes() {
     const mappedAI = rawAI.map((v: any) => ({
       id: v.id,
       title: v.title,
+      description: v.description,
       totalParticipants: v.totalParticipants ?? 0,
       status: v.status ?? "UNKNOWN",
     }));
@@ -213,7 +214,13 @@ export function Votes() {
             <tbody className="divide-y divide-white/5">
               {filteredNormal.map((v) => (
                 <tr key={v.id} className="hover:bg-white/5">
-                  <td className="px-6 py-4 text-white">{v.title}</td>
+                  <td className="px-6 py-4 text-white">
+  <div className="font-semibold">{v.title}</div>
+
+  <div className="text-gray-400 text-xs mt-1 line-clamp-2">
+    {v.description}
+  </div>
+</td>                  
                   <td className="px-6 py-4 text-white">{v.totalParticipants}</td>
 
                   <td className="px-6 py-4 flex gap-2">

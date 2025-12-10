@@ -65,8 +65,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                 // Auth 필요
-    .requestMatchers("/api/admin/**")
-        .hasAnyRole("ADMIN", "SUPER_ADMIN")        // ⭐⭐⭐ 이거 추가해야 함!!!
 
                 // 인증 필요한 API
                 .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
