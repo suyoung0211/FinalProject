@@ -21,45 +21,67 @@ public class VoteSettlementService {
     private final VoteUserRepository voteUserRepository;
     private final UserRepository userRepository;
     private final VoteStatusHistoryService historyService;
-
+    private final VotesStatusHistoryRepository historyRepository;
 
     /* ============================================================
        1) 정답 확정 (FINISHED → RESOLVED)
        ============================================================ */
     @Transactional
-public VoteDetailSettlementResponse finished(Integer voteId, VoteDetailResolveRequest req) {
+    public VoteDetailSettlementResponse finished(Integer voteId, VoteDetailResolveRequest req) {
 
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("Vote not found"));
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("Vote not found"));
 
-    // 🔥 ONGOING이면 자동으로 FINISHED로 변경
-    if (vote.getStatus() == VoteEntity.Status.ONGOING) {
-        vote.setStatus(VoteEntity.Status.FINISHED);
+        // 🔥 ONGOING이면 자동으로 FINISHED로 변경
+        if (vote.getStatus() == VoteEntity.Status.ONGOING) {
+            vote.setStatus(VoteEntity.Status.FINISHED);
+        }
+
+        // FINISHED 상태만 정답 확정 가능
+        if (vote.getStatus() != VoteEntity.Status.FINISHED) {
+            throw new RuntimeException("정답 확정 불가한 상태입니다. 상태=" + vote.getStatus());
+        }
+
+        // 🔥 단일 정답 모드: correctChoiceId 우선 사용
+        VoteOptionChoiceEntity correct;
+
+        if (req.getCorrectChoiceId() != null) {
+            correct = choiceRepository.findById(req.getCorrectChoiceId())
+                    .orElseThrow(() -> new RuntimeException("Choice not found"));
+        } else if (req.getAnswers() != null && !req.getAnswers().isEmpty()) {
+            // (옵션별 모드 고려해서 첫 번째를 대표 정답으로 사용)
+            VoteDetailResolveRequest.CorrectAnswer first = req.getAnswers().get(0);
+            correct = choiceRepository.findById(first.getChoiceId())
+                    .orElseThrow(() -> new RuntimeException("Choice not found"));
+        } else {
+            throw new RuntimeException("정답 정보가 없습니다. correctChoiceId 또는 answers 필요.");
+        }
+
+        vote.setCorrectChoice(correct);
+        vote.setStatus(VoteEntity.Status.RESOLVED);
+        vote.setUpdatedAt(LocalDateTime.now());
+
+        historyService.recordStatus(vote, VoteEntity.Status.RESOLVED);
+
+        return computePreview(vote, correct);
     }
 
-    // FINISHED 상태만 정답 확정 가능
-    if (vote.getStatus() != VoteEntity.Status.FINISHED) {
-        throw new RuntimeException("정답 확정 불가한 상태입니다. 상태=" + vote.getStatus());
+    /* ============================================================
+       REVIEWING → ONGOING (투표 오픈)
+       ============================================================ */
+    @Transactional
+    public void openVote(Integer voteId) {
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (vote.getStatus() != VoteEntity.Status.REVIEWING) {
+            throw new RuntimeException("REVIEWING 상태만 시작할 수 있습니다.");
+        }
+
+        vote.setStatus(VoteEntity.Status.ONGOING);
+        voteRepository.save(vote);
+        historyService.recordStatus(vote, VoteEntity.Status.ONGOING);
     }
-
-    // 정답 체크
-    if (req.getAnswers() == null || req.getAnswers().isEmpty()) {
-        throw new RuntimeException("정답 정보가 없습니다. correctChoiceId 또는 answers 필요.");
-    }
-
-    // 단일 정답
-    VoteDetailResolveRequest.CorrectAnswer first = req.getAnswers().get(0);
-    VoteOptionChoiceEntity correct = choiceRepository.findById(first.getChoiceId())
-            .orElseThrow(() -> new RuntimeException("Choice not found"));
-
-    vote.setCorrectChoice(correct);
-    vote.setStatus(VoteEntity.Status.RESOLVED);
-    vote.setUpdatedAt(LocalDateTime.now());
-
-    historyService.recordStatus(vote, VoteEntity.Status.RESOLVED);
-
-    return computePreview(vote, correct);
-}
 
     /* ============================================================
        2) 정답 확정 + 정산 동시에
@@ -67,20 +89,21 @@ public VoteDetailSettlementResponse finished(Integer voteId, VoteDetailResolveRe
     @Transactional
     public VoteDetailSettlementResponse finishAndSettle(Integer voteId, VoteDetailResolveRequest req) {
 
-        VoteDetailSettlementResponse preview = finished(voteId, req); // 먼저 대표 정답 저장
+        // 🔥 1단계: 정답 확정 (ONGOING → FINISHED → RESOLVED)
+        VoteDetailSettlementResponse preview = finished(voteId, req);
 
+        // 🔥 2단계: DB에서 최신 Vote + CorrectChoice 읽기
         VoteEntity vote = voteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("Vote not found"));
 
-                // 단일 정답 기준
-    VoteDetailResolveRequest.CorrectAnswer first = req.getAnswers().get(0);
-    VoteOptionChoiceEntity correct = choiceRepository.findById(first.getChoiceId())
-            .orElseThrow(() -> new RuntimeException("Choice not found"));
+        VoteOptionChoiceEntity correct = vote.getCorrectChoice();
+        if (correct == null) {
+            throw new RuntimeException("정답이 설정되지 않았습니다.");
+        }
 
-        // 옵션별 정산
+        // 🔥 3단계: 실제 정산
         return settleSingle(vote, correct);
     }
-
 
     /* ============================================================
        3) 미리보기 (단일 정답)
@@ -107,7 +130,6 @@ public VoteDetailSettlementResponse finished(Integer voteId, VoteDetailResolveRe
                 .build();
     }
 
-
     /* ============================================================
        4) 단독 정산 API (RESOLVED → REWARDED)
        ============================================================ */
@@ -117,14 +139,14 @@ public VoteDetailSettlementResponse finished(Integer voteId, VoteDetailResolveRe
         VoteEntity vote = voteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("Vote not found"));
 
-        // 만약 RESOLVED가 아니라면 resolve() 먼저 수행하도록
-if (vote.getStatus() == VoteEntity.Status.FINISHED) {
-    throw new RuntimeException("정답이 설정되지 않았습니다. 먼저 정답 확정 필요.");
-}
+        // FINISHED 상태면 아직 정답이 안 정해진 것
+        if (vote.getStatus() == VoteEntity.Status.FINISHED) {
+            throw new RuntimeException("정답이 설정되지 않았습니다. 먼저 정답 확정 필요.");
+        }
 
-if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
-    throw new RuntimeException("정산 불가한 상태입니다. 상태=" + vote.getStatus());
-}
+        if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
+            throw new RuntimeException("정산 불가한 상태입니다. 상태=" + vote.getStatus());
+        }
 
         VoteOptionChoiceEntity correct = vote.getCorrectChoice();
         if (correct == null) {
@@ -133,7 +155,6 @@ if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
 
         return settleSingle(vote, correct);
     }
-
 
     /* ============================================================
        5) 단일 정답 정산
@@ -153,9 +174,9 @@ if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
 
         int winnerPool = correctChoice.getPointsTotal() == null ? 0 : correctChoice.getPointsTotal();
 
-
         // 배당 계산
-        double feeRate = vote.getFeeRate();
+        double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
+
         for (VoteOptionChoiceEntity c : allChoices) {
 
             int pt = c.getPointsTotal() == null ? 0 : c.getPointsTotal();
@@ -168,7 +189,6 @@ if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
             c.setOdds(odds);
         }
         choiceRepository.saveAll(allChoices);
-
 
         // 유저 정산
         List<VoteUserEntity> winners = voteUserRepository.findByChoiceId(correctChoice.getId());
@@ -183,7 +203,7 @@ if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
 
             UserEntity user = vu.getUser();
             user.setPoints(user.getPoints() + reward);
-            // 2) 🔥 정직하게 winner면 레벨 +1
+
             if (user.getLevel() == null) user.setLevel(1);
             user.setLevel(user.getLevel() + 1);
             userRepository.save(user);
@@ -207,9 +227,8 @@ if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
                 .build();
     }
 
-
     /* ============================================================
-       6) 옵션별 정산 (YES/NO/DRAW 전부 지원)
+       6) 옵션별 정산 (YES/NO/DRAW 전부 지원) — 지금은 사용 X
        ============================================================ */
     private VoteDetailSettlementResponse settleMultiple(
             VoteEntity vote,
@@ -261,5 +280,22 @@ if (vote.getStatus() != VoteEntity.Status.RESOLVED) {
                 .distributedSum(distributed)
                 .resultSummary(summary.toString())
                 .build();
+    }
+
+    /* ============================================================
+       7) 상태 강제 변경 (ONGOING → FINISHED)
+       ============================================================ */
+    @Transactional
+    public void changeStatusToFinished(Integer voteId, Integer adminUserId) {
+
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+        if (vote.getStatus() != VoteEntity.Status.ONGOING) {
+            throw new RuntimeException("ONGOING 상태에서만 FINISHED로 변경할 수 있습니다.");
+        }
+
+        vote.setStatus(VoteEntity.Status.FINISHED);
+        historyService.recordStatus(vote, VoteEntity.Status.FINISHED);
     }
 }

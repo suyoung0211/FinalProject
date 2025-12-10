@@ -463,4 +463,25 @@ public void cancelVoteAdmin(Integer normalVoteId) {
                 .options(options)
                 .build();
     }
+
+    @Transactional(readOnly = true)
+public NormalVoteResponse getDetailForAdmin(Integer id) {
+    NormalVoteEntity vote = normalVoteRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+            normalVoteRepository.save(vote);
+    return toResponse(vote);
+};
+
+@Transactional
+public NormalVoteResponse finishVoteAdmin(Integer voteId) {
+    NormalVoteEntity vote = normalVoteRepository.findById(voteId)
+            .orElseThrow(() -> new RuntimeException("Vote not found"));
+
+    vote.setStatus(NormalVoteEntity.Status.FINISHED);
+    normalVoteRepository.save(vote);
+    return toResponse(vote);
+}
+
+
+
 }

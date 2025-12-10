@@ -118,3 +118,16 @@ export const getAllIssuesApi = () => api.get('/issues');
  * - 요청 바디: { issueId: number, status: "APPROVED" | "REJECTED" }
  */
 export const updateAdminIssueStatusApi = (body) => api.post('/issues/status', body);
+
+// 🔹 관리자: 일반투표 강제 종료
+export const adminFinishNormalVote = (id) =>
+  api.post(`/admin/normal-votes/${id}/finish`);
+
+// 🔹 관리자: 일반투표 강제 취소
+export const adminCancelNormalVote = (id) =>
+  api.post(`/admin/normal-votes/${id}/cancel`);
+
+export const adminOpenVote = (voteId) =>
+  api.post(`/admin/votes/${voteId}/open`);
+
+
