@@ -232,7 +232,7 @@ export function CommunityPostDetailPage() {
   const resolveImage = (url?: string | null) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `http://localhost:8080/${url}`;
+    return `https://res.cloudinary.com/dh9tw89xn/image/upload/${url}`;
   };
 
   // 뱃지가 이모지인지 확인
