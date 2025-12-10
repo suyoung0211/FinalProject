@@ -34,7 +34,7 @@ logger.setLevel(logging.INFO)
 print("[INIT] generateIssueCard.py loaded")
 
 load_dotenv()
-DB_URL = os.getenv("DB_URL")
+DB_URL = os.getenv("MYSQL_PUBLIC_URL")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 BACKEND_VOTE_URL = os.getenv(
     "BACKEND_VOTE_URL",
