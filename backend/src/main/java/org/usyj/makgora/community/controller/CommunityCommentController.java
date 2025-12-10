@@ -30,6 +30,17 @@ public class CommunityCommentController {
     }
 
     /**
+     * 모든 댓글 조회 (관리자용)
+     */
+    @GetMapping("/comments")
+    public List<CommunityCommentResponse> getAllComments(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Integer currentUserId = (userDetails != null) ? userDetails.getId() : null;
+        return communityCommentService.getAllComments(currentUserId);
+    }
+
+    /**
      * 댓글/대댓글 작성
      * - request.parentCommentId == null  → 일반 댓글
      * - request.parentCommentId != null → 대댓글
@@ -58,7 +69,7 @@ public class CommunityCommentController {
     }
 
     /**
-     * 댓글 삭제 (본인만 가능)
+     * 댓글 삭제 (본인 또는 관리자 가능)
      */
     @DeleteMapping("/comments/{commentId}")
     public void deleteComment(
@@ -66,7 +77,7 @@ public class CommunityCommentController {
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Integer userId = userDetails.getId();
-        communityCommentService.deleteComment(commentId, userId);
+        communityCommentService.deleteComment(commentId, userId, userDetails.getUser());
     }
 
     // 추천/비추천은 엔티티/DB 필드 생기면 따로 다시 추가하자.
