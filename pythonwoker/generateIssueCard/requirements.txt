@@ -8,7 +8,7 @@ Flask==3.1.2
 
 # 데이터베이스 & ORM
 SQLAlchemy==2.0.44
-PyMySQL==1.1.2
+pymysql==1.1.2  # MySQLdb 대신 pymysql 사용
 
 # 데이터 처리
 pandas==2.3.3
