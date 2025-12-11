@@ -23,9 +23,10 @@ COPY pythonwoker/generateIssueCard/generateIssueCard.py .
 COPY pythonwoker/generateIssueCard/issue_queue_worker.py .
 
 # ==========================
-# 5️⃣ Supervisor 설정 파일 복사
+# 5️⃣ Supervisor 메인 설정 파일 복사
 # ==========================
-COPY pythonwoker/generateIssueCard/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# 메인 설정 파일은 /etc/supervisord.conf로 복사해야 자동 인식
+COPY pythonwoker/generateIssueCard/supervisord.conf /etc/supervisord.conf
 
 # ==========================
 # 6️⃣ 컨테이너 포트 (Flask용)
@@ -35,4 +36,5 @@ EXPOSE 5001
 # ==========================
 # 7️⃣ 컨테이너 시작 시 supervisord 실행
 # ==========================
-CMD ["supervisord", "-n"]
+# -n: foreground 실행, -c: config 파일 경로 지정 (안전)
+CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]
