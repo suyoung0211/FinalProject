@@ -11,7 +11,4 @@ import org.usyj.makgora.entity.VoteTrendHistoryEntity;
 public interface VoteTrendHistoryRepository extends JpaRepository<VoteTrendHistoryEntity, Long> {
 
     List<VoteTrendHistoryEntity> findByVoteId(Integer voteId);
-
-    // vote.id 기준 + 시간 오름차순
-    List<VoteTrendHistoryEntity> findByVote_IdOrderByRecordedAtAsc(Integer voteId);
 }
