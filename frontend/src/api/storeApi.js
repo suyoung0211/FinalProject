@@ -1,38 +1,31 @@
-import axios from "axios";  // 공개용
-import api from "./api";    // 인증용(Authorization: Bearer 토큰 포함)
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
-
-// 🔹 공개용 → 카테고리 조회 / 비로그인 접근 가능한 API만 사용
-const PublicAPI = axios.create({
-  baseURL: `${API_URL}/api/store`, // 배포용 백엔드 URL 적용
-  withCredentials: false, // 로그인 필요 없으므로 쿠키 사용 안 함
-});
+import api from "./api"; // 인증용 Axios 인스턴스 사용
 
 // ============================
 // 🔹 아이템 목록 조회 (공개)
 // ============================
 export function getItems(category, type) {
-  return PublicAPI.get("/items", { params: { category, type } });
+  // Access Token이 없으면 헤더 없음 → 공개 API처럼 동작
+  return api.get(`/store/items`, { params: { category, type } });
 }
 
 // ============================
 // 🔹 아이템 상세 조회 (공개)
 // ============================
 export function getItem(id) {
-  return PublicAPI.get(`/items/${id}`);
+  return api.get(`/store/items/${id}`);
 }
 
 // ============================
 // 🔹 아이템 구매 (로그인 필요)
 // ============================
 export function purchaseItem(itemId) {
-  return api.post("/store/purchase", { itemId });
+  // Access Token이 없으면 서버에서 401 → 로그인 페이지 리다이렉트 처리 가능
+  return api.post(`/store/purchase`, { itemId });
 }
 
 // ============================
 // 🔹 내가 구매한 아이템 목록 (로그인 필요)
 // ============================
 export function getMyItems() {
-  return api.get("/store/my-items");
+  return api.get(`/store/my-items`);
 }
