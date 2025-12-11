@@ -4,9 +4,11 @@
 FROM python:3.11-slim
 
 # ==========================
-# 2️⃣ 작업 디렉토리
+# 2️⃣ 작업 디렉토리 및 로그 디렉토리 생성
 # ==========================
 WORKDIR /app
+RUN mkdir -p /app/logs
+# Supervisor 및 프로그램 로그 저장용
 
 # ==========================
 # 3️⃣ 종속성 설치
@@ -25,7 +27,6 @@ COPY pythonwoker/generateIssueCard/issue_queue_worker.py .
 # ==========================
 # 5️⃣ Supervisor 메인 설정 파일 복사
 # ==========================
-# 메인 설정 파일은 /etc/supervisord.conf로 복사해야 자동 인식
 COPY pythonwoker/generateIssueCard/supervisord.conf /etc/supervisord.conf
 
 # ==========================
@@ -36,5 +37,5 @@ EXPOSE 5001
 # ==========================
 # 7️⃣ 컨테이너 시작 시 supervisord 실행
 # ==========================
-# -n: foreground 실행, -c: config 파일 경로 지정 (안전)
+# -n: foreground 실행, -c: config 파일 경로 지정
 CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]
