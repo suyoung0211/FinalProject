@@ -57,6 +57,7 @@ public class SecurityConfig {
                         "/api/issues/latest",
                         "/api/store/items"
                 ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/votes/ai-create").permitAll()
 
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
