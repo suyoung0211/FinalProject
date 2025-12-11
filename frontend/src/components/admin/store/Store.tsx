@@ -363,7 +363,8 @@ export function Store() {
                 </td>
 
                 <td className="px-6 py-4">
-                  <button className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
+                  <button className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30" 
+                  onClick={() => deleteItem(item.id)}>
                     삭제
                   </button>
                 </td>
