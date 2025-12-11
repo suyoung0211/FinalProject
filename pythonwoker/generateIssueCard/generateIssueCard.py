@@ -671,36 +671,73 @@ def run_vote_for_issue(session, issue_id):
 
 
 # ---------------------------------------------
-# Redis 클라이언트 생성 (Cloud 연결)
+# Redis 클라이언트 생성 (Cloud / Local 모두 지원)
 # ---------------------------------------------
-r = redis.Redis(
-    host=REDIS_HOST,       # Cloud host 적용
-    port=int(REDIS_PORT),  # Cloud port 적용
-    password=REDIS_PASSWORD,  # 반드시 비밀번호 입력해야 접속됨
-    db=0,
-    decode_responses=True
-)
+
+def create_redis_client():
+    host = REDIS_HOST or "localhost"
+    port = int(REDIS_PORT) if REDIS_PORT else 6379
+    pwd = REDIS_PASSWORD
+
+    # 🔥 비밀번호 없으면 password 제거
+    if pwd is None or pwd.strip() == "":
+        print("[REDIS] 로컬 모드 — 비밀번호 없이 접속")
+        return redis.Redis(
+            host=host,
+            port=port,
+            db=0,
+            decode_responses=True
+        )
+    
+    # 🔥 비밀번호가 있을 때만 password 인자 사용
+    print("[REDIS] 배포 모드 — 비밀번호 인증 접속")
+    return redis.Redis(
+        host=host,
+        port=port,
+        password=pwd,
+        db=0,
+        decode_responses=True
+    )
+
+r = create_redis_client()
 QUEUE = "ISSUE_TRIGGER_QUEUE"
+
 
 def worker():
     print("🔄 Makgora Issue/Vote Worker started. Listening for jobs...")
 
     while True:
         try:
-            raw = r.rpop(QUEUE)
+            # -----------------------------------------------------------
+            # 🔥 변경된 부분: r.rpop → r.brpop
+            # brpop은 (queue_name, value) 튜플을 반환함.
+            # timeout=30 동안 메시지가 없으면 None 반환.
+            # -----------------------------------------------------------
+            raw = r.brpop(QUEUE, timeout=30)
 
+            # -----------------------------------------------------------
+            # 🔥 변경된 부분: timeout일 때는 None 반환 → 쉬고 loop 재개
+            # -----------------------------------------------------------
             if raw is None:
-                time.sleep(0.3)
+                time.sleep(1)
                 continue
 
+            # -----------------------------------------------------------
+            # 🔥 변경된 부분: raw는 (queue, value) 형태이므로 value만 추출
+            # 예: ("ISSUE_TRIGGER_QUEUE", "article:12")
+            # -----------------------------------------------------------
+            raw = raw[1]
             print(f"📌 Queue Received: {raw}")
 
-            # 🔥 매 처리마다 새로운 세션 생성
+            # 🔥 매 job마다 새로운 DB 세션 생성
             session = Session()
             session.expire_all()
 
+            # -----------------------------------------------------------
             # ARTICLE → ISSUE
+            # -----------------------------------------------------------
             if raw.startswith("article:"):
+                # 🔥 brpop 이후 raw는 문자열이라 그대로 split 가능
                 article_id = int(raw.split(":")[1])
                 print(f"➡ Processing Article Issue: {article_id}")
 
@@ -710,7 +747,9 @@ def worker():
                 if result.get("status") in ["success", "ignored", "ignored_vote_exists"]:
                     r.set(f"article:{article_id}:triggered", "1")
 
+            # -----------------------------------------------------------
             # COMMUNITY → ISSUE
+            # -----------------------------------------------------------
             elif raw.startswith("cp:"):
                 post_id = int(raw.split(":")[1])
                 print(f"➡ Processing Community Issue: {post_id}")
@@ -721,7 +760,9 @@ def worker():
                 if result.get("status") in ["success", "ignored", "ignored_vote_exists"]:
                     r.set(f"cp:{post_id}:triggered", "1")
 
-            # ISSUE APPROVE → VOTE
+            # -----------------------------------------------------------
+            # ISSUE APPROVE → VOTE 생성
+            # -----------------------------------------------------------
             elif raw.startswith("issueApprove:"):
                 issue_id = int(raw.split(":")[1])
                 print(f"🔥 Issue 승인 감지 → Vote 생성 시작 (issue_id={issue_id})")

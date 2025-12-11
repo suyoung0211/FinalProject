@@ -41,8 +41,9 @@ public class RedisConfig {
         config.setHostName(redisHost);                 // Redis 호스트
         config.setPort(redisPort);                     // Redis 포트
 
-        // 패스워드 설정 (NULL 또는 빈 문자열이면 인증 실패 발생)
-        config.setPassword(RedisPassword.of(redisPassword));  // Redis 비밀번호
+        if (redisPassword != null && !redisPassword.trim().isEmpty()) {
+        config.setPassword(RedisPassword.of(redisPassword));
+    }
 
         return new LettuceConnectionFactory(config);
     }
