@@ -40,7 +40,7 @@ public ResponseEntity<?> resolveAndSettle(
 ) {
     req.setAdminUserId(admin.getId());
 
-    // 🔥 정답 확정 + 상태 FINISHED + 정산 → 한 번에 처리됨.
+    // 🔥 정답 확정 + 상태 FINISHED + 정산 → 한 번에 처리됨
     voteSettlementService.finishAndSettle(voteId, req);
 
     return ResponseEntity.ok(Map.of("message", "정답 확정 및 정산 완료"));
