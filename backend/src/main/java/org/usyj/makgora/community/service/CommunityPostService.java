@@ -9,8 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.community.dto.CommunityPostCreateRequest;
 import org.usyj.makgora.community.dto.CommunityPostResponse;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
+import org.usyj.makgora.community.repository.CommunityCommentRepository;
+import org.usyj.makgora.community.service.CommunityCommentReactionService;
 import org.usyj.makgora.entity.CommunityPostEntity;
+import org.usyj.makgora.entity.CommunityCommentEntity;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.entity.IssueEntity;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,9 @@ public class CommunityPostService {
 
     private final CommunityPostRepository communityPostRepository;
     private final CommunityPostReactionService postReactionService;
+    private final CommunityCommentRepository communityCommentRepository;
+    private final CommunityCommentReactionService communityCommentReactionService;
+    private final IssueRepository issueRepository;
     private final StringRedisTemplate redis;
 
     /** 게시글 등록 */
@@ -136,6 +144,11 @@ public class CommunityPostService {
             throw new AccessDeniedException("작성자만 게시글을 삭제할 수 있습니다.");
         }
 
+        // 🔥 이슈가 연결된 게시글인지 확인
+        if (issueRepository.findByCommunityPostId(postId).isPresent()) {
+            throw new IllegalArgumentException("삭제 불가: 이슈생성된 게시글입니다.");
+        }
+
         // Redis 데이터 삭제
         redis.delete("cp:" + postId + ":view");
         redis.delete("cp:" + postId + ":comment");
@@ -144,10 +157,25 @@ public class CommunityPostService {
         redis.delete("cp:" + postId + ":score");
         redis.delete("cp:" + postId + ":triggered");
 
-        // 🔥 게시글 반응(reactions) 먼저 삭제 (외래키 제약 조건 해결)
+        // 🔥 이슈와의 연결 해제 (외래키 제약 조건 해결)
+        issueRepository.findByCommunityPostId(postId).ifPresent(issue -> {
+            issue.setCommunityPost(null);
+            issueRepository.saveAndFlush(issue);  // 즉시 DB에 반영
+        });
+
+        // 🔥 댓글 및 댓글 반응 먼저 삭제 (외래키 제약 조건 해결)
+        List<CommunityCommentEntity> comments = communityCommentRepository.findAllByPostId(postId);
+        for (CommunityCommentEntity comment : comments) {
+            // 각 댓글의 Redis 반응 데이터 삭제
+            communityCommentReactionService.clearCommentReaction(comment.getCommentId());
+            // 댓글 삭제 (대댓글은 CASCADE로 자동 삭제됨)
+            communityCommentRepository.delete(comment);
+        }
+
+        // 🔥 게시글 반응(reactions) 삭제
         postReactionService.deleteAllReactionsByPostId(postId);
 
-        // DB에서 게시글 삭제 (댓글과 파일은 CASCADE로 자동 삭제됨)
+        // DB에서 게시글 삭제 (파일은 CASCADE로 자동 삭제됨)
         communityPostRepository.delete(post);
     }
 }

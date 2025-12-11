@@ -114,7 +114,7 @@ public class CommunityPostController {
 
     // ⭐ 게시글 삭제 (작성자만)
     @DeleteMapping("/{postId}")
-    public ResponseEntity<Void> deletePost(
+    public ResponseEntity<?> deletePost(
             @PathVariable Long postId,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
@@ -122,9 +122,29 @@ public class CommunityPostController {
         System.out.println("   - 요청자: " + userDetails.getUser().getNickname()
                 + " (ID: " + userDetails.getUser().getId() + ")");
 
-        communityPostService.deletePost(postId, userDetails.getUser());
+        try {
+            communityPostService.deletePost(postId, userDetails.getUser());
+            System.out.println("✅ 게시글 삭제 완료, id = " + postId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            System.out.println("❌ 게시글 삭제 실패: " + e.getMessage());
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            System.out.println("❌ 게시글 삭제 실패: " + e.getMessage());
+            return ResponseEntity.status(500).body(new ErrorResponse("게시글 삭제에 실패했습니다."));
+        }
+    }
 
-        System.out.println("✅ 게시글 삭제 완료, id = " + postId);
-        return ResponseEntity.noContent().build();
+    // 에러 응답용 내부 클래스
+    private static class ErrorResponse {
+        private String message;
+        
+        public ErrorResponse(String message) {
+            this.message = message;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
     }
 }
