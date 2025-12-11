@@ -13,12 +13,8 @@ def worker():
 
     while True:
         try:
-            raw = r.rpop(VOTE_QUEUE)
-
-            if raw is None:
-                time.sleep(0.3)
-                continue
-
+            # 🔥 Blocking pop → 메시지 들어올 때까지 대기
+            queue, raw = r.brpop(VOTE_QUEUE)  
             print(f"📌 VoteQueue Received: {raw}")
 
             if raw.startswith("issue:"):
@@ -36,4 +32,3 @@ def worker():
             print("❌ Vote Worker Exception:", e)
             traceback.print_exc()
             time.sleep(1)
-
