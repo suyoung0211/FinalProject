@@ -2,6 +2,7 @@
 import { Eye, Trash2, MessageSquare } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "../../../api/api";
+import { useNavigate } from "react-router-dom";
 
 // 🔹 게시글 타입
 interface CommunityPost {
@@ -38,6 +39,8 @@ export function Community() {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
 
   // 🔥 게시글 목록 조회
   const loadPosts = async () => {
@@ -151,7 +154,7 @@ export function Community() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => window.open(`/community/posts/${post.postId}`, '_blank')}
+                          onClick={() => navigate(`/community/posts/${post.postId}`)} // 현재 창으로 변경
                           className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400"
                         >
                           <Eye className="w-4 h-4" />
@@ -209,7 +212,7 @@ export function Community() {
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
                         <button 
-                          onClick={() => window.open(`/community/posts/${cmt.postId}`, '_blank')}
+                          onClick={() => navigate(`/community/posts/${cmt.postId}`)} // 현재 창으로 변경
                           className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400"
                         >
                           <MessageSquare className="w-4 h-4" />
