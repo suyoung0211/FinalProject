@@ -13,7 +13,6 @@ import {
 } from "../../../api/adminAPI";
 
 import { ResolveVoteModal } from "./ResolveVoteModal";
-import { NormalVoteEditModal } from "./NormalVoteEditModal";
 
 export function Votes() {
   const [tab, setTab] = useState<"AI" | "NORMAL">("AI");
@@ -25,7 +24,6 @@ export function Votes() {
   const [sort, setSort] = useState("latest");
 
   const [resolveVote, setResolveVote] = useState<any | null>(null);
-  const [editNormalVote, setEditNormalVote] = useState<any | null>(null);
 
   // 🔥 리스트 로드
   async function loadAll() {
@@ -225,13 +223,6 @@ export function Votes() {
 
                   <td className="px-6 py-4 flex gap-2">
                     <Button
-                      className="bg-yellow-500/20 text-yellow-300 text-xs"
-                      onClick={() => setEditNormalVote(v)}
-                    >
-                      수정
-                    </Button>
-
-                    <Button
                       className="bg-green-500/20 text-green-300 text-xs"
                       onClick={() => adminFinishNormalVote(v.id).then(loadAll)}
                     >
@@ -270,20 +261,6 @@ export function Votes() {
           }
         />
       )}
-
-      {editNormalVote && (
-        <NormalVoteEditModal
-          vote={editNormalVote}
-          onClose={() => setEditNormalVote(null)}
-          onSubmit={(data) =>
-            updateNormalVote(editNormalVote.id, data).then(() => {
-              setEditNormalVote(null);
-              loadAll();
-            })
-          }
-        />
-      )}
-
     </div>
   );
 }

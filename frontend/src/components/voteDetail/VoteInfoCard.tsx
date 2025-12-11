@@ -8,8 +8,6 @@ export function VoteInfoCard({
   isNormalVote,
   isOwner,
   isAdmin,
-  editMode,
-  setEditMode,
   setData,
   handleSaveEdit,
 
@@ -63,19 +61,10 @@ export function VoteInfoCard({
             {data.category}
           </span>
         </div>
-
-        {isNormalVote && (isOwner || isAdmin) && (
-          <button
-            onClick={() => setEditMode((prev: boolean) => !prev)}
-            className="ml-auto px-3 py-1 rounded-full text-xs bg-white/10 text-white hover:bg-white/20"
-          >
-            {editMode ? "수정 종료" : "수정하기"}
-          </button>
-        )}
       </div>
 
       {/* TITLE */}
-      {editMode && isNormalVote && (isOwner || isAdmin) ? (
+      {isNormalVote && (isOwner || isAdmin) ? (
         <input
           value={data.title}
           onChange={(e) => setData({ ...data, title: e.target.value })}
@@ -86,7 +75,7 @@ export function VoteInfoCard({
       )}
 
       {/* DESCRIPTION */}
-      {editMode && isNormalVote && (isOwner || isAdmin) ? (
+      {isNormalVote && (isOwner || isAdmin) ? (
         <textarea
           value={data.description ?? ""}
           onChange={(e) => setData({ ...data, description: e.target.value })}
@@ -172,18 +161,6 @@ export function VoteInfoCard({
               정산만 실행
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* NORMAL 수정 저장 */}
-      {editMode && isNormalVote && (isOwner || isAdmin) && (
-        <div className="mt-4 flex gap-2 justify-end">
-          <Button variant="outline" onClick={() => setEditMode(false)}>
-            취소
-          </Button>
-          <Button className="bg-purple-600 text-white" onClick={handleSaveEdit}>
-            저장
-          </Button>
         </div>
       )}
     </div>
