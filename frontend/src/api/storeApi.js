@@ -27,5 +27,16 @@ export function purchaseItem(itemId) {
 // 🔹 내가 구매한 아이템 목록 (로그인 필요)
 // ============================
 export function getMyItems() {
-  return api.get(`/store/my-items`);
+  return api.get("/store/my-items");
+}
+
+export async function uploadStoreImage(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await api.post("/admin/store/upload-image", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+  return res.data; // 업로드된 이미지 URL
 }

@@ -8,6 +8,8 @@ import {
 import { Button } from "../components/ui/button";
 import { getItems, getMyItems, purchaseItem } from "../api/storeApi";
 import { Header } from "../components/layout/Header";
+import { resolveImageApi } from "../api/imageApi";
+
 
 /** 🔥 아이템 타입 정의 */
 interface ShopItem {
@@ -63,13 +65,6 @@ useEffect(() => {
   }
 }, [user]);
 
-  /** 🔥 Cloudinary에서 이미지 가져오기 */
-  const resolveImage = (path?: string | null): string => {
-    if (!path) return "";
-    if (path.startsWith("http")) return path; // 이미 절대 URL이면 그대로 사용
-    // Cloudinary URL로 변환
-    return `https://res.cloudinary.com/dh9tw89xn/image/upload/${path}`;
-};
 
 const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["category"] => {
   switch (backendCategory) {
@@ -100,45 +95,57 @@ const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["
 
   /** 🔥 서버에서 아이템 목록 로딩 */
   useEffect(() => {
-    const loadItems = async () => {
-      try {
-        const res = await getItems();
-        console.log("🔥 서버에서 받은 아이템:", res.data);
+  const loadItems = async () => {
+  try {
+    const res = await getItems();
+    console.log("🔥 서버에서 받은 아이템:", res.data);
 
-        const items: ShopItem[] = res.data.map((i: StoreItemResponse) => ({
-          id: i.itemId,
-          name: i.name,
-          price: i.price,
-          description: `${i.category} 카테고리`,
-          emoji: i.image
-            ? (i.image.length <= 3 ? i.image : resolveImage(i.image))
-            : "",
-          category: mapCategory(i.category),
-          rarity: getRarityFromPrice(i.price),
-        }));
-        
-        // 🔥🔥 가격 높은 순으로 정렬
-        items.sort((a, b) => b.price - a.price);
-        
-        setShopItems(items);
-      } catch (e) {
-        console.error("아이템 불러오기 실패:", e);
+    const items: ShopItem[] = await Promise.all(
+  res.data.map(async (i: StoreItemResponse) => {
+
+    let imageUrl = "";
+
+    if (i.image) {
+      if (i.image.length <= 3) {
+        imageUrl = i.image;
+      } else {
+        imageUrl = await resolveImageApi(i.image);
       }
-    };
+    }
 
-    const loadMyItems = async () => {
-      try {
-        const res = await getMyItems();
-        const ids = res.data.map((m: MyItemResponse) => m.itemId);
-        setMyItems(ids);
-      } catch (e) {
-        console.error("내 아이템 불러오기 실패:", e);
-      }
+    return {
+      id: i.itemId,
+      name: i.name,
+      price: i.price,
+      description: `${i.category} 카테고리`,
+      emoji: imageUrl,
+      category: mapCategory(i.category),
+      rarity: getRarityFromPrice(i.price),
     };
+  })
+);
 
-    loadItems();
-    loadMyItems();
-  }, []);
+    items.sort((a, b) => b.price - a.price);
+    setShopItems(items);
+
+  } catch (e) {
+    console.error("아이템 불러오기 실패:", e);
+  }
+};
+
+  const loadMyItems = async () => {
+    try {
+      const res = await getMyItems();
+      const ids = res.data.map((m: MyItemResponse) => m.itemId);
+      setMyItems(ids);
+    } catch (e) {
+      console.error("내 아이템 불러오기 실패:", e);
+    }
+  };
+
+  loadItems();
+  loadMyItems();
+}, []);
 
   /** 내 아이템인지 확인 */
   const isOwned = (itemId: number) => myItems.includes(itemId);
