@@ -20,4 +20,9 @@ public interface CommunityPostReactionRepository extends JpaRepository<Community
      * - 존재하면 Optional에 담겨서 반환
      * - 없으면 Optional.empty()
      */
+
+    /**
+     * 특정 게시글의 모든 반응 삭제
+     */
+    void deleteByPost(CommunityPostEntity post);
 }

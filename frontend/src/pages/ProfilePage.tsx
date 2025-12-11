@@ -6,6 +6,8 @@ import {
   Coins,
   Calendar,
   Edit2,
+  FileText,
+  MessageSquare,
 } from "lucide-react";
 
 import { Button } from "../components/ui/button";
@@ -339,12 +341,52 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
                   communityActivities.map((a) => (
                     <div
                       key={a.activityId}
-                      className="p-4 bg-white/5 border border-white/10 rounded-xl mb-3"
+                      className="p-4 bg-white/5 border border-white/10 rounded-xl mb-3 hover:bg-white/10 transition-all"
                     >
-                      <p className="text-white font-medium">{a.postTitle}</p>
-                      <p className="text-gray-400 text-sm">
-                        {a.contentPreview}
-                      </p>
+                      <div className="flex items-start gap-3">
+                        {/* 타입 아이콘 */}
+                        <div className={`flex-shrink-0 mt-1 ${
+                          a.type === "POST" 
+                            ? "text-blue-400" 
+                            : "text-purple-400"
+                        }`}>
+                          {a.type === "POST" ? (
+                            <FileText className="w-5 h-5" />
+                          ) : (
+                            <MessageSquare className="w-5 h-5" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* 타입 배지 */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              a.type === "POST"
+                                ? "bg-blue-500/20 text-blue-400"
+                                : "bg-purple-500/20 text-purple-400"
+                            }`}>
+                              {a.type === "POST" ? "게시글" : "댓글"}
+                            </span>
+                            <span className="text-gray-500 text-xs">
+                              {new Date(a.createdAt).toLocaleDateString("ko-KR", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          
+                          {/* 게시글 제목 */}
+                          <p className="text-white font-medium mb-1">
+                            {a.postTitle}
+                          </p>
+                          
+                          {/* 내용 미리보기 */}
+                          <p className="text-gray-400 text-sm line-clamp-2">
+                            {a.contentPreview}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}

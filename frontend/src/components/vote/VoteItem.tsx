@@ -13,12 +13,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
   const [loading, setLoading] = useState(!initialVote);
   const [showAllOptions, setShowAllOptions] = useState(false);
 
-  const isFinished =
-  vote?.status === "FINISHED" ||
-  vote?.status === "RESOLVED" ||
-  vote?.status === "REWARDED";
-
-  const thumbnail = vote?.article?.thumbnailUrl ?? "/default-thumb.png";
+  const isFinished = vote?.status === "FINISHED";
 
   useEffect(() => {
     if (initialVote?.type === "NORMAL") return;
@@ -62,9 +57,9 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
     );
   }
 
-  /* =========================================================
-      🔥 종료된 AI 투표 UI
-     ========================================================= */
+  /* ===================================================================
+      🔥 🔥 종료된 AI 투표 UI – NormalVoteItem 과 동일 스타일
+     =================================================================== */
   if (isFinished) {
     return (
       <div
@@ -75,16 +70,6 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
           hover:bg-gray-600/40 transition
         "
       >
-
-        {/* 🔥 썸네일 */}
-        <div className="w-full h-40 mb-3 rounded-xl overflow-hidden">
-          <img
-            src={thumbnail}
-            alt="thumbnail"
-            className="w-full h-full object-cover opacity-60"
-          />
-        </div>
-
         <h3 className="text-gray-200 font-bold text-lg mb-4">{vote.title}</h3>
 
         <div className="bg-gray-800/60 text-gray-200 border border-gray-500/40 
@@ -101,6 +86,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
           <span>마감: {vote.endAt?.substring(0, 10) ?? "미정"}</span>
         </div>
 
+        {/* 종료된 투표는 '결과 보기' 버튼이 더 자연스러움 */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -117,9 +103,9 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
     );
   }
 
-  /* =========================================================
-      🔥 진행중인 AI 투표 UI
-     ========================================================= */
+  /* ===================================================================
+      🔥 🔥 진행중인 경우 기존 AI 투표 UI 유지
+     =================================================================== */
 
   let totalYes = 0;
   let totalDraw = 0;
@@ -147,7 +133,7 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
 
     const yesP = sum > 0 ? Math.round((yes / sum) * 100) : 33;
     const drawP = sum > 0 ? Math.round((draw / sum) * 100) : 33;
-    const noP = 100 - yesP - drawP;
+    const noP = sum > 0 ? 100 - yesP - drawP : 34;
 
     return { ...opt, yesP, drawP, noP, sum };
   });
@@ -165,20 +151,11 @@ export function VoteItem({ voteId, onMarketClick, initialVote }: VoteItemProps) 
       onClick={() => onMarketClick(vote.id, "AI")}
       className="flex flex-col rounded-2xl p-4 cursor-pointer bg-[#261b3a] border border-purple-700/30 hover:bg-[#381f5c]"
     >
-
-      {/* 🔥 썸네일 */}
-      <div className="w-full h-40 mb-3 rounded-xl overflow-hidden">
-        <img
-          src={thumbnail}
-          alt="thumbnail"
-          className="w-full h-full object-cover"
-        />
-      </div>
-
       {/* HEADER */}
       <div className="flex justify-between pb-3">
         <h3 className="text-white font-bold text-lg flex-1">{vote.title}</h3>
 
+        {/* Donut */}
         <div className="relative w-14 h-14 flex items-center justify-center">
           <div
             className="absolute inset-0 rounded-full"

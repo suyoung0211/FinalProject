@@ -49,7 +49,7 @@ export function VoteTabs({
               </div>
 
               {/* 기존 차트 */}
-              <ChartAI chartData={chartData} data={data} />
+              <ChartAI chartData={chartData} />
             </>
           ) : (
             <ChartNormal data={data} getPercent={getNormalChoicePercent} />
@@ -65,56 +65,21 @@ export function VoteTabs({
   );
 }
 
-function ChartAI({ chartData, data }: any) {
-  if (!data?.odds?.odds) {
-    return (
-      <div className="text-gray-400 text-sm p-4 text-center">
-        📉 배당률 정보가 없습니다.
-      </div>
-    );
-  }
-
-  const choices = data.odds.odds;
-
-  let finalData = chartData;
-
-  // chartData 없으면 현재 배당률로 단일 데이터 생성
-  if (!chartData || chartData.length === 0) {
-    const single: Record<string, number> = { count: 1 };
-
-    choices.forEach((c: any) => {
-      single[c.text] = c.odds ?? 1.0;
-    });
-
-    finalData = [single];
-  }
-
+function ChartAI({ chartData }: any) {
   return (
     <div className="h-64 mb-6">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={finalData}>
-          <XAxis dataKey="count" stroke="#aaa" label={{ value: "투표자 수", dy: 10 }} />
-          <YAxis stroke="#aaa" label={{ value: "배당률", angle: -90, dx: -10 }} />
+        <AreaChart data={chartData}>
+          <XAxis dataKey="date" stroke="#aaa" />
+          <YAxis stroke="#aaa" />
           <Tooltip />
-
-          {/* 🔥 choiceId를 key로 사용 => 절대 중복되지 않음 */}
-          {choices.map((c: any, idx: number) => (
-            <Area
-              key={c.choiceId}
-              type="monotone"
-              dataKey={c.text}
-              stroke={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
-              strokeWidth={2}
-              fillOpacity={0.2}
-              fill={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
-            />
-          ))}
+          <Area type="monotone" dataKey="yes" stroke="#22c55e" strokeWidth={2} fillOpacity={0.3} fill="#22c55e" />
+          <Area type="monotone" dataKey="no" stroke="#ef4444" strokeWidth={2} fillOpacity={0.3} fill="#ef4444" />
         </AreaChart>
       </ResponsiveContainer>
     </div>
   );
 }
-
 function ChartNormal({ data, getPercent }: any) {
   return (
     <div className="space-y-4">

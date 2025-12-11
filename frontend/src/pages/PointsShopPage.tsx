@@ -63,11 +63,12 @@ useEffect(() => {
   }
 }, [user]);
 
-  /** 🔥 백엔드 카테고리 → 프론트 카테고리 매핑 */
+  /** 🔥 Cloudinary에서 이미지 가져오기 */
   const resolveImage = (path?: string | null): string => {
-  if (!path) return "";
-  if (path.startsWith("http")) return path;
-  return `http://localhost:8080/${path}`;
+    if (!path) return "";
+    if (path.startsWith("http")) return path; // 이미 절대 URL이면 그대로 사용
+    // Cloudinary URL로 변환
+    return `https://res.cloudinary.com/dh9tw89xn/image/upload/${path}`;
 };
 
 const mapCategory = (backendCategory: StoreItemResponse["category"]): ShopItem["category"] => {

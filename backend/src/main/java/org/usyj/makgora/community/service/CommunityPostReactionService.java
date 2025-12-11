@@ -130,4 +130,13 @@ public class CommunityPostReactionService {
     public long getLikeCount(Long postId) { return getCount(postId, "like"); }
 
     public long getDislikeCount(Long postId) { return getCount(postId, "dislike"); }
+
+    /* ========================== 게시글 삭제 시 반응 삭제 ======================== */
+
+    @Transactional
+    public void deleteAllReactionsByPostId(Long postId) {
+        CommunityPostEntity post = postRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다. id=" + postId));
+        reactionRepository.deleteByPost(post);
+    }
 }

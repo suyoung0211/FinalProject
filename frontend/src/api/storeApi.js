@@ -1,9 +1,12 @@
 import axios from "axios";  // 공개용
 import api from "./api";    // 인증용(Authorization: Bearer 토큰 포함)
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
 // 🔹 공개용 → 카테고리 조회 / 비로그인 접근 가능한 API만 사용
 const PublicAPI = axios.create({
-  baseURL: "/api/store",
+  baseURL: `${API_URL}/api/store`, // 배포용 백엔드 URL 적용
+  withCredentials: false, // 로그인 필요 없으므로 쿠키 사용 안 함
 });
 
 // ============================

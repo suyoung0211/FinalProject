@@ -69,6 +69,22 @@ public class CommunityCommentService {
         return roots;
     }
 
+    /** 모든 댓글 조회 (관리자용) */
+    @Transactional(readOnly = true)
+    public List<CommunityCommentResponse> getAllComments(Integer currentUserId) {
+        List<CommunityCommentEntity> entities = communityCommentRepository.findAll();
+        
+        // 최신순 정렬
+        entities.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        
+        List<CommunityCommentResponse> responses = new ArrayList<>();
+        for (CommunityCommentEntity entity : entities) {
+            responses.add(toResponse(entity, currentUserId));
+        }
+        
+        return responses;
+    }
+
     /** 댓글 작성 */
     public CommunityCommentResponse createComment(
             Long postId,
@@ -123,12 +139,16 @@ public class CommunityCommentService {
     }
 
     /** 댓글 삭제 */
-    public void deleteComment(Long commentId, Integer userId) {
+    public void deleteComment(Long commentId, Integer userId, UserEntity currentUser) {
 
         CommunityCommentEntity comment = communityCommentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
 
-        if (!comment.getUser().getId().equals(userId)) {
+        // 🔥 관리자(ADMIN, SUPER_ADMIN)는 작성자가 아니어도 삭제 가능
+        boolean isAdmin = currentUser.getRole() == UserEntity.Role.ADMIN 
+                || currentUser.getRole() == UserEntity.Role.SUPER_ADMIN;
+        
+        if (!isAdmin && !comment.getUser().getId().equals(userId)) {
             throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
         }
 

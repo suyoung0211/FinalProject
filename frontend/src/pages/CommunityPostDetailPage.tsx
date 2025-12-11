@@ -232,7 +232,7 @@ export function CommunityPostDetailPage() {
   const resolveImage = (url?: string | null) => {
     if (!url) return "";
     if (url.startsWith("http")) return url;
-    return `http://localhost:8080/${url}`;
+    return `https://res.cloudinary.com/dh9tw89xn/image/upload/${url}`;
   };
 
   // 뱃지가 이모지인지 확인
@@ -528,7 +528,9 @@ export function CommunityPostDetailPage() {
 
         {/* 댓글 섹션 */}
         <div className="mt-10 bg-white/5 p-6 rounded-xl">
-          <h2 className="text-xl font-bold mb-6">댓글 {comments.length}</h2>
+          <h2 className="text-xl font-bold mb-6">
+            댓글 {comments.length + comments.reduce((sum, comment) => sum + (comment.replies?.length || 0), 0)}
+          </h2>
 
           {/* 댓글 작성 */}
           {user && (

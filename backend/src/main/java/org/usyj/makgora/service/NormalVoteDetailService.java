@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
-import org.usyj.makgora.response.voteDetails.VoteDetailParticipationResponse;
 import org.usyj.makgora.response.normalvote.NormalVoteDetailResponse;
 
 import java.util.List;
@@ -20,16 +19,17 @@ public class NormalVoteDetailService {
     private final NormalVoteOptionRepository optionRepository;
     private final NormalVoteChoiceRepository choiceRepository;
     private final NormalVoteCommentRepository commentRepository;
-    private final VoteUserRepository voteUserRepository;
 
-    /** 일반 투표 상세 조회 */
-    public NormalVoteDetailResponse getDetail(Integer normalVoteId, Integer userId) {
+    /**
+     * 일반 투표 상세 조회 + 옵션 + 선택지 + 댓글 트리 포함
+     */
+    public NormalVoteDetailResponse getDetail(Integer normalVoteId) {
 
-        // 1) 기본 투표 정보
+        // 🔥 1. 일반 투표 정보
         NormalVoteEntity vote = normalVoteRepository.findById(normalVoteId)
                 .orElseThrow(() -> new RuntimeException("NormalVote not found"));
 
-        // 2) 옵션 + 선택지 목록
+        // 🔥 2. 옵션 + 선택지
         List<NormalVoteOptionEntity> options =
                 optionRepository.findByNormalVote_Id(normalVoteId);
 
@@ -38,19 +38,17 @@ public class NormalVoteDetailService {
                 .mapToInt(c -> c.getParticipantsCount())
                 .sum();
 
-        // 3) 댓글 트리
+        // 🔥 3. 댓글 (루트 댓글만)
         List<NormalVoteCommentEntity> rootComments =
                 commentRepository.findByNormalVote_IdAndParentIsNull(normalVoteId);
 
-        List<VoteDetailCommentResponse> commentDtos = rootComments.stream()
-                .map(this::convertComment)
-                .toList();
+        // 🔥 4. 댓글 트리 변환
+        List<VoteDetailCommentResponse> commentDtos =
+                rootComments.stream()
+                        .map(this::convertCommentTree)
+                        .toList();
 
-        // 4) 내 참여 정보 (🔥 userId=null 허용)
-        VoteDetailParticipationResponse myParticipation =
-                loadMyParticipation(normalVoteId, userId);
-
-        // 5) Response 조립
+        // 🔥 5. 응답 조합
         return NormalVoteDetailResponse.builder()
                 .id(vote.getId())
                 .title(vote.getTitle())
@@ -60,77 +58,70 @@ public class NormalVoteDetailService {
                 .endAt(vote.getEndAt())
                 .createdAt(vote.getCreatedAt())
                 .totalParticipants(totalParticipants)
+
                 .options(
                         options.stream()
-                                .map(opt -> NormalVoteDetailResponse.OptionDetail.builder()
-                                        .optionId(opt.getId())
-                                        .optionTitle(opt.getOptionTitle())
-                                        .choices(
-                                                opt.getChoices().stream()
-                                                        .map(ch -> NormalVoteDetailResponse.ChoiceDetail.builder()
-                                                                .choiceId(ch.getId())
-                                                                .choiceText(ch.getChoiceText())
-                                                                .participantsCount(ch.getParticipantsCount())
-                                                                .build()
-                                                        ).toList()
-                                        )
-                                        .build()
+                                .map(opt ->
+                                        NormalVoteDetailResponse.OptionDetail.builder()
+                                                .optionId(opt.getId())
+                                                .optionTitle(opt.getOptionTitle())
+                                                .choices(
+                                                        opt.getChoices().stream()
+                                                                .map(choice ->
+                                                                        NormalVoteDetailResponse.ChoiceDetail.builder()
+                                                                                .choiceId(choice.getId())
+                                                                                .choiceText(choice.getChoiceText())
+                                                                                .participantsCount(choice.getParticipantsCount())
+                                                                                .build()
+                                                                ).toList()
+                                                )
+                                                .build()
                                 ).toList()
                 )
-                .myParticipation(myParticipation)
+
                 .comments(commentDtos)
                 .build();
     }
 
-    /** 댓글 → DTO 변환 */
-    private VoteDetailCommentResponse convertComment(NormalVoteCommentEntity c) {
+    /** =======================================================
+     *  🔥 NormalVote 댓글 트리 변환 (재귀)
+     * ======================================================= */
+    private VoteDetailCommentResponse convertCommentTree(NormalVoteCommentEntity c) {
+
+        List<VoteDetailCommentResponse> children =
+                c.getChildren() == null ? List.of()
+                        : c.getChildren().stream()
+                        .map(this::convertCommentTree)
+                        .toList();
+
         return VoteDetailCommentResponse.builder()
-                .commentId(c.getId().intValue())
+                .commentId(c.getId().intValue()) // Long → int
+                .voteId(null)                    // NormalVote는 voteId 없음
                 .normalVoteId(c.getNormalVote().getId().intValue())
+
                 .userId(c.getUser().getId())
                 .username(c.getUser().getNickname())
-                .content(Boolean.TRUE.equals(c.getIsDeleted()) ? "(삭제된 댓글입니다.)" : c.getContent())
+
+                .userPosition(null)
+                .position(null)
+
+                .content(Boolean.TRUE.equals(c.getIsDeleted())
+                        ? "(삭제된 댓글입니다.)"
+                        : c.getContent())
+
                 .likeCount(c.getLikeCount() != null ? c.getLikeCount() : 0)
                 .dislikeCount(c.getDislikeCount() != null ? c.getDislikeCount() : 0)
+
+                // 투표 상세에서는 myLike/myDislike 계산하지 않음
+                .myLike(false)
+                .myDislike(false)
+
                 .parentId(c.getParent() != null ? c.getParent().getId().intValue() : null)
-                .children(
-                        c.getChildren() == null ? List.of()
-                                : c.getChildren().stream().map(this::convertComment).toList()
-                )
+
+                .children(children)
+
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
                 .build();
-    }
-
-    /** 🔥 userId가 null이어도 안전한 참여 조회 */
-    private VoteDetailParticipationResponse loadMyParticipation(Integer normalVoteId, Integer userId) {
-
-        if (userId == null) {
-            return VoteDetailParticipationResponse.builder()
-                    .hasParticipated(false)
-                    .build();
-        }
-
-        return voteUserRepository
-                .findByUserIdAndNormalVoteId(userId, normalVoteId)
-                .map(v -> {
-
-                    NormalVoteChoiceEntity choice = v.getNormalChoice();
-
-                    return VoteDetailParticipationResponse.builder()
-                            .hasParticipated(true)
-                            .optionId(choice.getNormalOption().getId().intValue())
-                            .choiceId(choice.getId().intValue())
-                            .pointsBet(0)
-                            .votedAt(v.getCreatedAt())
-                            .expectedOdds(null)
-                            .expectedReward(null)
-                            .build();
-                })
-                .orElseGet(() ->
-                        VoteDetailParticipationResponse.builder()
-                                .hasParticipated(false)
-                                .build()
-                );
     }
 }

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",                      // 최신 ES 기능 사용
+    "module": "ESNext",                      // ES 모듈 방식
+    "moduleResolution": "Node",              // Node 방식 모듈 해석
+    "strict": true,                           // 엄격한 타입 체크
+    "jsx": "react-jsx",                       // React 17+ JSX 변환 방식
+    "esModuleInterop": true,                 // CommonJS 패키지 import 가능
+    "skipLibCheck": true,                     // 라이브러리 타입 체크 무시
+    "forceConsistentCasingInFileNames": true,// 파일명 대소문자 일관성 체크
+    "outDir": "dist",                         // 빌드 결과물 디렉토리
+    "baseUrl": ".",                            // 경로 기준점: 프로젝트 루트
+    "paths": {                                // 경로 alias 설정
+      "@/*": ["src/*"]                        // @ → src
+    }
+  },
+  "include": ["src"],                         // 컴파일 포함 폴더
+  "exclude": ["node_modules", "dist"]         // 컴파일 제외 폴더
+}
