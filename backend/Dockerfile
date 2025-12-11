@@ -5,9 +5,9 @@ FROM maven:3.9.2-eclipse-temurin-17 AS build
 WORKDIR /app
 
 # pom.xml 먼저 복사 → 의존성 캐시 활용
-COPY pom.xml . 
+COPY backend/pom.xml . 
 # src 폴더 전체 복사
-COPY src ./src
+COPY backend/src ./src
 
 # Maven 빌드 (테스트 생략)
 RUN mvn clean package -DskipTests

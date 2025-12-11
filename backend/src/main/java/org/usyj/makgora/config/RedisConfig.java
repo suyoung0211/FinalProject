@@ -17,6 +17,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableCaching
 public class RedisConfig {
 
+    // 환경 변수에서 Redis 호스트와 포트 가져오기
     // Redis 호스트, 포트, 비밀번호를 환경변수 또는 properties 에서 주입받음
     @Value("${spring.data.redis.host}")
     private String redisHost;
@@ -40,8 +41,9 @@ public class RedisConfig {
         config.setHostName(redisHost);                 // Redis 호스트
         config.setPort(redisPort);                     // Redis 포트
 
-        // 패스워드 설정 (NULL 또는 빈 문자열이면 인증 실패 발생)
-        config.setPassword(RedisPassword.of(redisPassword));  // Redis 비밀번호
+        if (redisPassword != null && !redisPassword.trim().isEmpty()) {
+        config.setPassword(RedisPassword.of(redisPassword));
+    }
 
         return new LettuceConnectionFactory(config);
     }

@@ -67,7 +67,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                // Auth 필요
 
                 // 인증 필요한 API
                 .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
