@@ -14,13 +14,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        // target: "http://192.168.0.21:8080",   // ⭐ 백엔드 스프링부트 주소
-        target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소
-        changeOrigin: true,
-        secure: false,
-      },
-      "/uploads": {
-        target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소 (이미지/동영상 파일)
+        target: "https://finalproject-production-bb6b.up.railway.app",   // ⭐ 백엔드 스프링부트 주소
+        // target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소
         changeOrigin: true,
         secure: false,
       }

@@ -19,7 +19,7 @@ public class StoreAdminController {
         return storeAdminService.uploadImage(file);
     }
 
-    /** 🔥 이미지 폴더 목록 가져오기 */
+    /** 🔥 특정 폴더 이미지 조회 */
     @GetMapping("/images")
     public Object getImages(@RequestParam String folder) {
         return storeAdminService.getImagesByFolder(folder);
@@ -31,7 +31,7 @@ public class StoreAdminController {
         return storeAdminService.createItem(req);
     }
 
-    /** 🔥 전체 아이템 조회 */
+    /** 🔥 아이템 목록 */
     @GetMapping("/items")
     public Object getItems() {
         return storeAdminService.getItems();
@@ -42,4 +42,9 @@ public class StoreAdminController {
     public Object deleteItem(@PathVariable Integer id) {
         return storeAdminService.deleteItem(id);
     }
+
+    @DeleteMapping("/delete-image")
+    public Object deleteImage(@RequestParam String publicId) {
+    return storeAdminService.deleteCloudImage(publicId);
+}
 }
