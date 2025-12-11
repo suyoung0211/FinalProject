@@ -4,8 +4,11 @@ import axios from "axios";
 // ⭐ 기본 API 요청용 Axios 인스턴스
 // ------------------------------------------------------------
 // → 여기서는 Access Token을 자동으로 넣어줄 것
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
 const api = axios.create({
-  baseURL: "/api",
+  baseURL: `${API_URL}/api`,
   withCredentials: true, // HttpOnly 쿠키(refreshToken) 자동 포함 🔥이거 꼭 있어야 쿠키가 실려감
 });
 
@@ -14,7 +17,7 @@ const api = axios.create({
 // ------------------------------------------------------------
 // → 여기는 Authorization 헤더를 사용하지 않음 (중요!)
 const refreshClient = axios.create({
-  baseURL: "/api",
+  baseURL: `${API_URL}/api`,
   withCredentials: true, // refreshToken 쿠키 포함
 });
 
