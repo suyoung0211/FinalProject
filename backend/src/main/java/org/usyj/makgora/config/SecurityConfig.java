@@ -58,9 +58,9 @@ public class SecurityConfig {
                         "/api/store/items"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/votes/ai-create").permitAll()
-
+                .requestMatchers(HttpMethod.GET, "/api/resolve-image").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/votes/**").permitAll()
