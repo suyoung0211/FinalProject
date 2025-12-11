@@ -4,6 +4,7 @@ package org.usyj.makgora.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.usyj.makgora.response.issue.IssueResponse;
@@ -46,6 +47,7 @@ public class IssueController {
     }
 
     /** 🔥 AI 자동 생성 투표 (Python Worker 전용) */
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     @PostMapping("/ai-create")
     public ResponseEntity<VoteResponse> createVoteByAi(@RequestBody VoteAiCreateRequest req) {
         return ResponseEntity.ok(voteService.createVoteByAI(req));
