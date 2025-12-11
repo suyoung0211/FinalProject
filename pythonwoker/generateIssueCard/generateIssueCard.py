@@ -673,7 +673,7 @@ def worker():
 
     while True:
         try:
-            raw = r.rpop(QUEUE)
+            raw = r.brpop(QUEUE)
 
             if raw is None:
                 time.sleep(0.3)
