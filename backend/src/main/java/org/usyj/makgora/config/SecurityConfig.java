@@ -1,6 +1,8 @@
 package org.usyj.makgora.config;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,6 +23,7 @@ import org.usyj.makgora.security.JwtTokenProvider;
 import org.usyj.makgora.service.CustomUserDetailsService;
 
 import java.util.Arrays;
+import java.util.List;
 
 @EnableAsync
 @Configuration
@@ -54,7 +57,6 @@ public class SecurityConfig {
                         "/api/issues/latest",
                         "/api/store/items"
                 ).permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/votes/ai-create").permitAll()
 
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/articles**").permitAll()
@@ -64,7 +66,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/normal-votes/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                // Auth 필요
 
                 // 인증 필요한 API
                 .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
@@ -92,17 +93,14 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    @Value("${frontend.urls}")
+    private String frontendUrls;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // 로컬과 배포용 프론트 도메인 허용
-        config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",          // 로컬 개발용
-                "https://your-frontend-domain.com", // 배포용
-                "http://192.168.0.23:5173/"
-        ));
-
+        List<String> allowedOrigins = Arrays.asList(frontendUrls.split(","));
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowCredentials(true);
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
@@ -111,4 +109,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
 }
