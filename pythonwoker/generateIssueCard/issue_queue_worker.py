@@ -1,4 +1,4 @@
-# pythonworker/worker_vote.py
+# pythonworker/generateIssueCard/issue_queue_worker.py
 import os
 import time
 import redis
