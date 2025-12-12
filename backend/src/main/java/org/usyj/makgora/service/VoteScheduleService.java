@@ -25,7 +25,7 @@ public class VoteScheduleService {
      * cron = "0 0 * * * *"
      *   - 초  분  시  일  월  요일
      */
-    // @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
     @Transactional
     public void autoFinishVotes() {
 
