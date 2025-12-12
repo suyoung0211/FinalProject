@@ -1,15 +1,16 @@
 package org.usyj.makgora.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.repository.VoteRepository;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -24,7 +25,7 @@ public class VoteScheduleService {
      * cron = "0 0 * * * *"
      *   - 초  분  시  일  월  요일
      */
-    // @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
     @Transactional
     public void autoFinishVotes() {
 

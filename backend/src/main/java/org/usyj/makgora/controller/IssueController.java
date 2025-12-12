@@ -31,7 +31,7 @@ public class IssueController {
     private final IssueRepository issueRepo;
 
     // 🔹 클래스 필드로 선언, Spring에서 application.properties 또는 환경변수로 주입
-    @Value("${worker.url:http://localhost:5001/trigger/vote}")
+    @Value("${issue.card.url:http://localhost:5001/trigger/vote}")
     private String workerUrl;
 
     /** 🔹 AI 추천 이슈 목록 */

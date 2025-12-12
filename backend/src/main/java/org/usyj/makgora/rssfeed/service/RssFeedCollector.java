@@ -23,7 +23,7 @@ public class RssFeedCollector {
     private final RestTemplate restTemplate = new RestTemplate();
 
     // 🔹 Python AI 제목 생성 API URL
-    @Value("${python.api.url:http://localhost:8000/generate-ai-titles}")
+    @Value("${ai.title.url:http://localhost:8000/generate-ai-titles}")
     private String pythonApiUrl;
 
     // 🔹 application.properties 또는 application.yml에서 값 주입
