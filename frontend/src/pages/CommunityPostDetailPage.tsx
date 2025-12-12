@@ -207,10 +207,31 @@ const PostBody = memo(function PostBody({
   );
 });
 
-export function CommunityPostDetailPage() {
-  const { postId } = useParams<{ postId: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+interface CommunityPostDetailPageProps {
+  postId?: string | number;
+  modalMode?: boolean;
+  onClose?: () => void;
+}
+
+export function CommunityPostDetailPage({
+    postId: propPostId,
+    modalMode = false,
+    onClose,
+  }: CommunityPostDetailPageProps) {
+    const { postId: paramPostId } = useParams<{ postId: string }>();
+    const navigate = useNavigate();
+    const { user } = useAuth(); // 그대로 사용
+
+    // 최종 postId 결정
+    const postId = propPostId ?? paramPostId;
+
+    // postId 없으면 에러 처리
+    if (!postId) return <div className="text-white">게시글을 찾을 수 없습니다.</div>;
+
+    const handleBack = () => {
+      if (modalMode && onClose) onClose();
+      else navigate("/community");
+    };
 
   const [post, setPost] = useState<PostDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -507,7 +528,16 @@ export function CommunityPostDetailPage() {
 
   return (
     <div className="min-h-screen text-white p-8">
-      <button onClick={() => navigate("/community")} className="mb-6">
+      <button
+        onClick={() => {
+          if (modalMode && onClose) {
+            onClose(); // 모달 모드면 그냥 닫기
+          } else {
+            navigate("/community"); // 모달 아니면 페이지 이동
+          }
+        }}
+        className="mb-6"
+      >
         ← 목록으로
       </button>
 

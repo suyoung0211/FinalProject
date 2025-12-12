@@ -62,6 +62,13 @@ public class FeedArticleService {
 
         for (RssArticleCreateDTO dto : dtos) {
 
+            // 🔹 publishedAt 이 null이면 저장 스킵
+            if (dto.getPublishedAt() == null) {
+                // publishedAt 없는 데이터는 기사로 저장되지 않도록 제외
+                skipped++;
+                continue;
+            }
+
             // 중복 링크 검사
             if (articleRepo.existsByLink(dto.getLink()) || savedLinks.contains(dto.getLink())) {
                 skipped++;
