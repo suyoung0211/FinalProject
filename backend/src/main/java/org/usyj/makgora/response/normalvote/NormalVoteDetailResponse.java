@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
+import org.usyj.makgora.response.voteDetails.VoteDetailParticipationResponse;
 
 @Data
 @Builder
@@ -26,6 +27,7 @@ public class NormalVoteDetailResponse {
 
     private List<OptionDetail> options;
     private List<VoteDetailCommentResponse> comments;
+    private VoteDetailParticipationResponse myParticipation;
 
     @Data
     @Builder

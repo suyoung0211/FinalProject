@@ -1,12 +1,6 @@
-// ------------------------------------------------------------
-// src/pages/MainPage.tsx (최종 완성본)
-// ------------------------------------------------------------
-
 import {
   TrendingUp,
   Search,
-  User,
-  ChevronDown,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -15,15 +9,18 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 import { fetchHomeData } from "../api/homeApi";
-import { fetchRecommendedIssues, fetchLatestIssues } from "../api/issueApi";
 import { fetchCategories } from "../api/categoryApi";
+
 import { useArticleModal } from "../context/ArticleModalContext";
+
 import NewsSlider from "../components/home/NewsSlider";
 import LatestNewsSidebar from "../components/home/LatestNewsSidebar";
 import LatestNewsList from "../components/home/LatestNewsList";
+import { VoteCard } from "../components/home/VoteCard";
+
 import { Header } from "../components/layout/Header";
 
-// 타입 정의
+// 타입
 interface HotIssue {
   articleId: number;
   title: string;
@@ -43,26 +40,25 @@ interface SlideNews {
 export function MainPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { openModal } = useArticleModal();
 
   const [newsSlides, setNewsSlides] = useState<SlideNews[]>([]);
   const [hotIssues, setHotIssues] = useState<HotIssue[]>([]);
   const [filteredIssues, setFilteredIssues] = useState<HotIssue[]>([]);
   const [latestIssues, setLatestIssues] = useState<HotIssue[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [votes, setVotes] = useState<any[]>([]);
 
-  const [recommendedIssues, setRecommendedIssues] = useState([]);
-  const [siteLatestIssues, setSiteLatestIssues] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { openModal } = useArticleModal();
   const [loading, setLoading] = useState(false);
 
-  // -------------------------------------------------------
-  // 🔥 1) 홈 데이터 + 카테고리 로드 (초기 1회)
-  // -------------------------------------------------------
+  // 무한스크롤
+  const [visibleVotes, setVisibleVotes] = useState(20);
+
+  // 초기 Load
   useEffect(() => {
     loadHomeData();
-    loadSiteIssues();
     loadCategories();
   }, []);
 
@@ -82,8 +78,10 @@ export function MainPage() {
 
       setNewsSlides(res.data.newsSlides || []);
       setHotIssues(res.data.hotIssues || []);
-      setFilteredIssues(res.data.hotIssues || []); // 초기 기본값
+      setFilteredIssues(res.data.hotIssues || []);
       setLatestIssues(res.data.latestIssues || []);
+
+      setVotes(res.data.voteList || []);
     } catch (err) {
       console.error("홈 데이터 불러오기 오류:", err);
     } finally {
@@ -91,75 +89,71 @@ export function MainPage() {
     }
   };
 
-  const loadSiteIssues = async () => {
-    try {
-      const [rec, latest] = await Promise.all([
-        fetchRecommendedIssues(),
-        fetchLatestIssues(),
-      ]);
+  // 🔥 Top 3 투표
+  const topVotes = [...votes]
+    .sort((a, b) => b.totalParticipants - a.totalParticipants)
+    .slice(0, 3);
 
-      setRecommendedIssues(rec.data || []);
-      setSiteLatestIssues(latest.data || []);
-    } catch (err) {
-      console.error("사이트 이슈 로딩 오류:", err);
-    }
-  };
+  // 투표 검색 필터
+  const filteredVotes = votes.filter((v) =>
+    v.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // -------------------------------------------------------
-  // 🔥 2) 카테고리 변경 시 API 호출 없이 local filter
-  // -------------------------------------------------------
+  // 무한 스크롤 적용 투표 리스트
+  const displayedVotes = filteredVotes.slice(0, visibleVotes);
+
+  // 무한 스크롤 이벤트
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 600) {
+        setVisibleVotes((prev) => prev + 20);
+      }
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // 카테고리 필터링
   useEffect(() => {
     if (selectedCategory === "all") {
       setFilteredIssues(hotIssues);
     } else {
-      const filtered = hotIssues.filter((article) =>
-        article.categories?.includes(selectedCategory)
+      const filtered = hotIssues.filter((a) =>
+        a.categories?.includes(selectedCategory)
       );
       setFilteredIssues(filtered);
     }
   }, [selectedCategory, hotIssues]);
 
-  // -------------------------------------------------------
-  // 🔍 검색 필터링
-  // -------------------------------------------------------
-  const finalFiltered = filteredIssues.filter((item) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      item.title?.toLowerCase().includes(q) ||
-      item.aiTitle?.toLowerCase().includes(q)
-    );
-  });
-
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* ---------------- HEADER ---------------- */}
       <Header activeMenu="" />
 
-      {/* ---------------- SLIDER + SIDEBAR ---------------- */}
-<section className="w-full px-6 pt-[150px]">
-  <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-    
-    <div className="md:col-span-2">
-      <NewsSlider slides={newsSlides} />
-    </div>
+      {/* SLIDER + 우측 뉴스 */}
+      <section className="w-full px-6 pt-[150px]">
+        <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
 
-    <div className="md:col-span-1">
-      <div className="h-[380px] md:h-[525px] overflow-hidden rounded-2xl">
-        <LatestNewsSidebar items={latestIssues} />
-      </div>
-    </div>
+          <div className="md:col-span-2">
+            <NewsSlider slides={newsSlides} />
+          </div>
 
-  </div>
-</section>
+          <div className="md:col-span-1">
+            <div className="h-[380px] md:h-[525px] overflow-hidden rounded-2xl">
+              <LatestNewsSidebar items={latestIssues} />
+            </div>
+          </div>
 
-      {/* ---------------- CATEGORY ---------------- */}
+        </div>
+      </section>
+
+      {/* CATEGORY */}
       <section className="w-full px-6 mt-8">
         <div className="max-w-[1440px] mx-auto flex gap-3 justify-center flex-wrap">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2.5 rounded-full flex items-center gap-2 transition ${
+              className={`px-5 py-2.5 rounded-full transition ${
                 selectedCategory === cat
                   ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
                   : "bg-white/10 text-gray-300 border border-white/20"
@@ -171,54 +165,58 @@ export function MainPage() {
         </div>
       </section>
 
-      {/* ---------------- SEARCH ---------------- */}
+      {/* SEARCH */}
       <section className="w-full px-6 pt-5">
         <div className="max-w-[700px] mx-auto relative">
           <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <Input
             className="bg-white/10 border-white/20 text-white pl-12 h-12"
-            placeholder="이슈 검색..."
+            placeholder="이슈 / 투표 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </section>
 
-      {/* ---------------- MAIN CONTENT ---------------- */}
-      <section className="w-full px-6 mt-3">
-        <h2 className="text-2xl font-bold text-white mb-6">핫이슈</h2>
-        {loading && <p className="text-gray-300">불러오는 중...</p>}
-        <LatestNewsList items={finalFiltered} />
+      {/* TOP 3 VOTES */}
+      <section className="w-full px-6 mt-10">
+        <h2 className="text-2xl font-bold text-white mb-4">🔥 인기 투표 Top 3</h2>
+
+        <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+          {topVotes.map((v) => (
+            <VoteCard key={v.voteId} vote={v} />
+          ))}
+        </div>
       </section>
 
-    </div>
-  );
-}
+      {/* MAIN CONTENT — 핫이슈 & 투표 */}
+      <section className="w-full px-6 mt-14">
+        <div className="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
 
-// ---------------- USER DROPDOWN ----------------
-function UserDropdown({ user, onLogout }: { user: any; onLogout?: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/20"
-      >
-        <User className="w-5 h-5 text-white" />
-        {user?.nickname}
-        <ChevronDown className={`w-4 h-4 text-gray-400 ${open ? "rotate-180" : ""}`} />
-      </button>
+          {/* LEFT - NEWs LIST */}
+          <div className="md:col-span-2">
+            <h2 className="text-2xl font-bold text-white mb-4">📰 핫이슈</h2>
+            <LatestNewsList items={filteredIssues} />
+          </div>
 
-      {open && (
-        <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-white/10 rounded-2xl p-2">
-          <button
-            onClick={onLogout}
-            className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/10 rounded-xl"
-          >
-            로그아웃
-          </button>
+          {/* RIGHT - VOTE LIST */}
+          <div className="md:col-span-1">
+            <h2 className="text-2xl font-bold text-white mb-4">🗳 전체 투표</h2>
+
+            {/* Vote List */}
+            <div className="flex flex-col gap-4">
+              {displayedVotes.map((v) => (
+                <VoteCard key={v.voteId} vote={v} />
+              ))}
+            </div>
+
+            {visibleVotes < filteredVotes.length && (
+              <p className="text-gray-400 text-center mt-4">스크롤하여 더 보기...</p>
+            )}
+          </div>
+
         </div>
-      )}
+      </section>
     </div>
   );
 }

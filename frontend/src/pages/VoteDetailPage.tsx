@@ -20,7 +20,7 @@ import {
   adminResolveAndSettleVote,
   adminSettleVote,
 } from "../api/adminAPI";
-
+  
 // Components
 import { VoteTabs } from "../components/voteDetail/VoteTabs";
 import { VoteModal } from "../components/voteDetail/VoteModal";
@@ -105,6 +105,15 @@ export function VoteDetailPage({
     }
   }
 
+  function calcExpectedOdds(choicePoints: number, totalPool: number, amount: number) {
+  const newChoicePoints = (choicePoints ?? 0) + amount;
+  const newTotalPool = (totalPool ?? 0) + amount;
+
+  if (newChoicePoints <= 0) return 1;
+
+  return Math.round((newTotalPool / newChoicePoints) * 100) / 100;
+}
+
   // ====================================================================
   //  NORMAL Percent 계산
   // ====================================================================
@@ -129,16 +138,30 @@ export function VoteDetailPage({
   //  AI 차트 데이터
   // ====================================================================
   const chartData = useMemo(() => {
-    if (!isAIVote || !data?.statistics?.changes) return [];
-    return data.statistics.changes.map((ch: any) => ({
-      date: new Date(ch.time).toLocaleDateString("ko-KR", {
-        month: "2-digit",
-        day: "2-digit",
-      }),
-      yes: ch.yesPercent,
-      no: ch.noPercent,
-    }));
-  }, [isAIVote, data]);
+  if (!isAIVote || !data?.odds?.odds) return [];
+
+  const choices = data.odds.odds;
+
+  // 가장 긴 history 길이
+  const maxLen = Math.max(
+    ...choices.map((c: any) => c.history?.length ?? 0)
+  );
+
+  const rows = [];
+
+  for (let i = 0; i < maxLen; i++) {
+    const row: Record<string, number | null> = { count: i + 1 };
+
+    choices.forEach((c: any) => {
+      const h = c.history?.[i];
+      row[c.text] = h?.odds ?? null;
+    });
+
+    rows.push(row);
+  }
+
+  return rows;
+}, [isAIVote, data]);
 
   // ====================================================================
   //  PARTICIPATE — AI
@@ -180,34 +203,55 @@ export function VoteDetailPage({
   //  ADMIN 처리
   // ====================================================================
   async function handleAdminResolve(alsoSettle: boolean) {
-    if (!adminCorrectChoiceId) return alert("정답 선택 필요");
+  if (!adminCorrectChoiceId) return alert("정답 선택 필요");
 
-    try {
-      if (alsoSettle) {
-        await adminResolveAndSettleVote(data.voteId, {
-          correctChoiceId: adminCorrectChoiceId,
-        });
-      } else {
-        await adminResolveVote(data.voteId, {
-          correctChoiceId: adminCorrectChoiceId,
-        });
-      }
-      alert("처리 완료");
-      load();
-    } catch {
-      alert("실패");
+  try {
+    // 단일 AI투표는 option이 하나뿐
+    const optionId =
+      data.options?.[0]?.optionId ??
+      data.options?.[0]?.id ??
+      null;
+
+    if (!optionId) {
+      alert("옵션 ID를 찾을 수 없습니다.");
+      return;
     }
+
+    const payload = {
+      answers: [
+        {
+          optionId,
+          choiceId: adminCorrectChoiceId
+        }
+      ]
+    };
+
+    console.log("📤 Admin Resolve Payload:", payload);
+
+    if (alsoSettle) {
+      await adminResolveAndSettleVote(data.voteId, payload);
+    } else {
+      await adminResolveVote(data.voteId, payload);
+    }
+
+    alert("처리 완료");
+    load();
+  } catch (err) {
+    console.error(err);
+    alert("실패");
   }
+}
+
 
   async function handleAdminSettleOnly() {
-    try {
-      await adminSettleVote(data.voteId);
-      alert("정산 완료");
-      load();
-    } catch {
-      alert("정산 실패");
-    }
+  try {
+    await adminSettleVote(data.voteId);
+    alert("정산 완료");
+    load();
+  } catch {
+    alert("정산 실패");
   }
+}
 
   async function handleSaveEdit() {
     try {
@@ -287,13 +331,30 @@ export function VoteDetailPage({
       {/* AI Vote Modal */}
       {isAIVote && showVoteModal !== null && data && (
         <VoteModal
-          choiceId={showVoteModal}
-          amount={selectedAmount}
-          odds={selectedChoice?.odds ?? 1}
-          percent={selectedChoice?.percent ?? 0}
-          onClose={() => setShowVoteModal(null)}
-          onConfirm={handleParticipateAI}
-        />
+  choiceId={showVoteModal}
+  amount={selectedAmount}
+  currentOdds={selectedChoice?.odds ?? 1}
+
+  expectedOdds={calcExpectedOdds(
+    selectedChoice?.pointsTotal ?? 0,
+    data.totalPoints ?? 0,
+    selectedAmount
+  )}
+
+  expectedReward={
+    selectedAmount *
+    calcExpectedOdds(
+      selectedChoice?.pointsTotal ?? 0,
+      data.totalPoints ?? 0,
+      selectedAmount
+    )
+  }
+
+  percent={selectedChoice?.percent ?? 0}
+
+  onClose={() => setShowVoteModal(null)}
+  onConfirm={handleParticipateAI}
+/>
       )}
 
       {/* AI 완료 Modal */}
