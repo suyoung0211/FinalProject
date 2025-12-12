@@ -7,17 +7,16 @@ import org.usyj.makgora.dto.home.AiBannerDto;
 import org.usyj.makgora.dto.home.HotIssueDto;
 import org.usyj.makgora.dto.home.SlideNewsDto;
 import org.usyj.makgora.dto.home.TopVoteDto;
-import org.usyj.makgora.dto.home.VoteListDto;
 
 @Getter
 @Setter
 @AllArgsConstructor
-@NoArgsConstructor 
+@NoArgsConstructor
 @Builder
 public class HomeResponse {
-
-    private List<SlideNewsDto> newsSlides;   // 뉴스 슬라이드
-    private List<HotIssueDto> latestIssues;  // 최신 뉴스 20개
+    private List<SlideNewsDto> newsSlides;
+    private List<TopVoteDto> topVotes;
     private List<HotIssueDto> hotIssues;
-    private List<VoteListDto> voteList;      // 🔥 전체 투표 목록 추가
+    private AiBannerDto aiBanner;
+    private List<HotIssueDto> latestIssues;
 }
