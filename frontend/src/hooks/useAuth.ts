@@ -2,16 +2,6 @@
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 
-export interface UserType {
-  id: number;
-  loginId: string;
-  nickname: string;
-  points: number;   // 🔥 추가
-  level: number;    // 있으면 추가
-  profileImage?: string;
-  role: "USER" | "ADMIN" | "SUPER_ADMIN"; // 🔥 추가
-}
-
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

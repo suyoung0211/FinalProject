@@ -11,15 +11,12 @@ import { CommunityPostDetailPage } from './pages/CommunityPostDetailPage';
 import { CommunityEditPageContainer } from "./pages/CommunityEditPageContainer";
 
 import { AdminPage } from "./pages/AdminPage";
-import { AdminPage22 } from "./components/AdminPage22";
-
 import { VoteListPage } from './pages/VoteListPage';
 import { VoteDetailRouteWrapper } from './pages/VoteDetailPage';
 
 import { PointsShopPage } from './pages/PointsShopPage';
 import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { ArticleListPage } from "./pages/ArticleListPage";
-import { ProfilePageContainer } from "./pages/ProfilePageContainer";
 
 import { AdminProtectedRoute } from './components/admin/AdminProtectedRoute';
 import { Toaster } from "react-hot-toast";
@@ -39,7 +36,6 @@ function CommunityWriteRouteWrapper() {
   );
 }
 
-
 export default function App() {
   return (
     <AuthProvider>
@@ -56,31 +52,31 @@ export default function App() {
               <Route path="/" element={<MainPage />} />
               <Route path="/login" element={<LoginPage />} />
 
-              <Route path="/community" element={<CommunityPageContainer />} />
-              <Route path="/community/write" element={<CommunityWriteRouteWrapper />} />
-              <Route path="/community/posts/:postId" element={<CommunityPostDetailPage />} />
-              <Route path="/community/posts/:postId/edit" element={<CommunityEditPageContainer />} />
+              <Route path="/community">
+                <Route index element={<CommunityPageContainer />} />
+                <Route path="write" element={<CommunityWriteRouteWrapper />} />
+                <Route path="posts/:postId" element={<CommunityPostDetailPage />} />
+                <Route path="posts/:postId/edit" element={<CommunityEditPageContainer />} />
+              </Route>
 
-              <Route path="/vote" element={<VoteListPage />} />
-              <Route path="/vote/:voteId" element={<VoteDetailRouteWrapper />} />
+              <Route path="/vote">
+                <Route index element={<VoteListPage />} />
+                <Route path=":voteId" element={<VoteDetailRouteWrapper />} />
+              </Route>
 
               <Route path="/store" element={<PointsShopPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/article" element={<ArticleListPage />} />
               <Route path='/profile' element={<ProfilePageWrapper />} />
-              <Route 
-                path="/admin/*"
-                element={
-                  <AdminProtectedRoute roles={['ADMIN','SUPER_ADMIN']}>
-                    <AdminPage />
-                  </AdminProtectedRoute>
-                }
-              />
 
+              <Route path="/admin/*" element={
+                <AdminProtectedRoute roles={['ADMIN', 'SUPER_ADMIN']}>
+                  <AdminPage />
+                </AdminProtectedRoute>
+              } />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-
-              <Route path="/admin22" element={<AdminPage22 />} />
             </Routes>
+
             {/* 🔹 Toaster 추가 */}
             <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
           </div>

@@ -118,3 +118,16 @@ export const getAllIssuesApi = () => api.get('/issues');
  * - 요청 바디: { issueId: number, status: "APPROVED" | "REJECTED" }
  */
 export const updateAdminIssueStatusApi = (body) => api.post('/issues/status', body);
+
+// 커뮤니티 대쉬보드
+// 🔹 게시글 목록 조회
+export const getCommunityPosts = () => api.get("/community/posts");
+
+// 🔹 댓글 목록 조회
+export const getCommunityComments = () => api.get("/community/comments");
+
+// 🔹 게시글 삭제
+export const deleteCommunityPost = (postId) => api.delete(`/community/posts/${postId}`);
+
+// 🔹 댓글 삭제
+export const deleteCommunityComment = (commentId) => api.delete(`/community/comments/${commentId}`);

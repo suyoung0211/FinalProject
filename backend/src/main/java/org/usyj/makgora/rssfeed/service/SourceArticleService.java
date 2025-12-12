@@ -41,33 +41,53 @@ public class SourceArticleService {
         int savedCount = 0; // 실제 저장된 기사 수
 
         for (RssArticleCreateDTO dto : dtos) {
-            String link = dto.getLink();
 
-            // DB에 이미 존재하거나 배치 내 중복이면 건너뜀
-            if (articleRepo.existsByLink(link) || savedLinksSet.contains(link)) {
+            // -------------------------------------------------------
+            // 🔸 publishedAt이 null인 경우 기사로서 저장할 수 없으므로 스킵
+            // -------------------------------------------------------
+            if (dto.getPublishedAt() == null) {
                 continue; 
             }
 
-            // 카테고리 처리
+            String link = dto.getLink();
+
+            // -------------------------------------------------------
+            // 🔸 이미 DB에 존재하거나, 이번 배치 내에서 중복된 경우 스킵
+            // -------------------------------------------------------
+            if (articleRepo.existsByLink(link) || savedLinksSet.contains(link)) {
+                continue;
+            }
+
+            // -------------------------------------------------------
+            // 🔸 카테고리 처리
+            //     - DTO에 카테고리가 있으면 feedService에서 처리
+            //     - 없으면 feed 기본 카테고리를 사용
+            // -------------------------------------------------------
             Set<ArticleCategoryEntity> categories;
             if (dto.getCategories() != null && !dto.getCategories().isEmpty()) {
                 categories = feedService.getOrCreateCategories(new HashSet<>(dto.getCategories()));
             } else {
-                categories = feed.getCategories() != null ? new HashSet<>(feed.getCategories()) : new HashSet<>();
+                categories = feed.getCategories() != null
+                        ? new HashSet<>(feed.getCategories())
+                        : new HashSet<>();
             }
 
-            // RssArticle 엔터티 생성
+            // -------------------------------------------------------
+            // 🔸 RssArticleEntity 생성
+            // -------------------------------------------------------
             RssArticleEntity article = RssArticleEntity.builder()
                     .feed(feed)
                     .title(dto.getTitle())
                     .link(link)
                     .content(dto.getContent())
                     .thumbnailUrl(dto.getThumbnailUrl())
-                    .publishedAt(dto.getPublishedAt())
+                    .publishedAt(dto.getPublishedAt()) // 이미 null 아님 보장됨
                     .categories(categories)
                     .build();
 
-            // DB에 저장
+            // -------------------------------------------------------
+            // 🔸 DB 저장 + 링크 기록
+            // -------------------------------------------------------
             articleRepo.save(article);
             savedLinksSet.add(link);
             savedCount++;
