@@ -29,7 +29,7 @@ public class CommunityCommentReactionSyncScheduler {
     /**
      * 🔥 1시간마다 반영 Redis → DB 반영
      */
-    @Scheduled(fixedRate = 60 * 60 * 1000)
+    // @Scheduled(fixedRate = 60 * 60 * 1000)
     public void syncCommentReactions() {
 
         log.info("[Scheduler] 댓글 반응 동기화 시작");
