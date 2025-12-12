@@ -56,7 +56,7 @@ export const getCategories = () =>
 
 // 🔥 관리자: 정답 선택만
 export const adminResolveVote = (voteId, body) =>
-  api.post(`/admin/votes/${voteId}/resolve`, body);
+  api.post(`/admin/votes/${voteId}/finish`, body);
 
 // 🔥 관리자: 정답 선택 + 즉시 정산
 export const adminResolveAndSettleVote = (voteId, body) =>
@@ -131,3 +131,16 @@ export const deleteCommunityPost = (postId) => api.delete(`/community/posts/${po
 
 // 🔹 댓글 삭제
 export const deleteCommunityComment = (commentId) => api.delete(`/community/comments/${commentId}`);
+
+// 🔹 관리자: 일반투표 강제 종료
+export const adminFinishNormalVote = (id) =>
+  api.post(`/admin/normal-votes/${id}/finish`);
+
+// 🔹 관리자: 일반투표 강제 취소
+export const adminCancelNormalVote = (id) =>
+  api.post(`/admin/normal-votes/${id}/cancel`);
+
+export const adminOpenVote = (voteId) =>
+  api.post(`/admin/votes/${voteId}/open`);
+
+

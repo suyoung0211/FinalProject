@@ -1,3 +1,5 @@
+// src/components/voteDetail/VoteInfoCard.tsx
+
 import { Button } from "../../components/ui/button";
 
 export function VoteInfoCard({
@@ -8,9 +10,49 @@ export function VoteInfoCard({
   isAdmin,
   setData,
   handleSaveEdit,
+
+  // 관리자용 props
+  adminCorrectChoiceId,
+  setAdminCorrectChoiceId,
+  handleAdminResolve,
+  handleAdminSettleOnly,
 }: any) {
+
+  // =============================
+  // 🔥 DEBUG LOGGING
+  // =============================
+  console.log("🔥 [ADMIN] adminCorrectChoiceId:", adminCorrectChoiceId);
+  console.log("🔥 [ADMIN] raw options:", data?.options);
+
+  const maxOdds = isAIVote
+  ? Math.max(...(data?.odds?.odds?.map((o: any) => o.odds) ?? [0]))
+  : null;
+
+  // ⚡ 옵션을 문자열 id로 통일
+  const parsedOptions =
+  data?.options?.flatMap((opt: any) =>
+    (opt?.choices ?? []).map((c: any) => ({
+      id: c.choiceId ?? c.id,
+      text: `${opt.optionTitle ?? opt.title ?? ""} - ${c.text ?? c.choiceText ?? ""}`,
+    }))
+  ) ?? [];
+
+  console.log("🔥 [ADMIN] parsed options:", parsedOptions);
+
+
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
+
+      {/* 🔥 ARTICLE THUMBNAIL */}
+      {data.article?.thumbnailUrl && (
+        <div className="w-full rounded-xl overflow-hidden mb-4">
+          <img
+            src={data.article.thumbnailUrl}
+            alt="Thumbnail"
+            className="w-full h-[260px] object-cover"
+          />
+        </div>
+      )}
 
       {/* CATEGORY + EDIT */}
       <div className="flex items-center gap-3 mb-4">
@@ -29,7 +71,7 @@ export function VoteInfoCard({
           className="w-full bg-white/10 text-white rounded-lg p-2 mb-4"
         />
       ) : (
-        <h1 className="text-3xl font-bold text-white mb-4">{data.title}</h1>
+        <h1 className="text-lg font-bold text-white mb-3">{data.title}</h1>
       )}
 
       {/* DESCRIPTION */}
@@ -40,7 +82,9 @@ export function VoteInfoCard({
           className="w-full bg-white/10 text-white rounded-lg p-2 mb-6"
         />
       ) : data.description ? (
-        <p className="text-gray-300 leading-relaxed mb-6">{data.description}</p>
+        <p className="text-gray-300 leading-relaxed mb-6">
+          {data.description}
+        </p>
       ) : null}
 
       {/* SUMMARY STATS */}
@@ -51,7 +95,15 @@ export function VoteInfoCard({
           <StatCard label="총 포인트" value={data.totalPoints ?? 0} />
         )}
 
-        <StatCard label="상태" value={data.status} />
+        {/* 🔥 상태 대신 최대 배당 표시 */}
+  {isAIVote ? (
+    <StatCard
+      label="최대 배당률"
+      value={maxOdds ? `x${maxOdds.toFixed(2)}` : "-"}
+    />
+  ) : (
+    <StatCard label="상태" value={data.status} />
+  )}
 
         <StatCard
           label="마감일"
