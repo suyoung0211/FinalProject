@@ -19,7 +19,7 @@ public class ArticleScoreSyncScheduler {
     private final StringRedisTemplate redis;
     private final RssArticleRepository articleRepo;
 
-    @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
+    // @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
     @Transactional
     public void syncScores() {
 
