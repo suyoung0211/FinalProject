@@ -235,6 +235,7 @@ export function Votes() {
                     >
                       취소
                     </Button>
+                    
                   </td>
                 </tr>
               ))}
