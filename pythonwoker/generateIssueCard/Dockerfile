@@ -4,38 +4,30 @@
 FROM python:3.11-slim
 
 # ==========================
-# 2️⃣ 작업 디렉토리 및 로그 디렉토리 생성
+# 2️⃣ 작업 디렉토리
 # ==========================
 WORKDIR /app
-RUN mkdir -p /app/logs
-# Supervisor 및 프로그램 로그 저장용
 
 # ==========================
 # 3️⃣ 종속성 설치
 # ==========================
 COPY pythonwoker/generateIssueCard/requirements.txt .
+
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir supervisor
+    && pip install --no-cache-dir -r requirements.txt
 
 # ==========================
 # 4️⃣ 소스코드 복사
 # ==========================
 COPY pythonwoker/generateIssueCard/generateIssueCard.py .
-COPY pythonwoker/generateIssueCard/issue_queue_worker.py .
 
 # ==========================
-# 5️⃣ Supervisor 메인 설정 파일 복사
+# 5️⃣ 컨테이너 포트
 # ==========================
-COPY pythonwoker/generateIssueCard/supervisord.conf /etc/supervisord.conf
-
-# ==========================
-# 6️⃣ 컨테이너 포트 (Flask용)
-# ==========================
+# 워커 내부에서 Flask API 사용 시 포트 노출 (기본 5001)
 EXPOSE 5001
 
 # ==========================
-# 7️⃣ 컨테이너 시작 시 supervisord 실행
+# 6️⃣ 실행 명령
 # ==========================
-# -n: foreground 실행, -c: config 파일 경로 지정
-CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]
+CMD ["sh", "-c", "python generateIssueCard.py"]
