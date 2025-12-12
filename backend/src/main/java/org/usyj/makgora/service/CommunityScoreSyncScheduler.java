@@ -24,7 +24,7 @@ public class CommunityScoreSyncScheduler {
         return (value != null) ? Integer.parseInt(value) : 0;
     }
 
-    // @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
+    @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
     @Transactional
     public void syncScores() {
 
