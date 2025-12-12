@@ -15,6 +15,50 @@ interface VoteType {
   status: "ACTIVE" | "PENDING" | "CLOSED"; // 상태값
 }
 
+import { fetchVoteList, fetchVoteDetail } from "../../../api/voteApi";
+import { fetchNormalVoteList, updateNormalVote } from "../../../api/normalVoteApi";
+
+import {
+  adminResolveAndSettleVote,
+  adminSettleVote,
+  adminFinishNormalVote,
+  adminCancelNormalVote,
+  adminOpenVote,
+} from "../../../api/adminAPI";
+
+import { ResolveVoteModal } from "./ResolveVoteModal";
+
+export function Votes() {
+  const [tab, setTab] = useState<"AI" | "NORMAL">("AI");
+
+  const [aiVotes, setAiVotes] = useState<any[]>([]);
+  const [normalVotes, setNormalVotes] = useState<any[]>([]);
+
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("latest");
+
+  const [resolveVote, setResolveVote] = useState<any | null>(null);
+
+  // 🔥 리스트 로드
+  async function loadAll() {
+    const aiRes = await fetchVoteList();
+    const normalRes = await fetchNormalVoteList();
+
+    console.log("🔥 AI Vote Response:", aiRes.data);
+    console.log("🔥 Normal Vote Response:", normalRes.data);
+
+    const rawAI = aiRes.data.votes || aiRes.data || [];
+
+    const mappedAI = rawAI.map((v: any) => ({
+      id: v.id,
+      title: v.title,
+      description: v.description,
+      totalParticipants: v.totalParticipants ?? 0,
+      status: v.status ?? "UNKNOWN",
+    }));
+
+    setAiVotes(mappedAI);
+    setNormalVotes(normalRes.data.votes || []);
 // ✔ 테이블 Badge 구분 함수
 function getStatusBadge(status: VoteType["status"]) {
   switch (status) {
@@ -77,6 +121,31 @@ export function Votes() {
 
             {/* ✔ 목록 표시 */}
             <tbody className="divide-y divide-white/5">
+              {filteredNormal.map((v) => (
+                <tr key={v.id} className="hover:bg-white/5">
+                  <td className="px-6 py-4 text-white">
+  <div className="font-semibold">{v.title}</div>
+
+  <div className="text-gray-400 text-xs mt-1 line-clamp-2">
+    {v.description}
+  </div>
+</td>                  
+                  <td className="px-6 py-4 text-white">{v.totalParticipants}</td>
+
+                  <td className="px-6 py-4 flex gap-2">
+                    <Button
+                      className="bg-green-500/20 text-green-300 text-xs"
+                      onClick={() => adminFinishNormalVote(v.id).then(loadAll)}
+                    >
+                      종료
+                    </Button>
+
+                    <Button
+                      className="bg-red-500/20 text-red-300 text-xs"
+                      onClick={() => adminCancelNormalVote(v.id).then(loadAll)}
+                    >
+                      취소
+                    </Button>
               {votes.map(vote => (
                 <tr key={vote.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-white">{vote.question}</td>
@@ -113,6 +182,25 @@ export function Votes() {
 
           </table>
         </div>
+      )}
+
+      {/* ----------------------------- */}
+      {/* Modals */}
+      {/* ----------------------------- */}
+      {resolveVote && (
+        <ResolveVoteModal
+          vote={resolveVote}
+          onClose={() => setResolveVote(null)}
+          onSubmit={(choiceId: number) =>
+            adminResolveAndSettleVote(resolveVote.voteId ?? resolveVote.id, {
+              correctChoiceId: choiceId,
+            }).then(() => {
+              setResolveVote(null);
+              loadAll();
+            })
+          }
+        />
+      )}
       </div>
     </div>
   );

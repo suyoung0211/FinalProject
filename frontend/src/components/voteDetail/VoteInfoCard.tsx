@@ -6,8 +6,6 @@ export function VoteInfoCard({
   isNormalVote,
   isOwner,
   isAdmin,
-  editMode,
-  setEditMode,
   setData,
   handleSaveEdit,
 }: any) {
@@ -21,19 +19,10 @@ export function VoteInfoCard({
             {data.category}
           </span>
         </div>
-
-        {isNormalVote && (isOwner || isAdmin) && (
-          <button
-            onClick={() => setEditMode((prev: boolean) => !prev)}
-            className="ml-auto px-3 py-1 rounded-full text-xs bg-white/10 text-white hover:bg-white/20"
-          >
-            {editMode ? "수정 종료" : "수정하기"}
-          </button>
-        )}
       </div>
 
       {/* TITLE */}
-      {editMode && isNormalVote && (isOwner || isAdmin) ? (
+      {isNormalVote && (isOwner || isAdmin) ? (
         <input
           value={data.title}
           onChange={(e) => setData({ ...data, title: e.target.value })}
@@ -44,7 +33,7 @@ export function VoteInfoCard({
       )}
 
       {/* DESCRIPTION */}
-      {editMode && isNormalVote && (isOwner || isAdmin) ? (
+      {isNormalVote && (isOwner || isAdmin) ? (
         <textarea
           value={data.description ?? ""}
           onChange={(e) => setData({ ...data, description: e.target.value })}
@@ -70,18 +59,56 @@ export function VoteInfoCard({
         />
       </div>
 
-      {/* ADMIN PANEL */}
-      {isAdmin && isAIVote && data.adminPanel}
+      {/* =============================== */}
+      {/* 🔥 ADMIN PANEL – 관리자만 보임 */}
+      {/* =============================== */}
+      {isAdmin && isAIVote && (
+        <div className="mt-8 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <h2 className="text-red-300 font-bold mb-4 text-lg">관리자 패널</h2>
 
-      {/* NORMAL 수정 저장 */}
-      {editMode && isNormalVote && (isOwner || isAdmin) && (
-        <div className="mt-4 flex gap-2 justify-end">
-          <Button variant="outline" onClick={() => setEditMode(false)}>
-            취소
-          </Button>
-          <Button className="bg-purple-600 text-white" onClick={handleSaveEdit}>
-            저장
-          </Button>
+          {/* 정답 선택 */}
+          <label className="text-white text-sm mb-2 block">정답 선택</label>
+
+          <select
+  value={adminCorrectChoiceId ? String(adminCorrectChoiceId) : ""}
+  onChange={(e) => setAdminCorrectChoiceId(Number(e.target.value))}
+  className="
+      w-full bg-purple-600/40 text-white p-2 rounded-lg mb-4
+      border border-purple-400/40
+      focus:outline-none focus:ring-2 focus:ring-purple-400
+  "
+>
+  <option value="">정답을 선택하세요</option>
+
+  {parsedOptions.map((c: any) => (
+    <option key={c.id} value={String(c.id)} className="text-white bg-purple-700">
+      {c.text}
+    </option>
+  ))}
+</select>
+
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              className="bg-red-600 text-white"
+              onClick={() => handleAdminResolve(false)}
+            >
+              투표 종료
+            </Button>
+
+            <Button
+              className="bg-orange-500 text-white"
+              onClick={() => handleAdminResolve(true)}
+            >
+              종료 + 정산
+            </Button>
+
+            <Button
+              className="bg-blue-600 text-white"
+              onClick={handleAdminSettleOnly}
+            >
+              정산만 실행
+            </Button>
+          </div>
         </div>
       )}
     </div>
