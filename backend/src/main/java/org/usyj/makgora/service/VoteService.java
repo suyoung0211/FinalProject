@@ -113,42 +113,52 @@ private void recordTrend(VoteEntity vote) {
        🔹 3. 배당률 계산
        =============================== */
     @Transactional(readOnly = true)
-    public OddsResponse getOdds(Integer voteId) {
+public OddsResponse getOdds(Integer voteId) {
 
-        VoteEntity vote = voteRepository.findById(voteId)
-                .orElseThrow(() -> new RuntimeException("vote 없음"));
+    VoteEntity vote = voteRepository.findById(voteId)
+            .orElseThrow();
 
-        // 전체 포인트 풀
-        int totalPool = vote.getOptions().stream()
-                .flatMap(opt -> opt.getChoices().stream())
-                .mapToInt(VoteOptionChoiceEntity::getPointsTotal)
-                .sum();
+    double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
 
-        List<OddsResponse.ChoiceOdds> list =
-                vote.getOptions().stream()
-                        .flatMap(opt -> opt.getChoices().stream())
-                        .map(ch -> {
-                            Double odds = null;
-                            if (ch.getPointsTotal() > 0 && totalPool > 0) {
-                                odds = (double) totalPool / (double) ch.getPointsTotal();
-                            }
+    List<OddsResponse.OptionOdds> options =
+        vote.getOptions().stream().map(option -> {
 
-                            return OddsResponse.ChoiceOdds.builder()
-                                    .choiceId(ch.getId())
-                                    .choiceText(ch.getChoiceText())
-                                    .pointsTotal(ch.getPointsTotal())
-                                    .participantsCount(ch.getParticipantsCount())
-                                    .odds(odds)
-                                    .build();
-                        })
-                        .toList();
+            int optionPool = option.getChoices().stream()
+                    .mapToInt(c -> c.getPointsTotal() == null ? 0 : c.getPointsTotal())
+                    .sum();
 
-        return OddsResponse.builder()
-                .voteId(vote.getId())
-                .totalPool(totalPool)
-                .choices(list)
-                .build();
-    }
+            List<OddsResponse.ChoiceOdds> choices =
+                option.getChoices().stream().map(c -> {
+
+                    int choicePool = c.getPointsTotal() == null ? 0 : c.getPointsTotal();
+
+                    Double odds = null;
+                    if (choicePool > 0 && optionPool > 0) {
+                        odds = ((double) optionPool / choicePool) * (1 - feeRate);
+                    }
+
+                    return OddsResponse.ChoiceOdds.builder()
+                            .choiceId(c.getId())
+                            .choiceText(c.getChoiceText())
+                            .pointsTotal(choicePool)
+                            .participantsCount(c.getParticipantsCount())
+                            .odds(odds)
+                            .build();
+                }).toList();
+
+            return OddsResponse.OptionOdds.builder()
+                    .optionId(option.getId())
+                    .optionPool(optionPool)
+                    .choices(choices)
+                    .build();
+        }).toList();
+
+    return OddsResponse.builder()
+            .voteId(vote.getId())
+            .feeRate(feeRate)
+            .options(options)
+            .build();
+}
 
 
     /* ===============================

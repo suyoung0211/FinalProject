@@ -405,3 +405,24 @@ name = "Vote_Users",
 댓글 부모자식관계 fetch = FetchType.EAGER 붙여줌
 
 ALTERTABLE필수! 그냥 create로
+--------------------------------------------------
+12/12
+voteoptionchoiceentity 에 컬럼 추가
+
+옵션 당 초이스 방식 채용
+
+/* =========================
+     🆕 정답 여부 (핵심)
+     ========================= */
+  @Column(name = "is_correct", nullable = false)
+  @Builder.Default
+  private Boolean isCorrect = false;
+
+
+컬럼 추가 쿼리문 사용할거면 밑에꺼 사용
+ALTER TABLE Vote_Option_Choices
+ADD COLUMN is_correct BOOLEAN NOT NULL DEFAULT FALSE;
+
+⚠️ DB 새로 업데이트 필요함!
+
+

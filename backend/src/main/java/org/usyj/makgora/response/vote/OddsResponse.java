@@ -2,28 +2,30 @@ package org.usyj.makgora.response.vote;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.List;
 
-@Getter
-@Setter
-@Builder
+@Getter @Builder
 public class OddsResponse {
 
     private Integer voteId;
-    private Integer totalPool;
+    private Double feeRate;
+    private List<OptionOdds> options;
 
-    private List<ChoiceOdds> choices;
+    @Getter @Builder
+    public static class OptionOdds {
+        private Long optionId;
+        private String optionTitle;
+        private Integer optionPool;
+        private List<ChoiceOdds> choices;
+    }
 
-    @Getter
-    @Setter
-    @Builder
+    @Getter @Builder
     public static class ChoiceOdds {
         private Long choiceId;
         private String choiceText;
         private Integer pointsTotal;
         private Integer participantsCount;
-        private Double odds;  // null이면 아직 베팅이 없는 선택지
+        private Double odds;
     }
 }

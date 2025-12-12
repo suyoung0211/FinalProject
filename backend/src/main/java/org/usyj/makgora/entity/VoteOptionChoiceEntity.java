@@ -43,4 +43,11 @@ public class VoteOptionChoiceEntity {
 
   @Column(name = "odds")
   private Double odds;
+
+  /* =========================
+     🆕 정답 여부 (핵심)
+     ========================= */
+  @Column(name = "is_correct", nullable = false)
+  @Builder.Default
+  private Boolean isCorrect = false;
 }
