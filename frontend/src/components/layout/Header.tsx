@@ -1,6 +1,6 @@
   import { useState, useRef, useEffect } from "react";
   import { useAuth } from "../../hooks/useAuth";
-  import { Coins, ChevronDown, User, LogOut } from "lucide-react";
+  import { Coins, ChevronDown, User, LogOut, Shield } from "lucide-react";
   import { useNavigate, useLocation } from "react-router-dom";
 
   interface HeaderProps {
@@ -117,6 +117,8 @@
                 {/* Dropdown */}
                 {menuOpen && (
                   <div className="absolute right-0 mt-3 w-48 bg-[#1B1B29] rounded-xl border border-white/10 shadow-xl overflow-hidden animate-fadeIn">
+
+                    {/* 프로필 */}
                     <button
                       className="flex items-center gap-2 px-4 py-3 w-full text-left text-gray-300 hover:bg-white/10 hover:text-white transition"
                       onClick={() => {
@@ -124,9 +126,25 @@
                         setMenuOpen(false);
                       }}
                     >
-                      <User className="w-4 h-4" /> 프로필
+                      <User className="w-4 h-4" />
+                      프로필
                     </button>
 
+                    {/* ✅ 관리자 전용 메뉴 */}
+                    {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                      <button
+                        className="flex items-center gap-2 px-4 py-3 w-full text-left text-gray-300 hover:bg-yellow-500/10 hover:text-yellow-200 transition"
+                        onClick={() => {
+                          navigate("/admin");
+                          setMenuOpen(false);
+                        }}
+                      >
+                        <Shield className="w-4 h-4" />
+                        관리자 페이지
+                      </button>
+                    )}
+
+                    {/* 로그아웃 */}
                     <button
                       className="flex items-center gap-2 px-4 py-3 w-full text-left text-red-400 hover:bg-red-500/10 transition"
                       onClick={() => {
@@ -135,7 +153,8 @@
                         navigate("/");
                       }}
                     >
-                      <LogOut className="w-4 h-4" /> 로그아웃
+                      <LogOut className="w-4 h-4" />
+                      로그아웃
                     </button>
                   </div>
                 )}

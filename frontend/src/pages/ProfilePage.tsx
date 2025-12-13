@@ -254,7 +254,7 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
 
                     {user.email && (
                       <div className="flex items-center gap-2 text-gray-400 mb-4">
-                        <Mail className="w-4 h-4" />
+                        <User className="w-4 h-4" />
                         <span>{user.email}</span>
                       </div>
                     )}
@@ -296,9 +296,9 @@ export function ProfilePage({ onBack }: { onBack: () => void }) {
                     </div>
 
                     <div>
-                      <label className="text-gray-300 text-sm">이메일</label>
+                      <label className="text-gray-300 text-sm">아이디</label>
                       <input
-                        type="email"
+                        type="text"
                         className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2 mt-[6px] mb-[16px]"
                         value={editForm.email}
                         onChange={(e) =>
