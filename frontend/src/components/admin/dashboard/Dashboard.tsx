@@ -4,9 +4,10 @@ import { Users, DollarSign, TrendingUp, MessageSquare, Search, Plus, Edit, Ban, 
 import { Avatar } from "../../Avatar";
 import { Button } from '../../ui/button';
 import CreateAdminModal from "./CreateAdminModal";
-import UserDetailModal from "./UserDetailModal";
 import UserActionButtons from "./UserActionButtons";
 import EditUserModal from "./EditUserModal";
+import UserProfileModal from "../../profile/UserProfileModal";
+
 
 export function Dashboard() {
   // 전체 유저 데이터
@@ -22,6 +23,8 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");             // 실제 검색 기준
   const [tempQuery, setTempQuery] = useState("");                 // 입력창 상태
 
+  // 프로필 카드 모달용
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
   
   // 🔹 검색 실행 (엔터 또는 돋보기 클릭)
   const handleSearch = () => {
@@ -52,9 +55,10 @@ export function Dashboard() {
   // 모달 관리 타입
   type ModalType =
     | { type: "CREATE_ADMIN" }
-    | { type: "USER_DETAIL"; user: any }
     | { type: "EDIT_USER"; user: any }
     | { type: null };
+
+  
 
   const openModal = (type: ModalType["type"], user?: any) => {
     if (modal.type) return; // 관리자 모달 열려있으면 무시
@@ -195,8 +199,8 @@ export function Dashboard() {
                 filteredUsers.map(user => (
                   <tr
                     key={user.loginId}
-                    className="hover:bg-white/5 transition-colors"
-                    onClick={() => openModal("USER_DETAIL", user)}
+                    className="hover:bg-white/5 transition-colors cursor-pointer"
+                    onClick={() => setProfileUserId(user.id)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
@@ -253,12 +257,12 @@ export function Dashboard() {
         />
       )}
 
-      {/* 유저 상세 */}
-      {modal.type === "USER_DETAIL" && modal.user && (
-        <UserDetailModal
+      {/* 프로필 카드 */}
+      {profileUserId && (
+        <UserProfileModal
+          userId={profileUserId}
           open={true}
-          user={modal.user}
-          onClose={() => setModal({ type: null })}
+          onClose={() => setProfileUserId(null)}
         />
       )}
 

@@ -40,7 +40,7 @@ export default function UserDetailModal({ open, user, onClose }: UserDetailModal
 
         {/* 사용자 정보 */}
         <div className="ml-24">
-          <h2 className="text-xl font-bold text-white">{user.nickname} (@{user.loginId})</h2>
+          <h2 className="text-xl font-bold text-white">{user.nickname} ({user.loginId})</h2>
           <p className="text-sm text-gray-300">레벨: {user.level}</p>
           <p className="text-sm text-yellow-400">포인트: {user.points?.toLocaleString()}P</p>
           <p className="text-sm text-gray-400">상태: {user.status}</p>
