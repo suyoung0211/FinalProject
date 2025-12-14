@@ -8,6 +8,7 @@ import {
   fetchVoteDetail,
   participateVote,
   fetchExpectedOdds,
+  fetchVoteOdds,
 } from "../api/voteApi";
 import {
   fetchNormalVoteDetail,
@@ -82,16 +83,27 @@ export function VoteDetailPage({
   }, [marketId, voteType]);
 
   async function load() {
-    try {
-      setLoading(true);
-      const res = isAIVote
-        ? await fetchVoteDetail(marketId)
-        : await fetchNormalVoteDetail(marketId);
+  try {
+    setLoading(true);
+
+    if (isAIVote) {
+      const [detailRes, oddsRes] = await Promise.all([
+        fetchVoteDetail(marketId),
+        fetchVoteOdds(marketId), // 🔥 추가
+      ]);
+
+      setData({
+        ...detailRes.data,
+        odds: oddsRes.data, // 🔥 핵심
+      });
+    } else {
+      const res = await fetchNormalVoteDetail(marketId);
       setData(res.data);
-    } finally {
-      setLoading(false);
     }
+  } finally {
+    setLoading(false);
   }
+}
 
   /* ================= MODAL ================= */
   async function openVoteModal(choiceId: number) {

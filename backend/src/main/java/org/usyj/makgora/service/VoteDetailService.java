@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
+import org.usyj.makgora.response.vote.OddsResponse;
 import org.usyj.makgora.response.voteDetails.*;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
@@ -26,6 +27,7 @@ public class VoteDetailService {
     private final VoteTrendHistoryRepository trendRepository;
     private final VoteCommentRepository voteCommentRepository;
     private final ArticleAiTitleRepository aiTitleRepository;
+    private final OddsService oddsService;
 
     /* =======================================================
      * Main Entry
@@ -44,9 +46,28 @@ public class VoteDetailService {
                         .toList();
 
         VoteDetailArticleResponse article = loadArticle(vote);
+        OddsResponse oddsResponse = oddsService.getCurrentOdds(voteId);
+        VoteDetailOddsResponse odds = VoteDetailOddsResponse.builder()
+        .voteId(voteId) // ✅ 추가
+        .odds(
+                oddsResponse.getOptions().stream()
+                        .map(o -> VoteDetailOddsResponse.OddsItem.builder()
+                                .optionId(o.getOptionId())
+                                .optionTitle(
+                                        options.stream()
+                                                .filter(opt -> opt.getId().intValue() == o.getOptionId())
+                                                .map(VoteOptionEntity::getOptionTitle)
+                                                .findFirst()
+                                                .orElse(null)
+                                ) // ✅ 추가
+                                .odds(o.getOdds())
+                                .history(List.of())
+                                .build())
+                        .toList()
+        )
+        .build();
         List<VoteDetailOptionResponse> optionResponses =
-                loadOptions(options, validBets, userId);
-        VoteDetailOddsResponse odds = loadOdds(options);
+        loadOptions(options, validBets, userId, odds);
         VoteDetailStatisticsResponse statistics = loadStatistics(voteId);
         VoteDetailParticipationResponse myParticipation =
                 loadMyParticipation(validBets, userId);
@@ -123,104 +144,115 @@ public class VoteDetailService {
     }
 
     /* =======================================================
-     * Options + Choices (VoteUser 기준)
-     * ======================================================= */
-    private List<VoteDetailOptionResponse> loadOptions(
-            List<VoteOptionEntity> options,
-            List<VoteUserEntity> bets,
-            Integer userId
-    ) {
-
-        Integer myChoiceId = bets.stream()
-                .filter(v -> userId != null && v.getUser().getId().equals(userId))
-                .map(v -> v.getChoice() != null ? v.getChoice().getId() : null)
-                .findFirst()
-                .orElse(null);
-
-        return options.stream().map(opt -> {
-
-            List<VoteUserEntity> optionBets =
-                    bets.stream()
-                            .filter(v -> v.getOption().getId().equals(opt.getId()))
-                            .toList();
-
-            int participants = (int) optionBets.stream()
-                    .map(v -> v.getUser().getId())
-                    .distinct()
-                    .count();
-
-            long points = optionBets.stream()
-                    .mapToLong(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                    .sum();
-
-            Map<Integer, Long> choiceCounts =
-                    optionBets.stream()
-                            .filter(v -> v.getChoice() != null)
-                            .collect(Collectors.groupingBy(
-                                    v -> v.getChoice().getId(),
-                                    Collectors.counting()
-                            ));
-
-            List<VoteDetailChoiceResponse> choices =
-                    opt.getChoices().stream().map(c -> {
-
-                        long count = choiceCounts.getOrDefault(c.getId(), 0L);
-                        double percent =
-                                participants == 0
-                                        ? 0.0
-                                        : Math.round(count * 1000.0 / participants) / 10.0;
-
-                        return VoteDetailChoiceResponse.builder()
-                                .choiceId(c.getId().intValue())
-                                .text(c.getChoiceText())
-                                .participantsCount((int) count)
-                                .pointsTotal(null)
-                                .percent(percent)
-                                .marketShare(percent)
-                                .odds(opt.getOdds())
-                                .isMyChoice(
-                                        myChoiceId != null &&
-                                        myChoiceId.equals(c.getId())
-                                )
-                                .build();
-                    }).toList();
-
-            return VoteDetailOptionResponse.builder()
-                    .optionId(opt.getId().intValue())
-                    .title(opt.getOptionTitle())
-                    .totalParticipants(participants)
-                    .totalPoints(points)
-                    .correctChoiceId(
-                            opt.getCorrectChoice() != null
-                                    ? opt.getCorrectChoice().getId().intValue()
-                                    : null
-                    )
-                    .choices(choices)
-                    .trend(List.of())
-                    .build();
-        }).toList();
-    }
-
-    /* =======================================================
      * Odds (Option 기준)
      * ======================================================= */
-    private VoteDetailOddsResponse loadOdds(List<VoteOptionEntity> options) {
-
-        List<VoteDetailOddsResponse.OddsItem> items =
-                options.stream()
-                        .map(o ->
-                                VoteDetailOddsResponse.OddsItem.builder()
-                                        .optionId(o.getId().intValue())
-                                        .odds(o.getOdds())
-                                        .history(List.of())
-                                        .build()
-                        )
-                        .toList();
-
-        return VoteDetailOddsResponse.builder()
-                .odds(items)
-                .build();
+    private List<VoteDetailOptionResponse> loadOptions(
+        List<VoteOptionEntity> options,
+        List<VoteUserEntity> bets,
+        Integer userId,
+        VoteDetailOddsResponse odds // ✅ optionOddsMap 만들려고 추가
+) {
+    // ✅ optionId -> odds map
+    Map<Long, Double> optionOddsMap = new HashMap<>();
+    if (odds != null && odds.getOdds() != null) {
+        for (var item : odds.getOdds()) {
+            if (item.getOptionId() != null) {
+                optionOddsMap.put(item.getOptionId().longValue(),
+                        item.getOdds() != null ? item.getOdds() : 1.0);
+            }
+        }
     }
+
+    Integer myChoiceId = bets.stream()
+            .filter(v -> userId != null && v.getUser().getId().equals(userId))
+            .map(v -> v.getChoice() != null ? v.getChoice().getId().intValue() : null)
+            .findFirst()
+            .orElse(null);
+
+    return options.stream().map(opt -> {
+
+        // ✅ 해당 option에 속한 bets만
+        List<VoteUserEntity> optionBets = bets.stream()
+                .filter(v -> v.getOption() != null
+                        && Objects.equals(v.getOption().getId(), opt.getId()))
+
+                .toList();
+
+        int totalParticipants = (int) optionBets.stream()
+                .map(v -> v.getUser().getId())
+                .distinct()
+                .count();
+
+        long totalPoints = optionBets.stream()
+                .mapToLong(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+                .sum();
+
+        // ✅ choice별 집계 (participantsCount, pointsTotal)
+        Map<Long, Long> choicePoints =
+        optionBets.stream()
+                .filter(v -> v.getChoice() != null)
+                .collect(Collectors.groupingBy(
+                        v -> v.getChoice().getId().longValue(), // 🔥 핵심
+                        Collectors.summingLong(
+                                v -> v.getPointsBet() == null ? 0 : v.getPointsBet()
+                        )
+                ));
+
+        Map<Long, Long> choiceUsers =
+        optionBets.stream()
+                .filter(v -> v.getChoice() != null)
+                .collect(Collectors.groupingBy(
+                        v -> v.getChoice().getId().longValue(), // 🔥 Long 통일
+                        Collectors.mapping(
+                                v -> v.getUser().getId(),          // Integer OK
+                                Collectors.toSet()
+                        )
+                ))
+                .entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> (long) e.getValue().size()
+                ));
+
+        double optionOdds =
+        optionOddsMap.getOrDefault(opt.getId().longValue(), 1.0);
+
+        List<VoteDetailChoiceResponse> choices = opt.getChoices().stream().map(c -> {
+
+            long cParticipants =
+                choiceUsers.getOrDefault(c.getId().longValue(), 0L);
+            long cPoints =
+                choicePoints.getOrDefault(c.getId().longValue(), 0L);
+
+            double percent = totalParticipants == 0
+                    ? 0.0
+                    : Math.round(cParticipants * 1000.0 / totalParticipants) / 10.0;
+
+            return VoteDetailChoiceResponse.builder()
+                    .choiceId(c.getId().intValue())
+                    .text(c.getChoiceText())
+                    .participantsCount((int) cParticipants)
+                    .pointsTotal(cPoints)
+                    .percent(percent)
+                    .marketShare(percent)
+                    .odds(optionOdds) // ✅ ONGOING에서도 실시간 odds 주입
+                    .isMyChoice(myChoiceId != null && myChoiceId.equals(c.getId().intValue()))
+                    .isCorrect(null)
+                    .build();
+        }).toList();
+
+        return VoteDetailOptionResponse.builder()
+                .optionId(opt.getId().intValue())
+                .title(opt.getOptionTitle())
+                .totalParticipants(totalParticipants)
+                .totalPoints(totalPoints)
+                .correctChoiceId(opt.getCorrectChoice() != null ? opt.getCorrectChoice().getId().intValue() : null)
+                .choices(choices)
+                .trend(List.of())
+                .build();
+    }).toList();
+}
+
 
     /* =======================================================
      * Statistics (Trend)

@@ -24,10 +24,12 @@ public class VoteSettlementService {
 
     /* ============================================================
        1) 정답 확정 (FINISHED → RESOLVED)
-       - option.correctChoice 저장
        ============================================================ */
     @Transactional
-    public VoteDetailSettlementResponse finished(Integer voteId, VoteDetailResolveRequest req) {
+    public VoteDetailSettlementResponse finished(
+            Integer voteId,
+            VoteDetailResolveRequest req
+    ) {
 
         VoteEntity vote = voteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("Vote not found"));
@@ -59,7 +61,9 @@ public class VoteSettlementService {
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Choice not found in option"));
 
+            // 🔥 정답 저장 + 영속화
             option.setCorrectChoice(correctChoice);
+            optionRepository.save(option);
         }
 
         vote.setStatus(VoteEntity.Status.RESOLVED);
@@ -72,10 +76,13 @@ public class VoteSettlementService {
     }
 
     /* ============================================================
-       2) 정답 확정 + 정산
+       2) 정답 확정 + 즉시 정산
        ============================================================ */
     @Transactional
-    public VoteDetailSettlementResponse finishAndSettle(Integer voteId, VoteDetailResolveRequest req) {
+    public VoteDetailSettlementResponse finishAndSettle(
+            Integer voteId,
+            VoteDetailResolveRequest req
+    ) {
         finished(voteId, req);
         return settleMultipleByDb(
                 voteRepository.findById(voteId).orElseThrow()
@@ -99,12 +106,14 @@ public class VoteSettlementService {
     }
 
     /* ============================================================
-       4) 옵션별 미리보기
+       4) 옵션별 정산 미리보기 (실제 정산과 동일 로직)
        ============================================================ */
     private VoteDetailSettlementResponse computePreviewMultiple(VoteEntity vote) {
 
         double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
-        List<VoteDetailSettlementResponse.OptionSettlementResult> results = new ArrayList<>();
+
+        List<VoteDetailSettlementResponse.OptionSettlementResult> results =
+                new ArrayList<>();
 
         List<VoteUserEntity> allBets =
                 voteUserRepository.findByVoteId(vote.getId());
@@ -117,20 +126,26 @@ public class VoteSettlementService {
             List<VoteUserEntity> optionBets =
                     allBets.stream()
                             .filter(v -> v.getOption().getId().equals(option.getId()))
+                            .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
+                            .toList();
+
+            List<VoteUserEntity> winners =
+                    optionBets.stream()
+                            .filter(v -> v.getChoice().getId().equals(correct.getId()))
                             .toList();
 
             int optionPool = optionBets.stream()
                     .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
                     .sum();
 
-            int winnerPool = optionBets.stream()
-                    .filter(v -> v.getChoice().getId().equals(correct.getId()))
+            int winnerPool = winners.stream()
                     .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
                     .sum();
 
-            double odds = (optionPool > 0 && winnerPool > 0)
-                    ? ((double) optionPool / winnerPool) * (1 - feeRate)
-                    : 0.0;
+            double odds =
+                    (optionPool > 0 && winnerPool > 0)
+                            ? round(((double) optionPool / winnerPool) * (1 - feeRate))
+                            : 0.0;
 
             results.add(
                     VoteDetailSettlementResponse.OptionSettlementResult.builder()
@@ -139,7 +154,7 @@ public class VoteSettlementService {
                             .odds(odds)
                             .optionPool(optionPool)
                             .winnerPool(winnerPool)
-                            .winnerCount(0)
+                            .winnerCount(winners.size())
                             .distributedSum(0)
                             .build()
             );
@@ -154,133 +169,136 @@ public class VoteSettlementService {
     }
 
     /* ============================================================
-       5) 실제 정산
+       5) 실제 정산 (옵션 기준)
        ============================================================ */
-    /* ============================================================
-   5) 실제 정산 (옵션 기준)
-   ============================================================ */
-private VoteDetailSettlementResponse settleMultipleByDb(VoteEntity vote) {
+    private VoteDetailSettlementResponse settleMultipleByDb(VoteEntity vote) {
 
-    double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
+        double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
 
-    int totalDistributed = 0;
-    int totalWinnerCount = 0;
+        int totalDistributed = 0;
+        int totalWinnerCount = 0;
 
-    List<VoteDetailSettlementResponse.OptionSettlementResult> results = new ArrayList<>();
+        List<VoteDetailSettlementResponse.OptionSettlementResult> results =
+                new ArrayList<>();
 
-    // 🔥 전체 베팅 한 번만 조회
-    List<VoteUserEntity> allBets =
-            voteUserRepository.findByVoteId(vote.getId());
+        List<VoteUserEntity> allBets =
+                voteUserRepository.findByVoteId(vote.getId());
 
-    for (VoteOptionEntity option : vote.getOptions()) {
+        for (VoteOptionEntity option : vote.getOptions()) {
 
-        VoteOptionChoiceEntity correct = option.getCorrectChoice();
-        if (correct == null) continue;
+            VoteOptionChoiceEntity correct = option.getCorrectChoice();
+            if (correct == null) continue;
 
-        // 옵션별 유효 베팅
-        List<VoteUserEntity> optionBets =
-                allBets.stream()
-                        .filter(v -> v.getOption().getId().equals(option.getId()))
-                        .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
-                        .toList();
+            List<VoteUserEntity> optionBets =
+                    allBets.stream()
+                            .filter(v -> v.getOption().getId().equals(option.getId()))
+                            .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
+                            .toList();
 
-        // 정답 베팅자
-        List<VoteUserEntity> winners =
-                optionBets.stream()
-                        .filter(v -> v.getChoice().getId().equals(correct.getId()))
-                        .toList();
+            List<VoteUserEntity> winners =
+                    optionBets.stream()
+                            .filter(v -> v.getChoice().getId().equals(correct.getId()))
+                            .toList();
 
-        int optionPool = optionBets.stream()
-                .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                .sum();
+            int optionPool = optionBets.stream()
+                    .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+                    .sum();
 
-        int winnerPool = winners.stream()
-                .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                .sum();
+            int winnerPool = winners.stream()
+                    .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+                    .sum();
 
-        double odds =
-                (optionPool > 0 && winnerPool > 0)
-                        ? ((double) optionPool / winnerPool) * (1 - feeRate)
-                        : 0.0;
+            double odds =
+                    (optionPool > 0 && winnerPool > 0)
+                            ? round(((double) optionPool / winnerPool) * (1 - feeRate))
+                            : 0.0;
 
-        // 🔥 옵션에 최종 odds 저장 (중요)
-        option.setOdds(odds);
-        optionRepository.save(option);
+            // 🔥 옵션에 최종 odds 저장
+            option.setOdds(odds);
+            optionRepository.save(option);
 
-        int distributedSum = 0;
+            int distributedSum = 0;
 
-        for (VoteUserEntity vu : winners) {
+            // 🔥 승자 정산
+            for (VoteUserEntity vu : winners) {
 
-            int bet = vu.getPointsBet() == null ? 0 : vu.getPointsBet();
-            int reward = (int) Math.floor(bet * odds);
+                int bet = vu.getPointsBet() == null ? 0 : vu.getPointsBet();
+                int reward = (int) Math.floor(bet * odds);
 
-            UserEntity user = vu.getUser();
+                UserEntity user = vu.getUser();
+                user.setPoints(user.getPoints() + reward);
 
-            // 포인트 지급
-            user.setPoints(user.getPoints() + reward);
+                if (user.getLevel() == null) user.setLevel(1);
+                else user.setLevel(user.getLevel() + 1);
 
-            // 레벨 증가 (null-safe)
-            if (user.getLevel() == null) {
-                user.setLevel(1);
-            } else {
-                user.setLevel(user.getLevel() + 1);
+                userRepository.save(user);
+
+                // 🔥 VoteUser 정산 기록
+                vu.setRewardPoints(reward);
+                vu.setUpdatedAt(LocalDateTime.now());
+                voteUserRepository.save(vu);
+
+                distributedSum += reward;
             }
 
-            userRepository.save(user);
+            // 🔥 패자 기록
+            for (VoteUserEntity vu : optionBets) {
+                if (!winners.contains(vu)) {
+                    vu.setRewardPoints(0);
+                    voteUserRepository.save(vu);
+                }
+            }
 
-            // 정산 시점 기록
-            vu.setUpdatedAt(LocalDateTime.now());
-            distributedSum += reward;
+            totalDistributed += distributedSum;
+            totalWinnerCount += winners.size();
+
+            results.add(
+                    VoteDetailSettlementResponse.OptionSettlementResult.builder()
+                            .optionId(option.getId())
+                            .correctChoiceId(correct.getId())
+                            .odds(odds)
+                            .optionPool(optionPool)
+                            .winnerPool(winnerPool)
+                            .winnerCount(winners.size())
+                            .distributedSum(distributedSum)
+                            .build()
+            );
         }
 
-        totalDistributed += distributedSum;
-        totalWinnerCount += winners.size();
+        vote.setRewarded(true);
+        vote.setStatus(VoteEntity.Status.REWARDED);
+        voteRepository.save(vote);
+        historyService.recordStatus(vote, VoteEntity.Status.REWARDED);
 
-        results.add(
-                VoteDetailSettlementResponse.OptionSettlementResult.builder()
-                        .optionId(option.getId())
-                        .correctChoiceId(correct.getId())
-                        .odds(odds)
-                        .optionPool(optionPool)
-                        .winnerPool(winnerPool)
-                        .winnerCount(winners.size())
-                        .distributedSum(distributedSum)
-                        .build()
-        );
+        return VoteDetailSettlementResponse.builder()
+                .voteId(vote.getId())
+                .totalDistributed(totalDistributed)
+                .totalWinnerCount(totalWinnerCount)
+                .options(results)
+                .build();
     }
-
-    // 🔥 vote 상태 마무리
-    vote.setRewarded(true);
-    vote.setStatus(VoteEntity.Status.REWARDED);
-    voteRepository.save(vote);
-    historyService.recordStatus(vote, VoteEntity.Status.REWARDED);
-
-    return VoteDetailSettlementResponse.builder()
-            .voteId(vote.getId())
-            .totalDistributed(totalDistributed)
-            .totalWinnerCount(totalWinnerCount)
-            .options(results)
-            .build();
-}
-
 
     /* ============================================================
-   REVIEWING → ONGOING (투표 오픈)
-   ============================================================ */
-@Transactional
-public void openVote(Integer voteId) {
+       REVIEWING → ONGOING
+       ============================================================ */
+    @Transactional
+    public void openVote(Integer voteId) {
 
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
 
-    if (vote.getStatus() != VoteEntity.Status.REVIEWING) {
-        throw new RuntimeException("REVIEWING 상태에서만 투표를 시작할 수 있습니다.");
+        if (vote.getStatus() != VoteEntity.Status.REVIEWING) {
+            throw new RuntimeException("REVIEWING 상태에서만 투표를 시작할 수 있습니다.");
+        }
+
+        vote.setStatus(VoteEntity.Status.ONGOING);
+        vote.setUpdatedAt(LocalDateTime.now());
+
+        voteRepository.save(vote);
+        historyService.recordStatus(vote, VoteEntity.Status.ONGOING);
     }
 
-    vote.setStatus(VoteEntity.Status.ONGOING);
-    vote.setUpdatedAt(LocalDateTime.now());
-
-    voteRepository.save(vote);
-    historyService.recordStatus(vote, VoteEntity.Status.ONGOING);
-}
+    private double round(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
 }

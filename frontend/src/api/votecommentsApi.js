@@ -10,7 +10,7 @@ import api from "./api";
  * GET /api/comments?voteId=1
  */
 export const fetchVoteComments = (voteId) => {
-  return api.get("/api/comments", {
+  return api.get("/comments", {
     params: { voteId },
   });
 };
@@ -20,7 +20,7 @@ export const fetchVoteComments = (voteId) => {
  * POST /api/comments
  */
 export const addVoteComment = (data) => {
-  return api.post("/api/comments", {
+  return api.post("/comments", {
     voteId: data.voteId,
     content: data.content,
     parentId: data.parentId ?? null,
@@ -33,7 +33,7 @@ export const addVoteComment = (data) => {
  */
 export const reactVoteComment = (commentId, like) => {
   return api.post(
-    `/api/comments/${commentId}/react`,
+    `/comments/${commentId}/react`,
     null,
     {
       params: { like },
@@ -46,7 +46,7 @@ export const reactVoteComment = (commentId, like) => {
  * PUT /api/comments/{id}
  */
 export const updateVoteComment = (commentId, content) => {
-  return api.put(`/api/comments/${commentId}`, {
+  return api.put(`/comments/${commentId}`, {
     content,
   });
 };
