@@ -86,21 +86,38 @@ public class AuthController {
     }
 
     /** 로그아웃 */
-    @PostMapping("/logout") // ✅ 수정 @PostMapping("/logout"/{userId}) -> @PostMapping("/logout")
-    public ResponseEntity<?> logout(@CookieValue(name = "refreshToken", required = false) String refreshToken, HttpServletResponse response) {
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
 
-        // 1) DB에서 해당 RT 삭제 (이 브라우저 세션 무효화
+        // 1️⃣ DB에서 Refresh Token 삭제 (해당 브라우저 세션 무효화)
         authService.logout(refreshToken);
 
-        // 2) 쿠키도 삭제
+        // 2️⃣ 환경 구분 (로컬 / 운영)
+        boolean isProd = isProduction(); // 아래 메서드 참고
+
+        // 3️⃣ 쿠키 삭제 (생성 시와 동일한 옵션 필수)
         Cookie refreshCookie = new Cookie("refreshToken", null);
+
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(false); // 운영에서 https면 true
+        refreshCookie.setSecure(isProd);                // 운영=true / 로컬=false
         refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(0); // 즉시 만료
+        refreshCookie.setMaxAge(0);                     // 🔥 즉시 만료(쿠키 즉시 삭제 명령)
+        refreshCookie.setAttribute("SameSite", isProd ? "None" : "Lax");
+
         response.addCookie(refreshCookie);
 
         return ResponseEntity.ok("Logged out");
+    }
+
+    /**
+     * 운영 환경 여부 판단
+     * - 실무에서 가장 많이 쓰는 방식
+     */
+    private boolean isProduction() {
+        return "prod".equalsIgnoreCase(System.getProperty("spring.profiles.active"));
     }
 }
 /* 
