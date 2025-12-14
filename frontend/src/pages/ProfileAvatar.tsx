@@ -14,77 +14,41 @@ export default function ProfileAvatar({
 
   return (
     <div
-      className="relative flex items-center justify-center"
-      style={{
-        width: outerSize,
-        height: outerSize,
-      }}
+      className="relative flex items-center justify-center overflow-visible"
+      style={{ width: outerSize, height: outerSize }}
     >
-      {/* 아바타 */}
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          className="
-            absolute
-            w-[88%] h-[88%]
-            object-cover
-            rounded-full
-            z-10
-          "
-          /*
-            absolute + 중앙 정렬
-            → 프레임이 커져도 항상 정확히 중앙
-          */
-          style={{
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      ) : (
-        <div
-          className="
-            absolute
-            w-[88%] h-[88%]
-            rounded-full
-            bg-gradient-to-br
-            from-purple-500 to-pink-500
-            z-10
-          "
-          style={{
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-      )}
+      <div
+        className="relative flex items-center justify-center"
+        style={{ width: size, height: size }}
+      >
+        {/* 아바타 */}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            className="w-[88%] h-[88%] object-cover rounded-full z-10"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <div className="w-[88%] h-[88%] rounded-full bg-gradient-to-br from-purple-500 to-pink-500 z-10" />
+        )}
 
-      {/* 프레임 */}
-      {frameUrl && (
-        <img
-          src={frameUrl}
-          className="
-            absolute
-            inset-0
-            w-full
-            h-full
-            object-contain
-            pointer-events-none
-            z-20
-          "
-          /*
-            프레임은 outer div 기준으로 그대로 렌더링
-            → scale 사용 X
-            → 좌표 어긋남 발생하지 않음
-          */
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      )}
+        {/* 프레임 */}
+        {frameUrl && (
+          <img
+            src={frameUrl}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20"
+            style={{
+              transform: `scale(${FRAME_SCALE})`,
+              transformOrigin: "center",
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
