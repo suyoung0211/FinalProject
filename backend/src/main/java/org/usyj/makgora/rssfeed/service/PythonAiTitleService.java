@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class PythonAiTitleService {
 
     // 환경변수에서 API URL을 가져오도록 변경
-    @Value("${python.api.url:http://localhost:8000/generate-ai-titles}")
+    @Value("${ai.title.url:http://localhost:8000/generate-ai-titles}")
     private String pythonApiUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();

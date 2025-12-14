@@ -57,6 +57,7 @@ public class SecurityConfig {
                         "/api/issues/latest",
                         "/api/store/items"
                 ).permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/votes/ai-create").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/resolve-image").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/issues/**").permitAll()
@@ -68,7 +69,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/community/posts/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 
-                // 인증 필요한 API
+                // 🔒 인증 필요한 API
                 .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/**").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/**").authenticated()

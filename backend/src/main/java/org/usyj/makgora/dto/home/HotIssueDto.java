@@ -13,6 +13,7 @@ import lombok.Setter;
 @Data
 @Builder
 public class HotIssueDto {
+    private Integer id;          // 🔥 추가
     private Integer articleId;
     private String title;
     private String aiTitle;
