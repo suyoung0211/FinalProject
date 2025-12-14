@@ -7,6 +7,7 @@ import CreateAdminModal from "./CreateAdminModal";
 import UserActionButtons from "./UserActionButtons";
 import EditUserModal from "./EditUserModal";
 import UserProfileModal from "../../profile/UserProfileModal";
+import ProfileAvatar from "../../../pages/ProfileAvatar";
 
 
 export function Dashboard() {
