@@ -11,7 +11,7 @@ WORKDIR /app
 # ==========================
 # 3️⃣ 종속성 설치
 # ==========================
-COPY pythonwoker/generateAiTitle/requirements.txt .
+COPY pythonworker/generateAiTitle/requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 # ==========================
 # 4️⃣ 소스코드 복사
 # ==========================
-COPY pythonwoker/generateAiTitle/generateAiTitle.py .
+COPY pythonworker/generateAiTitle/generateAiTitle.py .
 
 # ==========================
 # 5️⃣ 컨테이너 포트
