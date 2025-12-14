@@ -14,17 +14,6 @@ export function UnifiedSidebar({
   const isFinished =
     data?.status === "RESOLVED" || data?.status === "REWARDED";
 
-  /* ===============================================================
-     1️⃣ Option 기준 odds 맵
-     =============================================================== */
-  const optionOddsMap: Record<number, number> = {};
-
-  (data?.odds?.odds ?? []).forEach((o: any) => {
-    const optionId = Number(o.optionId);
-    if (!Number.isNaN(optionId) && typeof o.odds === "number") {
-      optionOddsMap[optionId] = o.odds;
-    }
-  });
 
   /* ===============================================================
      2️⃣ 라벨 정규화
@@ -45,30 +34,23 @@ export function UnifiedSidebar({
     const optionId = Number(opt.optionId ?? opt.id);
     const correctChoiceId = opt.correctChoiceId ?? null;
 
-    // 🔥 배당률 우선순위 (중요)
-    const optionOdds =
-      optionOddsMap[optionId] ??
-      data?.odds?.odds?.find((o: any) => o.optionId === optionId)?.odds ??
-      opt.odds ??
-      1.0;
-
     // --- choice 정규화 ---
     const normalizedChoices = (opt.choices ?? []).map((c: any) => {
-      const finalChoiceId = Number(c.choiceId ?? c.id);
+  const finalChoiceId = Number(c.choiceId ?? c.id);
 
-      return {
-        ...c,
-        finalChoiceId,
-        label: c.choiceText ?? c.text ?? "",
-        normalized: normalizeLabel(c.choiceText ?? c.text),
-        isCorrect: isFinished && correctChoiceId === finalChoiceId,
+  return {
+    ...c,
+    finalChoiceId,
+    label: c.choiceText ?? c.text ?? "",
+    normalized: normalizeLabel(c.choiceText ?? c.text),
+    isCorrect: isFinished && correctChoiceId === finalChoiceId,
 
-        // ✅ 표시용 odds 주입
-        odds: optionOdds,
+    // ✅ 여기만 사용
+    odds: typeof c.odds === "number" ? c.odds : 1.0,
 
-        participantsCount: Number(c.participantsCount ?? 0),
-      };
-    });
+    participantsCount: Number(c.participantsCount ?? 0),
+  };
+});
 
     // --- option 내부 total 기준 ---
     const total = normalizedChoices.reduce(

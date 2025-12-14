@@ -65,6 +65,15 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
     // 🔥 voteId 기준 전체 베팅 조회 (정산용)
     List<VoteUserEntity> findByVote_Id(Integer voteId);
 
+    // 🔥 choice 기준 총 베팅 포인트 합
+@Query("""
+    select coalesce(sum(v.pointsBet), 0)
+    from VoteUserEntity v
+    where v.choice.id = :choiceId
+      and v.isCancelled = false
+""")
+int sumPointsByChoiceId(@Param("choiceId") Integer choiceId);
+
     // 🔥 vote + choice 기준 참여자 수
     int countByVote_IdAndChoice_Id(Integer voteId, Integer choiceId);
 
@@ -76,6 +85,24 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
           and v.isCancelled = false
     """)
     int sumPointsByOptionId(@Param("optionId") Integer optionId);
+
+    // 🔥 AI Vote 전체 베팅 포인트 합
+@Query("""
+    select coalesce(sum(v.pointsBet), 0)
+    from VoteUserEntity v
+    where v.vote.id = :voteId
+      and v.isCancelled = false
+""")
+int sumPointsByVoteId(@Param("voteId") Integer voteId);
+
+// 🔥 AI Vote 전체 참여자 수 (중복 유저 제거)
+@Query("""
+    select count(distinct v.user.id)
+    from VoteUserEntity v
+    where v.vote.id = :voteId
+      and v.isCancelled = false
+""")
+int countParticipantsByVoteId(@Param("voteId") Integer voteId);
 
     // 🔥 option 기준 참여자 수
     @Query("""

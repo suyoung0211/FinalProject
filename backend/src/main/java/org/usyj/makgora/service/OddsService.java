@@ -23,49 +23,70 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OddsService {
 
+    /**
+     * EPSILON
+     * - ONGOING 상태에서 예상 배당률 계산 시 사용
+     * - choicePool = 0 인 경우 division by zero 방지
+     * - 초기 배당률 튐 완화용
+     * - ⚠️ 정산(FINAL) 단계에서는 사용하지 않음
+     */
+    private static final double EPSILON = 1.0;
+
     private final VoteRepository voteRepository;
     private final VoteOptionRepository optionRepository;
     private final VoteUserRepository voteUserRepository;
     private final VoteOptionChoiceRepository choiceRepository;
 
+    private static final double MAX_ODDS = 10.0;
+
+    /* =====================================================
+       🔹 현재 배당률 조회 (상세페이지용)
+       ===================================================== */
     @Transactional(readOnly = true)
 public OddsResponse getCurrentOdds(Integer voteId) {
 
     VoteEntity vote = voteRepository.findById(voteId)
             .orElseThrow(() -> new RuntimeException("vote 없음"));
 
-    double feeRate = vote.getFeeRate() == null ? 0.10 : vote.getFeeRate();
-    int baseBet = 100; // 🔥 UI 기준 배팅 금액
+    double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.10;
 
     List<OddsResponse.OptionOdds> options =
-            vote.getOptions().stream()
-                    .map(option -> {
+            vote.getOptions().stream().map(option -> {
 
-                        int optionId = option.getId();
+                int optionId = option.getId();
 
-                        // 🔥 실시간 집계 (핵심)
-                        int optionPool =
-                                voteUserRepository.sumPointsByOptionId(optionId);
+                long totalPool =
+                        voteUserRepository.sumPointsByOptionId(optionId);
 
-                        int participants =
-                                voteUserRepository.countParticipantsByOptionId(optionId);
+                // 🔥 정답 choice 풀
+                VoteOptionChoiceEntity correctChoice =
+                        option.getCorrectChoice();
 
-                        double odds = calcDisplayOdds(
-                                optionPool,
-                                participants,
-                                feeRate,
-                                baseBet
-                        );
+                long winnerPool =
+                        (correctChoice != null)
+                                ? voteUserRepository.sumPointsByChoiceId(correctChoice.getId())
+                                : 0;
 
-                        return OddsResponse.OptionOdds.builder()
-                                .optionId(optionId)
-                                .optionTitle(option.getOptionTitle())
-                                .optionPool(optionPool)
-                                .participantsCount(participants)
-                                .odds(odds)
-                                .build();
-                    })
-                    .toList();
+                double odds;
+
+                if (totalPool <= 0 || winnerPool <= 0) {
+                    odds = 1.0;
+                } else {
+                    odds = (double) totalPool / winnerPool;
+                }
+
+                odds = odds * (1.0 - feeRate);
+                odds = Math.min(MAX_ODDS, Math.max(1.0, round(odds)));
+
+                return OddsResponse.OptionOdds.builder()
+                        .optionId(optionId)
+                        .optionTitle(option.getOptionTitle())
+                        .optionPool((int) totalPool)
+                        .participantsCount(option.getParticipantsCount())
+                        .odds(odds)
+                        .build();
+
+            }).toList();
 
     return OddsResponse.builder()
             .voteId(vote.getId())
@@ -74,131 +95,104 @@ public OddsResponse getCurrentOdds(Integer voteId) {
             .build();
 }
 
-
     /* =====================================================
-       🔹 예상 배당률 (유저 베팅 시뮬레이션)
+       🔹 예상 배당률 (베팅 직전 시뮬레이션)
        ===================================================== */
     @Transactional(readOnly = true)
-public ExpectedOddsResponse getExpectedOdds(
-        Integer voteId,
-        Integer choiceId,
-        Integer pointsBet
-) {
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new VoteException("VOTE_NOT_FOUND", "Vote not found"));
+    public ExpectedOddsResponse getExpectedOdds(
+            Integer voteId,
+            Integer choiceId,
+            Integer pointsBet
+    ) {
+        if (pointsBet == null || pointsBet <= 0) {
+            return ExpectedOddsResponse.builder()
+                    .expectedOdds(1.0)
+                    .expectedReward(0)
+                    .build();
+        }
 
-    VoteOptionChoiceEntity choice = choiceRepository.findById(choiceId)
-            .orElseThrow(() -> new VoteException("CHOICE_NOT_FOUND", "Choice not found"));
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new VoteException("VOTE_NOT_FOUND", "Vote not found"));
 
-    VoteOptionEntity option = choice.getOption();
+        VoteOptionChoiceEntity choice = choiceRepository.findById(choiceId)
+                .orElseThrow(() -> new VoteException("CHOICE_NOT_FOUND", "Choice not found"));
 
-    if (!option.getVote().getId().equals(vote.getId())) {
-        throw new VoteException("INVALID_CHOICE", "Choice does not belong to vote");
-    }
+        VoteOptionEntity option = choice.getOption();
 
-    if (pointsBet == null || pointsBet <= 0) {
+        if (!option.getVote().getId().equals(vote.getId())) {
+            throw new VoteException("INVALID_CHOICE", "Choice does not belong to vote");
+        }
+
+        double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.10;
+
+        long optionPool =
+                voteUserRepository.sumPointsByOptionId(option.getId());
+
+        long choicePool =
+                voteUserRepository.sumPointsByChoiceId(choice.getId());
+
+        long newOptionPool = optionPool + pointsBet;
+        long newChoicePool = choicePool + pointsBet;
+
+        double rawOdds =
+    (double) newOptionPool / (newChoicePool + EPSILON);
+
+        rawOdds = rawOdds * (1.0 - feeRate);
+
+        double odds = Math.min(
+            MAX_ODDS,
+            Math.max(1.0, round(rawOdds))
+        );
+
+        odds = odds * (1.0 - feeRate);
+        odds = Math.max(1.0, round(odds));
+
+        int expectedReward =
+                (int) Math.floor(pointsBet * odds);
+
         return ExpectedOddsResponse.builder()
-                .expectedOdds(1.0)
-                .expectedReward(0)
+                .expectedOdds(odds)
+                .expectedReward(expectedReward)
                 .build();
     }
 
-    double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.1;
-
-    // 🔹 현재 풀 (DB 기준)
-    long optionPool =
-            option.getPointsTotal() != null ? option.getPointsTotal() : 0;
-
-    long choicePool =
-            choice.getPointsTotal() != null ? choice.getPointsTotal() : 0;
-
-    // 🔹 내가 베팅했을 때의 미래 상태
-    long newOptionPool = optionPool + pointsBet;
-    long newChoicePool = choicePool + pointsBet;
-
-    if (newChoicePool <= 0) {
-        return ExpectedOddsResponse.builder()
-                .expectedOdds(1.0)
-                .expectedReward(pointsBet)
-                .build();
-    }
-
-    long distributable =
-            (long) Math.floor(newOptionPool * (1.0 - feeRate));
-
-    double expectedOdds =
-            (double) distributable / newChoicePool;
-
-    if (expectedOdds < 1.0) expectedOdds = 1.0;
-
-    expectedOdds = round(expectedOdds);
-
-    int expectedReward =
-            (int) Math.floor(pointsBet * expectedOdds);
-
-    return ExpectedOddsResponse.builder()
-            .expectedOdds(expectedOdds)
-            .expectedReward(expectedReward)
-            .build();
-}
-
-
     /* =====================================================
-       🔹 옵션 배당률 표시용 (기본 bet 기준)
+       🔹 옵션 단위 배당률 (리스트/요약용)
        ===================================================== */
     @Transactional(readOnly = true)
-public double getOptionOddsForDisplay(
-        Integer voteId,
-        Integer optionId,
-        int baseBet
-) {
-    VoteEntity vote = voteRepository.findById(voteId)
-            .orElseThrow(() -> new RuntimeException("Vote not found"));
+    public double getOptionOddsForDisplay(
+            Integer voteId,
+            Integer optionId,
+            int baseBet
+    ) {
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new RuntimeException("Vote not found"));
 
-    VoteOptionEntity option = optionRepository.findById(optionId)
-            .orElseThrow(() -> new RuntimeException("Option not found"));
+        VoteOptionEntity option = optionRepository.findById(optionId)
+                .orElseThrow(() -> new RuntimeException("Option not found"));
 
-    double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.10;
+        double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.10;
 
-    long pool =
-            option.getPointsTotal() != null
-                    ? option.getPointsTotal()
-                    : 0;
+        long pool = option.getPointsTotal() != null ? option.getPointsTotal() : 0;
+        long participants = option.getParticipantsCount() != null ? option.getParticipantsCount() : 0;
 
-    long participants =
-            option.getParticipantsCount() != null
-                    ? option.getParticipantsCount()
-                    : 0;
+        if (participants <= 0 || pool <= 0) return 1.0;
 
-    if (participants <= 0 || pool <= 0) return 1.0;
+        long distributable =
+                (long) Math.floor(pool * (1.0 - feeRate));
 
-    long distributable =
-            (long) Math.floor(pool * (1.0 - feeRate));
+        if (baseBet <= 0) baseBet = 100;
 
-    if (baseBet <= 0) baseBet = 100;
+        double odds =
+                ((double) distributable / participants) / baseBet;
 
-    double odds =
-            ((double) distributable / participants) / baseBet;
+        return round(Math.max(1.0, odds));
+    }
 
-    return round(odds);
-}
-
-private double round(double v) {
-    return Math.round(v * 100.0) / 100.0;
-}
-
-private double calcDisplayOdds(
-        int pool,
-        int participants,
-        double feeRate,
-        int baseBet
-) {
-    if (pool <= 0 || participants <= 0) return 1.0;
-
-    double distributable = pool * (1.0 - feeRate);
-    double odds = (distributable / participants) / Math.max(baseBet, 1);
-
-    if (odds < 1.0) odds = 1.0;
-    return round(odds);
-}
+    /* =====================================================
+       🔹 Util
+       ===================================================== */
+    private double round(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
 }

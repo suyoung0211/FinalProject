@@ -120,10 +120,7 @@ export function VoteDetailPage({
         percent = ch.percent ?? 0;
 
         // ✅ optionId → odds
-        currentOdds =
-          data.odds?.odds?.find(
-            (o: any) => o.optionId === (opt.optionId ?? opt.id)
-          )?.odds ?? null;
+        currentOdds = ch.odds ?? null; // ✅ 핵심
         break;
       }
     }

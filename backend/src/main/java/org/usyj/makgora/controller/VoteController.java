@@ -130,6 +130,17 @@ public ResponseEntity<?> participateVote(
         );
     }
 
+    /** 🔥 특정 투표에서 내 참여 정보만 조회 */
+@GetMapping("/{voteId}/my")
+public ResponseEntity<MyParticipationResponse> getMyParticipation(
+        @PathVariable Integer voteId,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    return ResponseEntity.ok(
+            voteDetailService.getMyParticipationOnly(voteId, user.getId())
+    );
+}
+
     /* =====================================================
        5️⃣ 투표 생성
        ===================================================== */

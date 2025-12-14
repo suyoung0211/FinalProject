@@ -2,6 +2,8 @@ package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
@@ -161,10 +163,20 @@ public VoteDetailMainResponse participateVote(
             .option(option)
             .choice(choice)
             .pointsBet(req.getPoints())
+            // oddsAtBet:
+        // - 참여 시점의 예상 배당률 스냅샷
+        // - 이후 배당 변동과 무관
+        // - 정산은 최종 odds 기준
             .oddsAtBet(expected.getExpectedOdds())
             .build();
 
+    try {
     voteUserRepository.save(voteUser);
+} catch (DataIntegrityViolationException e) {
+    log.warn("[VoteService] duplicate vote detected voteId={}, userId={}",
+            voteId, userId);
+    throw new VoteException("ALREADY_VOTED", "이미 참여한 투표입니다.");
+}
 
     int betPoints = req.getPoints();
 

@@ -29,6 +29,8 @@ public class VoteDetailService {
     private final ArticleAiTitleRepository aiTitleRepository;
     private final OddsService oddsService;
 
+    private static final double MAX_ODDS = 10.0;
+
     /* =======================================================
      * Main Entry
      * ======================================================= */
@@ -214,8 +216,17 @@ public class VoteDetailService {
                         e -> (long) e.getValue().size()
                 ));
 
-        double optionOdds =
-        optionOddsMap.getOrDefault(opt.getId().longValue(), 1.0);
+        final double optionOdds = Math.max(
+        1.0,
+        Math.min(
+                MAX_ODDS,
+                opt.getVote().getStatus() == VoteEntity.Status.REWARDED
+                        ? (opt.getOdds() != null ? opt.getOdds() : 1.0)
+                        : optionOddsMap.getOrDefault(opt.getId().longValue(), 1.0)
+        )
+);
+
+        double feeRate = Optional.ofNullable(opt.getVote().getFeeRate()).orElse(0.0);
 
         List<VoteDetailChoiceResponse> choices = opt.getChoices().stream().map(c -> {
 
@@ -227,6 +238,18 @@ public class VoteDetailService {
             double percent = totalParticipants == 0
                     ? 0.0
                     : Math.round(cParticipants * 1000.0 / totalParticipants) / 10.0;
+        
+                // ✅ 🔥 여기서 choiceOdds 계산
+    final double choiceOdds =
+            cPoints > 0
+                    ? Math.min(
+                          MAX_ODDS,
+                          Math.max(
+                              1.0,
+                              (double) totalPoints * (1.0 - feeRate) / cPoints
+                          )
+                      )
+                    : MAX_ODDS;
 
             return VoteDetailChoiceResponse.builder()
                     .choiceId(c.getId().intValue())
@@ -235,7 +258,7 @@ public class VoteDetailService {
                     .pointsTotal(cPoints)
                     .percent(percent)
                     .marketShare(percent)
-                    .odds(optionOdds) // ✅ ONGOING에서도 실시간 odds 주입
+                    .odds(choiceOdds) // ✅ ONGOING에서도 실시간 odds 주입
                     .isMyChoice(myChoiceId != null && myChoiceId.equals(c.getId().intValue()))
                     .isCorrect(null)
                     .build();

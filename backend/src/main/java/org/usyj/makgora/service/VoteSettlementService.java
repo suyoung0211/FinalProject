@@ -22,6 +22,8 @@ public class VoteSettlementService {
     private final UserRepository userRepository;
     private final VoteStatusHistoryService historyService;
 
+    private static final double MAX_ODDS = 10.0;
+
     /* ============================================================
        1) 정답 확정 (FINISHED → RESOLVED)
        ============================================================ */
@@ -30,7 +32,6 @@ public class VoteSettlementService {
             Integer voteId,
             VoteDetailResolveRequest req
     ) {
-
         VoteEntity vote = voteRepository.findById(voteId)
                 .orElseThrow(() -> new RuntimeException("Vote not found"));
 
@@ -59,20 +60,18 @@ public class VoteSettlementService {
                     option.getChoices().stream()
                             .filter(c -> c.getId().equals(ans.getChoiceId()))
                             .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Choice not found in option"));
+                            .orElseThrow(() -> new RuntimeException("Choice not found"));
 
-            // 🔥 정답 저장 + 영속화
             option.setCorrectChoice(correctChoice);
             optionRepository.save(option);
         }
 
         vote.setStatus(VoteEntity.Status.RESOLVED);
         vote.setUpdatedAt(LocalDateTime.now());
-
         voteRepository.save(vote);
         historyService.recordStatus(vote, VoteEntity.Status.RESOLVED);
 
-        return computePreviewMultiple(vote);
+        return previewSettlement(vote);
     }
 
     /* ============================================================
@@ -84,9 +83,7 @@ public class VoteSettlementService {
             VoteDetailResolveRequest req
     ) {
         finished(voteId, req);
-        return settleMultipleByDb(
-                voteRepository.findById(voteId).orElseThrow()
-        );
+        return settle(voteId);
     }
 
     /* ============================================================
@@ -102,78 +99,27 @@ public class VoteSettlementService {
             throw new RuntimeException("정산 불가한 상태입니다.");
         }
 
-        return settleMultipleByDb(vote);
+        return executeSettlement(vote, true);
     }
 
     /* ============================================================
-       4) 옵션별 정산 미리보기 (실제 정산과 동일 로직)
+       4) 정산 미리보기 (DB 반영 없음)
        ============================================================ */
-    private VoteDetailSettlementResponse computePreviewMultiple(VoteEntity vote) {
+    private VoteDetailSettlementResponse previewSettlement(VoteEntity vote) {
+        return executeSettlement(vote, false);
+    }
 
-        double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
-
-        List<VoteDetailSettlementResponse.OptionSettlementResult> results =
-                new ArrayList<>();
+    /* ============================================================
+       5) 정산 공통 로직 (preview / execute)
+       ============================================================ */
+    private VoteDetailSettlementResponse executeSettlement(
+            VoteEntity vote,
+            boolean applyResult
+    ) {
+        double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.0;
 
         List<VoteUserEntity> allBets =
                 voteUserRepository.findByVoteId(vote.getId());
-
-        for (VoteOptionEntity option : vote.getOptions()) {
-
-            VoteOptionChoiceEntity correct = option.getCorrectChoice();
-            if (correct == null) continue;
-
-            List<VoteUserEntity> optionBets =
-                    allBets.stream()
-                            .filter(v -> v.getOption().getId().equals(option.getId()))
-                            .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
-                            .toList();
-
-            List<VoteUserEntity> winners =
-                    optionBets.stream()
-                            .filter(v -> v.getChoice().getId().equals(correct.getId()))
-                            .toList();
-
-            int optionPool = optionBets.stream()
-                    .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                    .sum();
-
-            int winnerPool = winners.stream()
-                    .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                    .sum();
-
-            double odds =
-                    (optionPool > 0 && winnerPool > 0)
-                            ? round(((double) optionPool / winnerPool) * (1 - feeRate))
-                            : 0.0;
-
-            results.add(
-                    VoteDetailSettlementResponse.OptionSettlementResult.builder()
-                            .optionId(option.getId())
-                            .correctChoiceId(correct.getId())
-                            .odds(odds)
-                            .optionPool(optionPool)
-                            .winnerPool(winnerPool)
-                            .winnerCount(winners.size())
-                            .distributedSum(0)
-                            .build()
-            );
-        }
-
-        return VoteDetailSettlementResponse.builder()
-                .voteId(vote.getId())
-                .totalDistributed(0)
-                .totalWinnerCount(0)
-                .options(results)
-                .build();
-    }
-
-    /* ============================================================
-       5) 실제 정산 (옵션 기준)
-       ============================================================ */
-    private VoteDetailSettlementResponse settleMultipleByDb(VoteEntity vote) {
-
-        double feeRate = vote.getFeeRate() == null ? 0.0 : vote.getFeeRate();
 
         int totalDistributed = 0;
         int totalWinnerCount = 0;
@@ -181,9 +127,6 @@ public class VoteSettlementService {
         List<VoteDetailSettlementResponse.OptionSettlementResult> results =
                 new ArrayList<>();
 
-        List<VoteUserEntity> allBets =
-                voteUserRepository.findByVoteId(vote.getId());
-
         for (VoteOptionEntity option : vote.getOptions()) {
 
             VoteOptionChoiceEntity correct = option.getCorrectChoice();
@@ -208,49 +151,57 @@ public class VoteSettlementService {
                     .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
                     .sum();
 
-            double odds =
-                    (optionPool > 0 && winnerPool > 0)
-                            ? round(((double) optionPool / winnerPool) * (1 - feeRate))
-                            : 0.0;
+            int distributablePool =
+                    (int) Math.floor(optionPool * (1.0 - feeRate));
 
-            // 🔥 옵션에 최종 odds 저장
-            option.setOdds(odds);
-            optionRepository.save(option);
+            double rawOdds =
+            winnerPool > 0
+                ? (double) distributablePool / winnerPool
+                : 0.0;
+
+                double odds = Math.min(MAX_ODDS, round(rawOdds));
 
             int distributedSum = 0;
 
-            // 🔥 승자 정산
-            for (VoteUserEntity vu : winners) {
+            if (applyResult && winnerPool > 0) {
 
-                int bet = vu.getPointsBet() == null ? 0 : vu.getPointsBet();
-                int reward = (int) Math.floor(bet * odds);
+                // 🔥 FINAL 배당률 스냅샷
+                option.setOdds(odds);
+                optionRepository.save(option);
 
-                UserEntity user = vu.getUser();
-                user.setPoints(user.getPoints() + reward);
+                for (VoteUserEntity vu : winners) {
 
-                if (user.getLevel() == null) user.setLevel(1);
-                else user.setLevel(user.getLevel() + 1);
+                    int bet = vu.getPointsBet();
+                    int reward = (int) Math.floor(bet * odds);
 
-                userRepository.save(user);
+                    distributedSum += reward;
 
-                // 🔥 VoteUser 정산 기록
-                vu.setRewardPoints(reward);
-                vu.setUpdatedAt(LocalDateTime.now());
-                voteUserRepository.save(vu);
+                    UserEntity user = vu.getUser();
+                    user.setPoints(user.getPoints() + reward);
+                    user.setLevel(user.getLevel() == null ? 1 : user.getLevel() + 1);
+                    userRepository.save(user);
 
-                distributedSum += reward;
-            }
-
-            // 🔥 패자 기록
-            for (VoteUserEntity vu : optionBets) {
-                if (!winners.contains(vu)) {
-                    vu.setRewardPoints(0);
+                    vu.setRewardPoints(reward);
+                    vu.setUpdatedAt(LocalDateTime.now());
                     voteUserRepository.save(vu);
                 }
-            }
 
-            totalDistributed += distributedSum;
-            totalWinnerCount += winners.size();
+                // 패자 기록
+                for (VoteUserEntity vu : optionBets) {
+                    if (!winners.contains(vu)) {
+                        vu.setRewardPoints(0);
+                        voteUserRepository.save(vu);
+                    }
+                }
+
+                // 🔒 안전장치
+                if (distributedSum > distributablePool) {
+                    throw new IllegalStateException("정산 분배 초과 발생");
+                }
+
+                totalDistributed += distributedSum;
+                totalWinnerCount += winners.size();
+            }
 
             results.add(
                     VoteDetailSettlementResponse.OptionSettlementResult.builder()
@@ -265,10 +216,12 @@ public class VoteSettlementService {
             );
         }
 
-        vote.setRewarded(true);
-        vote.setStatus(VoteEntity.Status.REWARDED);
-        voteRepository.save(vote);
-        historyService.recordStatus(vote, VoteEntity.Status.REWARDED);
+        if (applyResult) {
+            vote.setRewarded(true);
+            vote.setStatus(VoteEntity.Status.REWARDED);
+            voteRepository.save(vote);
+            historyService.recordStatus(vote, VoteEntity.Status.REWARDED);
+        }
 
         return VoteDetailSettlementResponse.builder()
                 .voteId(vote.getId())
