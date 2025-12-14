@@ -30,4 +30,4 @@ EXPOSE 5001
 # ==========================
 # 6️⃣ 실행 명령
 # ==========================
-CMD ["sh", "-c", "python generateIssueCard.py"]
+CMD ["python", "generateIssueCard.py"]
