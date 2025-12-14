@@ -683,25 +683,25 @@ def create_redis_client():
     port = int(REDIS_PORT) if REDIS_PORT else 6379
     pwd = REDIS_PASSWORD
 
-    # 🔥 비밀번호 없으면 password 제거
+    # Redis 객체 생성
     if pwd is None or pwd.strip() == "":
         print("[REDIS] 로컬 모드 — 비밀번호 없이 접속")
-        return redis.Redis(
-            host=host,
-            port=port,
-            db=0,
-            decode_responses=True
-        )
-    
-    # 🔥 비밀번호가 있을 때만 password 인자 사용
-    print("[REDIS] 배포 모드 — 비밀번호 인증 접속")
-    return redis.Redis(
-        host=host,
-        port=port,
-        password=pwd,
-        db=0,
-        decode_responses=True
-    )
+        r = redis.Redis(host=host, port=port, db=0, decode_responses=True)
+    else:
+        print("[REDIS] 배포 모드 — 비밀번호 인증 접속")
+        r = redis.Redis(host=host, port=port, password=pwd, db=0, decode_responses=True)
+
+    # 🔹 연결 테스트
+    try:
+        pong = r.ping()
+        if pong:
+            print(f"[REDIS] 연결 성공 — {host}:{port}")
+        else:
+            print(f"[REDIS] 연결 실패 — {host}:{port} (PING 응답 없음)")
+    except Exception as e:
+        print(f"[REDIS] 연결 오류: {e}")
+
+    return r
 
 r = create_redis_client()
 QUEUE = "ISSUE_TRIGGER_QUEUE"
