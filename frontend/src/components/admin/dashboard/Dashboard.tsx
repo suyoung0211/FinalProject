@@ -58,7 +58,11 @@ export function Dashboard() {
     | { type: "EDIT_USER"; user: any }
     | { type: null };
 
-  
+  const resolveImage = (path?: string | null) => {
+    if (!path) return "";
+    if (path.startsWith("http")) return path;
+    return `http://localhost:8080/${path}`;
+  };
 
   const openModal = (type: ModalType["type"], user?: any) => {
     if (modal.type) return; // 관리자 모달 열려있으면 무시
@@ -205,10 +209,14 @@ export function Dashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden">
-                          {user.avatarType && user.avatarVariant ? (
-                            <Avatar type={user.avatarType} variant={user.avatarVariant} size={40} />
+                          {user.avatarIcon ? (
+                            <ProfileAvatar
+                              avatarUrl={resolveImage(user.avatarIcon)}
+                              frameUrl={resolveImage(user.profileFrame)}
+                              size={40} // 기존 Avatar size 맞추기
+                            />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full" />
                           )}
                         </div>
                         <div>
