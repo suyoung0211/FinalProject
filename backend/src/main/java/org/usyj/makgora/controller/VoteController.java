@@ -46,14 +46,6 @@ public class VoteController {
        2️⃣ 배당 관련
        ===================================================== */
 
-    /** 🔥 현재 배당 */
-    @GetMapping("/{voteId}/odds")
-    public OddsResponse getCurrentOdds(
-            @PathVariable Integer voteId
-    ) {
-        return oddsService.getCurrentOdds(voteId);
-    }
-
     @GetMapping("/{voteId}/expected-odds")
 public ResponseEntity<ExpectedOddsResponse> getExpectedOdds(
         @PathVariable Integer voteId,
@@ -62,6 +54,16 @@ public ResponseEntity<ExpectedOddsResponse> getExpectedOdds(
 ) {
     return ResponseEntity.ok(
             oddsService.getExpectedOdds(voteId, choiceId, amount)
+    );
+}
+
+/** 🔥 현재 옵션별 배당률 조회 */
+@GetMapping("/{voteId}/odds")
+public ResponseEntity<OddsResponse> getCurrentOdds(
+        @PathVariable Integer voteId
+) {
+    return ResponseEntity.ok(
+            oddsService.getCurrentOdds(voteId)
     );
 }
 

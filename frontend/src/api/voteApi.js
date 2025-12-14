@@ -8,10 +8,6 @@ import api from "./api";
 export const fetchVoteDetail = (voteId) =>
   api.get(`/votes/${voteId}`);
 
-// 🔹 배당률 조회
-export const fetchVoteOdds = (voteId) =>
-  api.get(`/votes/${voteId}/odds`);
-
 // 🔹 투표 리스트 조회
 export const fetchVoteList = () =>
   api.get(`/votes`);
@@ -20,6 +16,10 @@ export const fetchExpectedOdds = (voteId, choiceId, amount) =>
   api.get(`/votes/${voteId}/expected-odds`, {
     params: { choiceId, amount },
   });
+
+  // 🔹 옵션별 현재 배당률 조회
+export const fetchVoteOdds = (voteId) =>
+  api.get(`/votes/${voteId}/odds`);
 
 /* ==========================================================
  *  2) 참여 관련

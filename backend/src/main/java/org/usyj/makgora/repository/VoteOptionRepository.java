@@ -1,6 +1,7 @@
 package org.usyj.makgora.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,5 +17,6 @@ public interface VoteOptionRepository extends JpaRepository<VoteOptionEntity, In
 
 @Query("SELECT o FROM VoteOptionEntity o LEFT JOIN FETCH o.choices WHERE o.vote.id = :voteId")
 List<VoteOptionEntity> findAllWithChoicesByVoteId(Long voteId);
+
 }
 
