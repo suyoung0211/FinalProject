@@ -107,7 +107,7 @@ export function Dashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Users className="w-8 h-8 text-blue-400" />
-            <span className="text-green-400 text-sm font-medium">+42</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">{users.length.toLocaleString()}</div>
           <div className="text-sm text-gray-400">전체 회원</div>
@@ -115,7 +115,7 @@ export function Dashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <DollarSign className="w-8 h-8 text-yellow-400" />
-            <span className="text-green-400 text-sm font-medium">+45K</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">
             {users
@@ -128,15 +128,15 @@ export function Dashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <TrendingUp className="w-8 h-8 text-purple-400" />
-            <span className="text-green-400 text-sm font-medium">+12</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">156</div>
+          <div className="text-3xl font-bold text-white mb-1"></div>
           <div className="text-sm text-gray-400">활성 마켓</div>
         </div>
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <MessageSquare className="w-8 h-8 text-pink-400" />
-            <span className="text-green-400 text-sm font-medium">+89</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">{users.filter(u => u.posts).length}</div>
           <div className="text-sm text-gray-400">커뮤니티 글</div>
