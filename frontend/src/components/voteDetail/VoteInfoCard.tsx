@@ -138,9 +138,9 @@ export function VoteInfoCard({
                     : 0;
 
                   const currentOdds =
-                    data.odds?.odds?.find(
-                      (o: any) => o.choiceId === choiceId
-                    )?.odds ?? null;
+                  data.odds?.odds?.find(
+                  (o: any) => o.optionId === optionId
+                  )?.odds ?? null;
 
                   return (
                     <label

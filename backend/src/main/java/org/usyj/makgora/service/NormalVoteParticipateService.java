@@ -31,7 +31,7 @@ public class NormalVoteParticipateService {
         NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
                 .orElseThrow(() -> new RuntimeException("Choice not found"));
 
-        if (!choice.getNormalOption().getNormalVote().getId().equals(normalVoteId)) {
+        if (!choice.getNormalOption().getNormalVote().getId().equals(normalVoteId.longValue())) {
             throw new RuntimeException("해당 선택지는 이 투표에 속하지 않습니다.");
         }
 

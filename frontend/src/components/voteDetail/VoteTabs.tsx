@@ -37,16 +37,27 @@ export function VoteTabs({
           isAIVote ? (
             <>
               {/* 🔥 배당률 테이블 */}
-              <div className="mb-4 bg-white/5 p-4 rounded-xl border border-white/10">
-                {data.odds?.odds?.map((o: any) => (
-                  <div key={o.choiceId} className="flex justify-between py-1 text-gray-200">
-                    <span>{o.text}</span>
-                    <span className="text-green-300 font-semibold">
-                      x{o.odds?.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* 🔥 배당률 테이블 */}
+<div className="mb-4 bg-white/5 p-4 rounded-xl border border-white/10">
+  {data.odds?.odds?.map((o: any) => {
+    const opt = data.options?.find(
+      (op: any) => (op.optionId ?? op.id) === o.optionId
+    );
+
+    return (
+      <div
+        key={o.optionId}
+        className="flex justify-between py-1 text-gray-200"
+      >
+        <span>{opt?.optionTitle ?? "옵션"}</span>
+        <span className="text-green-300 font-semibold">
+          x{o.odds?.toFixed(2)}
+        </span>
+      </div>
+    );
+  })}
+</div>
+
 
               {/* 기존 차트 */}
               <ChartAI chartData={chartData} data={data} />
@@ -74,16 +85,20 @@ function ChartAI({ chartData, data }: any) {
     );
   }
 
-  const choices = data.odds.odds;
-
+  const options = data.options ?? [];
   let finalData = chartData;
 
   // chartData 없으면 현재 배당률로 단일 데이터 생성
   if (!chartData || chartData.length === 0) {
     const single: Record<string, number> = { count: 1 };
 
-    choices.forEach((c: any) => {
-      single[c.text] = c.odds ?? 1.0;
+    options.forEach((opt: any) => {
+      const odds =
+        data.odds.odds.find(
+          (o: any) => o.optionId === (opt.optionId ?? opt.id)
+        )?.odds ?? 1.0;
+
+      single[opt.optionTitle] = odds;
     });
 
     finalData = [single];
@@ -93,18 +108,16 @@ function ChartAI({ chartData, data }: any) {
     <div className="h-64 mb-6">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={finalData}>
-          <XAxis dataKey="count" stroke="#aaa" label={{ value: "투표자 수", dy: 10 }} />
-          <YAxis stroke="#aaa" label={{ value: "배당률", angle: -90, dx: -10 }} />
+          <XAxis dataKey="count" stroke="#aaa" />
+          <YAxis stroke="#aaa" />
           <Tooltip />
 
-          {/* 🔥 choiceId를 key로 사용 => 절대 중복되지 않음 */}
-          {choices.map((c: any, idx: number) => (
+          {options.map((opt: any, idx: number) => (
             <Area
-              key={c.choiceId}
+              key={opt.optionId}
               type="monotone"
-              dataKey={c.text}
+              dataKey={opt.optionTitle}
               stroke={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
-              strokeWidth={2}
               fillOpacity={0.2}
               fill={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
             />

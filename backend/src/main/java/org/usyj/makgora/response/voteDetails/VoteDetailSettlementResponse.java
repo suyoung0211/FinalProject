@@ -21,12 +21,12 @@ public class VoteDetailSettlementResponse {
     @Setter
     @Builder
     public static class OptionSettlementResult {
-        private Long optionId;
-        private Long correctChoiceId;
+        private Integer optionId;
+        private Integer correctChoiceId;
         private Double odds;
-        private Integer optionPool;
-        private Integer winnerPool;
-        private Integer winnerCount;
-        private Integer distributedSum;
+        private int optionPool;
+        private int winnerPool;
+        private int winnerCount;
+        private int distributedSum;
     }
 }

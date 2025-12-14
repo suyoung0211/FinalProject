@@ -1,18 +1,34 @@
+// src/components/voteDetail/UnifiedSidebar.tsx
+
 export function UnifiedSidebar({
   isAIVote,
   data,
   selectedAmount,
   setSelectedAmount,
-  setShowVoteModal,
+  openVoteModal,
   handleParticipateNormal,
 }: any) {
-
   const safeOptions = data?.options ?? [];
   const myParticipation = data?.myParticipation;
 
-  /* ---------------------------------------------------------------
-      공통 라벨 정규화
-  --------------------------------------------------------------- */
+  const isFinished =
+    data?.status === "RESOLVED" || data?.status === "REWARDED";
+
+  /* ===============================================================
+     1️⃣ Option 기준 odds 맵
+     =============================================================== */
+  const optionOddsMap: Record<number, number> = {};
+
+  (data?.odds?.odds ?? []).forEach((o: any) => {
+    const optionId = Number(o.optionId);
+    if (!Number.isNaN(optionId) && typeof o.odds === "number") {
+      optionOddsMap[optionId] = o.odds;
+    }
+  });
+
+  /* ===============================================================
+     2️⃣ 라벨 정규화
+     =============================================================== */
   function normalizeLabel(label: any): "YES" | "NO" | "DRAW" | "UNKNOWN" {
     if (!label) return "UNKNOWN";
     const upper = String(label).toUpperCase();
@@ -22,107 +38,109 @@ export function UnifiedSidebar({
     return "UNKNOWN";
   }
 
-  /* ---------------------------------------------------------------
-      YES / NO / DRAW 통계 계산 (AI + NORMAL 공용)
-  --------------------------------------------------------------- */
+  /* ===============================================================
+     3️⃣ 옵션 가공 (🔥 핵심 로직)
+     =============================================================== */
   const processedOptions = safeOptions.map((opt: any) => {
-    const normalizedChoices = opt.choices.map((c: any) => ({
-      ...c,
-      label: c.choiceText ?? c.text ?? "",
-      normalized: normalizeLabel(c.choiceText ?? c.text),
-      finalChoiceId: c.choiceId ?? c.id,
-    }));
+    const optionId = Number(opt.optionId ?? opt.id);
+    const correctChoiceId = opt.correctChoiceId ?? null;
 
+    // 🔥 배당률 우선순위 (중요)
+    const optionOdds =
+      optionOddsMap[optionId] ??
+      data?.odds?.odds?.find((o: any) => o.optionId === optionId)?.odds ??
+      opt.odds ??
+      1.0;
+
+    // --- choice 정규화 ---
+    const normalizedChoices = (opt.choices ?? []).map((c: any) => {
+      const finalChoiceId = Number(c.choiceId ?? c.id);
+
+      return {
+        ...c,
+        finalChoiceId,
+        label: c.choiceText ?? c.text ?? "",
+        normalized: normalizeLabel(c.choiceText ?? c.text),
+        isCorrect: isFinished && correctChoiceId === finalChoiceId,
+
+        // ✅ 표시용 odds 주입
+        odds: optionOdds,
+
+        participantsCount: Number(c.participantsCount ?? 0),
+      };
+    });
+
+    // --- option 내부 total 기준 ---
+    const total = normalizedChoices.reduce(
+      (sum: number, c: any) => sum + c.participantsCount,
+      0
+    );
+
+    normalizedChoices.forEach((c: any) => {
+      c.percent = total
+        ? Math.round((c.participantsCount / total) * 100)
+        : 0;
+    });
+
+    // --- YES / NO / DRAW ---
     const yes = normalizedChoices
       .filter((c: any) => c.normalized === "YES")
-      .reduce((acc: number, c: any) => acc + (c.participantsCount ?? 0), 0);
+      .reduce((a: number, c: any) => a + c.participantsCount, 0);
 
     const no = normalizedChoices
       .filter((c: any) => c.normalized === "NO")
-      .reduce((acc: number, c: any) => acc + (c.participantsCount ?? 0), 0);
+      .reduce((a: number, c: any) => a + c.participantsCount, 0);
 
     const draw = normalizedChoices
       .filter((c: any) => c.normalized === "DRAW")
-      .reduce((acc: number, c: any) => acc + (c.participantsCount ?? 0), 0);
-
-    const total = yes + no + draw;
-
-    normalizedChoices.forEach((c: any) => {
-      c.percent = total ? Math.round((c.participantsCount / total) * 100) : 0;
-    });
+      .reduce((a: number, c: any) => a + c.participantsCount, 0);
 
     return {
       ...opt,
-      optionId: opt.optionId ?? opt.id,
+      optionId,
+      optionTitle: opt.optionTitle ?? opt.title,
       choices: normalizedChoices,
-      optionTitle: opt.title ?? opt.optionTitle,
-      yes,
-      no,
-      draw,
+
       yesP: total ? Math.round((yes / total) * 100) : 0,
       noP: total ? Math.round((no / total) * 100) : 0,
-      drawP: total
-        ? 100 - Math.round((yes / total) * 100) - Math.round((no / total) * 100)
-        : 0,
+      drawP:
+        total && draw > 0
+          ? 100 -
+            Math.round((yes / total) * 100) -
+            Math.round((no / total) * 100)
+          : 0,
     };
   });
 
-  // 🔥 디버그 로그
-  console.log("🔥 processedOptions:", processedOptions);
-  console.log("🔥 myParticipation:", myParticipation);
+  /* ===============================================================
+     4️⃣ 내 선택
+     =============================================================== */
+  let myChoice: any = null;
 
-  /* ---------------------------------------------------------------
-      내가 참여한 선택지 찾기 (Fallback 포함)
-  --------------------------------------------------------------- */
-
-  let myChoice = null;
-
-  // 1) choiceId 기반 1차 매칭
   if (myParticipation?.choiceId) {
-    const allChoices = processedOptions.flatMap((opt: any) => opt.choices);
-
+    const allChoices = processedOptions.flatMap((o: any) => o.choices);
     myChoice = allChoices.find(
-      (c: any) => (c.choiceId ?? c.id) === myParticipation.choiceId
+      (c: any) => c.finalChoiceId === myParticipation.choiceId
     );
   }
 
-  // 2) fallback: label(Text) 매칭
-  if (!myChoice && myParticipation?.choiceText) {
-    const allChoices = processedOptions.flatMap((opt: any) => opt.choices);
+  const myOption = myChoice
+    ? processedOptions.find((o: any) =>
+        o.choices.some(
+          (c: any) => c.finalChoiceId === myChoice.finalChoiceId
+        )
+      )
+    : null;
 
-    myChoice = allChoices.find(
-      (c: any) => (c.choiceText ?? c.text) === myParticipation.choiceText
-    );
-  }
+  const myChoiceText = myChoice
+    ? `${myOption?.optionTitle ?? ""} - ${myChoice.label}`
+    : "(선택지 정보 없음)";
 
-  // 3) 최종 선택지 텍스트
-  // 선택한 선택지가 속한 옵션 제목 찾기
-let myOptionTitle = null;
-if (myChoice) {
-  const option = processedOptions.find((opt: any) =>
-    opt.choices.some((c: any) => c.finalChoiceId === myChoice.finalChoiceId)
-  );
-  myOptionTitle = option?.optionTitle ?? null;
-}
-
-// 최종 출력 텍스트 조합
-const myChoiceText = myOptionTitle
-  ? `${myOptionTitle} - ${myChoice?.label}`
-  : myChoice?.label ?? "(선택지 정보 없음)";
-
-  /* ---------------------------------------------------------------
-      RENDER
-  --------------------------------------------------------------- */
+  /* ===============================================================
+     5️⃣ RENDER
+     =============================================================== */
   return (
-    <div
-      className="
-      bg-white/5 border border-white/10 rounded-2xl 
-      p-4 space-y-4 
-      max-h-[calc(100vh-8rem)] 
-      overflow-y-auto
-    "
-    >
-      {/* 🔥 참여 완료 라벨 */}
+    <div className="relative bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
       {myParticipation?.hasParticipated && (
         <div className="absolute top-2 right-3 bg-green-600/70 text-white text-xs font-semibold px-2 py-1 rounded-md">
           참여 완료
@@ -133,24 +151,23 @@ const myChoiceText = myOptionTitle
         {isAIVote ? "포인트 배팅" : "설문 참여하기"}
       </h3>
 
-      {/* ---------------------------------------------------------------
-          옵션 + 선택지 버튼 리스트
-      --------------------------------------------------------------- */}
       {processedOptions.map((opt: any) => (
-        <div
-          key={opt.optionId}
-          className="bg-black/30 rounded-xl p-4 border border-white/10 mb-3"
-        >
-          <p className="text-white font-semibold mb-3">{opt.optionTitle}</p>
+        <div key={opt.optionId} className="bg-black/30 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-white font-semibold">{opt.optionTitle}</p>
+
+            <div className="text-xs text-gray-300 flex gap-2">
+              <span className="text-green-300">YES {opt.yesP}%</span>
+              <span className="text-red-300">NO {opt.noP}%</span>
+              {opt.drawP > 0 && (
+                <span className="text-gray-300">DRAW {opt.drawP}%</span>
+              )}
+            </div>
+          </div>
 
           {opt.choices.map((c: any) => {
-            const finalChoiceId = c.finalChoiceId;
-            const isSelected = myParticipation?.choiceId === finalChoiceId;
-
-            const isFinished =
-              data?.status === "FINISHED" ||
-              data?.status === "RESOLVED" ||
-              data?.status === "REWARDED";
+            const isSelected =
+              myParticipation?.choiceId === c.finalChoiceId;
 
             const color =
               c.normalized === "YES"
@@ -161,24 +178,26 @@ const myChoiceText = myOptionTitle
 
             return (
               <button
-                key={finalChoiceId}
+                key={c.finalChoiceId}
                 disabled={isFinished}
                 onClick={() =>
                   isAIVote
-                    ? setShowVoteModal(finalChoiceId)
-                    : handleParticipateNormal(finalChoiceId)
+                    ? openVoteModal(c.finalChoiceId)
+                    : handleParticipateNormal(c.finalChoiceId)
                 }
                 className={`
-                  w-full flex justify-between items-center rounded-lg px-3 py-3 mb-2 text-sm text-white
+                  w-full flex justify-between items-center
+                  rounded-lg px-3 py-3 mb-2 text-sm text-white
                   ${color}
-                  ${isSelected ? "ring-2 ring-yellow-400 scale-[1.02]" : ""}
-                  ${isFinished ? "opacity-40 cursor-not-allowed" : ""}
+                  ${isSelected ? "ring-2 ring-yellow-400" : ""}
+                  ${c.isCorrect ? "ring-2 ring-green-400" : ""}
+                  ${isFinished ? "opacity-50 cursor-not-allowed" : ""}
                 `}
               >
                 <span>{c.label}</span>
 
-                {isAIVote && c.odds && (
-                  <span className="text-xs opacity-80 mr-2">
+                {isAIVote && (
+                  <span className="text-xs opacity-80">
                     {c.odds.toFixed(2)}x
                   </span>
                 )}
@@ -189,38 +208,22 @@ const myChoiceText = myOptionTitle
               </button>
             );
           })}
-
-          {/* Progress Bar */}
-          <div className="mt-4 mb-1 text-white font-semibold text-sm opacity-80">
-            {opt.optionTitle}
-          </div>
-
-          <div className="w-full h-3 rounded-full overflow-hidden flex bg-white/10">
-            <div style={{ width: `${opt.yesP}%`, background: "#22c55e" }} />
-            <div style={{ width: `${opt.drawP}%`, background: "#9ca3af" }} />
-            <div style={{ width: `${opt.noP}%`, background: "#ef4444" }} />
-          </div>
         </div>
       ))}
 
-      {/* ---------------------------------------------------------------
-          AI Vote 금액 UI
-      --------------------------------------------------------------- */}
-      {isAIVote && (
+      {/* 포인트 선택 */}
+      {isAIVote && !myParticipation?.hasParticipated && !isFinished && (
         <>
-          <div className="grid grid-cols-3 gap-2 mt-3">
+          <div className="grid grid-cols-3 gap-2 mt-2">
             {[50, 100, 250, 500, 1000].map((amt) => (
               <button
                 key={amt}
                 onClick={() => setSelectedAmount(amt)}
-                className={`
-                  p-2 rounded-lg
-                  ${
-                    selectedAmount === amt
-                      ? "bg-purple-600 text-white"
-                      : "bg-white/10 text-gray-300"
-                  }
-                `}
+                className={`p-2 rounded-lg text-sm ${
+                  selectedAmount === amt
+                    ? "bg-purple-600 text-white"
+                    : "bg-white/10 text-gray-300"
+                }`}
               >
                 {amt}pt
               </button>
@@ -229,47 +232,26 @@ const myChoiceText = myOptionTitle
 
           <input
             type="number"
+            min={1}
             value={selectedAmount}
-            onChange={(e) =>
-              setSelectedAmount(Number(e.target.value) || 0)
-            }
-            className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-white mt-2"
+            onChange={(e) => setSelectedAmount(Number(e.target.value) || 0)}
+            className="w-full bg-white/5 border border-white/20 rounded-lg p-2 text-white"
+            placeholder="직접 입력"
           />
-
-          {/* 내가 참여한 경우 info box */}
-          {myParticipation?.hasParticipated && (
-            <div className="mt-4 bg-purple-600/20 border border-purple-400/30 rounded-lg p-3 text-white">
-              <div className="font-semibold mb-1 text-sm">내 참여 정보</div>
-
-              <div className="text-sm opacity-90">
-                선택:{" "}
-                <span className="font-bold text-purple-300">
-                  {myChoiceText}
-                </span>
-              </div>
-
-              <div className="text-sm opacity-90 mt-1">
-                배팅:{" "}
-                <span className="font-bold text-purple-300">
-                  {myParticipation.pointsBet?.toLocaleString()} pt
-                </span>
-              </div>
-
-              {myParticipation.expectedOdds && (
-                <div className="text-sm opacity-90 mt-1">
-                  예상보상:{" "}
-                  <span className="font-bold text-green-300">
-                    {(
-                      myParticipation.pointsBet *
-                      myParticipation.expectedOdds
-                    ).toLocaleString()}{" "}
-                    pt
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </>
+      )}
+
+      {isAIVote && myParticipation?.hasParticipated && (
+        <div className="mt-4 bg-purple-600/20 border border-purple-400/30 rounded-lg p-3 text-white">
+          <div className="font-semibold mb-1 text-sm">내 참여 정보</div>
+          <div className="text-sm">
+            선택: <b>{myChoiceText}</b>
+          </div>
+          <div className="text-sm mt-1">
+            배팅:{" "}
+            <b>{myParticipation.pointsBet?.toLocaleString()} pt</b>
+          </div>
+        </div>
       )}
     </div>
   );

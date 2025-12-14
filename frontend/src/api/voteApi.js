@@ -8,18 +8,18 @@ import api from "./api";
 export const fetchVoteDetail = (voteId) =>
   api.get(`/votes/${voteId}`);
 
-// 🔹 전체 상세 정보 조회 (옵션, 차트, 댓글 포함)
-export const fetchVoteDetailFull = (voteId) =>
-  api.get(`/votes/${voteId}/detail`);
-
 // 🔹 배당률 조회
 export const fetchVoteOdds = (voteId) =>
   api.get(`/votes/${voteId}/odds`);
 
 // 🔹 투표 리스트 조회
 export const fetchVoteList = () =>
-  api.get(`/votes/list`);
+  api.get(`/votes`);
 
+export const fetchExpectedOdds = (voteId, choiceId, amount) =>
+  api.get(`/votes/${voteId}/expected-odds`, {
+    params: { choiceId, amount },
+  });
 
 /* ==========================================================
  *  2) 참여 관련
@@ -65,10 +65,6 @@ export const fetchVoteStatistics = () =>
 // 🔹 투표 종료
 export const finishVote = (voteId) =>
   api.patch(`/votes/${voteId}/finish`);
-
-// 🔹 정답 확정
-export const resolveVote = (voteId, choiceId) =>
-  api.patch(`/votes/${voteId}/resolve/${choiceId}`);
 
 // 🔹 보상 지급
 export const rewardVote = (voteId) =>
