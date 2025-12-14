@@ -9,24 +9,7 @@ import {
 } from "react";
 import { logoutApi, getMyInfoApi, refreshTokenApi } from "../api/authApi"; // refreshTokenApi 추가
 import { jwtDecode } from "jwt-decode"; // 액세스 토큰 디코딩용
-
-// --------------------------------------------------
-// 🔹 유저 정보 타입
-// --------------------------------------------------
-export interface UserType {
-  // ✅ Access Token에서 가져옴
-  id?: number;                // ✅추가 Access Token의 "id"
-  loginId?: string;           // 토큰에 있을 경우
-  nickname: string;
-  level: number;
-  points: number;
-  profileImage?: string;
-  profileBackground?: string;
-  avatarIcon?: string;        // 추가: 로그인 응답 기준
-  profileFrame?: string;
-  profileBadge?: string;
-  role: "USER" | "ADMIN" | "SUPER_ADMIN";
-}
+import { UserType } from "../types/UserType";
 
 // --------------------------------------------------
 // 🔹 AuthContext 타입 정의
@@ -78,12 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: decoded.id,                       // ✅ 토큰에 있는 id
         loginId: decoded.loginId,
         nickname: decoded.nickname || "",
-        role: decoded.role || "USER",
         level: decoded.level || 1,   // 임시값
         points: decoded.points || 0,  // 임시값
         avatarIcon: decoded.avatarIcon,
         profileFrame: decoded.profileFrame,
         profileBadge: decoded.profileBadge,
+        role: decoded.role || "USER",
       };
 
       setUser(baseUser);

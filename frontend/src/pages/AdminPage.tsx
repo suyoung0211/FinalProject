@@ -1,8 +1,11 @@
+// src/components/admin/AdminPage.tsx
 import { 
-  ArrowLeft, BarChart3, Rss, FileCheck, Vote, MessageSquare, 
-  ShoppingBag, FileText, Shield 
+  BarChart3, Rss, FileCheck, Vote, MessageSquare, 
+  ShoppingBag, FileText, Shield, 
+  ArrowLeft,
+  LogOut,
+  User
 } from 'lucide-react';
-import { AdminPageProps } from '../types';
 import { NavLink, Routes, Route, useNavigate } from 'react-router-dom';
 import { Dashboard } from '../components/admin/dashboard/Dashboard';
 import { RssFeeds } from '../components/admin/rssFedds/RssFeeds';
@@ -11,111 +14,42 @@ import { Votes } from '../components/admin/vote/Votes';
 import { Community } from '../components/admin/community/Community';
 import { Store } from '../components/admin/store/Store';
 import { Logs } from '../components/admin/log/Logs';
-import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { refreshTokenApi } from '../api/authApi';
+import { useState, useRef, useEffect } from 'react';
+import { logoutApi } from '../api/authApi';
 
-export function AdminPage({ onBack }: AdminPageProps) {
-  const { user, setUser, token, login, logout } = useAuth();
+
+
+export function AdminPage() {
+  const { user, setUser } = useAuth();
   const navigate = useNavigate();
-  const [roleChecked, setRoleChecked] = useState(false); // role 검사 완료 여부
 
-  // -------------------------------------------------
-  // ⭐ 액세스 토큰 기반 role 검사 + 페이지 방어 + 자동 갱신
-  // -------------------------------------------------
+  // 🔹 드롭다운 상태 및 ref
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 🔹 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
-    const checkRole = async () => {
-      let currentRole = user?.role;
-
-      const refreshAccessToken = async () => {
-        try {
-          // 서버에 refresh token 요청해서 access token 재발급
-          const res = await refreshTokenApi();
-          const newAccessToken = res.data.accessToken;
-
-          localStorage.setItem("accessToken", newAccessToken);
-          return newAccessToken;
-        } catch (err) {
-          console.error("액세스 토큰 갱신 실패", err);
-          logout(); // refresh 실패 시 로그아웃
-          navigate("/", { replace: true });
-          return null;
-        }
-      };
-
-      // 1️⃣ user state가 없거나 role이 없는 경우
-      if (!currentRole) {
-        let accessToken = token || localStorage.getItem("accessToken");
-
-        if (accessToken) {
-          try {
-            // 토큰 디코딩
-            const payloadBase64 = accessToken.split(".")[1];
-            const decoded = JSON.parse(atob(payloadBase64));
-
-            // 만료 확인 (exp: UNIX timestamp)
-            const now = Math.floor(Date.now() / 1000);
-            if (decoded.exp && decoded.exp < now) {
-              // 토큰 만료 → refresh token으로 재발급
-              const newToken = await refreshAccessToken();
-              if (!newToken) return; // 실패 시 return
-              accessToken = newToken;
-
-              // 재발급 토큰 디코딩
-              const newDecoded = JSON.parse(atob(newToken.split(".")[1]));
-              currentRole = newDecoded.role;
-
-              // user state 업데이트
-              setUser({
-                loginId: newDecoded.loginId,
-                nickname: newDecoded.nickname,
-                role: newDecoded.role,
-                level: newDecoded.level || 1,      // 기본값 1
-                points: newDecoded.points || 0,    // 기본값 0
-                avatarIcon: newDecoded.avatarIcon,
-                profileFrame: newDecoded.profileFrame,
-                profileBadge: newDecoded.profileBadge,
-              });
-            } else {
-              // 만료되지 않았으면 그대로 user 세팅
-              currentRole = decoded.role;
-              setUser({
-                loginId: decoded.loginId,
-                nickname: decoded.nickname,
-                role: decoded.role,
-                level: decoded.level || 1,      // 기본값 1
-                points: decoded.points || 0,    // 기본값 0
-                avatarIcon: decoded.avatarIcon,
-                profileFrame: decoded.profileFrame,
-                profileBadge: decoded.profileBadge,
-              });
-            }
-          } catch (err) {
-            console.error("AccessToken decode 실패", err);
-            logout();
-            navigate("/", { replace: true });
-            return;
-          }
-        } else {
-          // 토큰 자체가 없으면 홈으로
-          navigate("/", { replace: true });
-          return;
-        }
-      }
-
-      // 2️⃣ role 검사
-      if (currentRole !== "ADMIN" && currentRole !== "SUPER_ADMIN") {
-        navigate("/", { replace: true });
-      } else {
-        setRoleChecked(true); // role 검사 완료
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
       }
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    checkRole();
-  }, [user, token, setUser, navigate, logout]);
-
-  // role 검사 전까지 렌더링하지 않음
-  if (!roleChecked) return null;
+  // 🔹 로그아웃 함수
+  const logout = async () => {
+    try {
+      await logoutApi(); // 서버 로그아웃 & 쿠키 만료
+      localStorage.removeItem("accessToken"); // 액세스 토큰 삭제
+      setUser(null); // 유저 상태 초기화
+      navigate("/"); // 홈 이동
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+    }
+  };
 
   // -------------------------------------------------
   // 메뉴 아이템 정의
@@ -137,6 +71,7 @@ export function AdminPage({ onBack }: AdminPageProps) {
     <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
       {/* Sidebar */}
       <aside className="w-64 h-screen bg-slate-950/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
+
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
@@ -192,31 +127,62 @@ export function AdminPage({ onBack }: AdminPageProps) {
               </NavLink>
             );
           })}
-      </nav>
-              {/* 🔥 여기에 메인으로 가기 버튼 추가 */}
-  <button
-    onClick={() => navigate("/")}
-    className="w-63 mt-6 flex items-center gap-2 text-sm bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition"
-  >
-    <ArrowLeft className="w-4 h-4" />
-    메인으로 돌아가기
-  </button>
+        </nav>
 
-        {/* User Info */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl">
+        {/* User Dropdown */}
+        <div className="p-4 border-t border-white/10 relative" ref={dropdownRef}>
+          {/* 유저 정보 클릭 영역 */}
+          <div
+            className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl cursor-pointer"
+            onClick={() => setMenuOpen(prev => !prev)}
+          >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="text-sm font-medium text-white">
-                {user?.nickname}
-              </div>
-              <div className="text-xs text-gray-400">
-                @{user?.role}
-              </div>
+              <div className="text-sm font-medium text-white">{user?.nickname}</div>
+              <div className="text-xs text-gray-400">@{user?.role}</div>
             </div>
           </div>
+
+          {/* 드롭다운 */}
+          {menuOpen && (
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-[#1B1B29] rounded-xl border border-white/10 shadow-xl overflow-hidden animate-fadeIn z-50">
+            {/* 프로필 버튼 */}
+            <button
+              className="flex items-center gap-2 px-4 py-3 w-full text-left text-gray-300 hover:bg-white/10 hover:text-white transition"
+              onClick={() => {
+                navigate("/profile");
+                setMenuOpen(false);
+              }}
+            >
+              <User className="w-4 h-4" /> 프로필
+            </button>
+
+            {/* 메인 페이지 이동 버튼 */}
+            <button
+              className="flex items-center gap-2 px-4 py-3 w-full text-left text-gray-300 hover:bg-white/10 hover:text-white transition"
+              onClick={() => {
+                navigate("/");
+                setMenuOpen(false);
+              }}
+            >
+              <ArrowLeft className="w-4 h-4" /> 메인으로 돌아가기
+            </button>
+
+            {/* 로그아웃 버튼 */}
+            <button
+              className="flex items-center gap-2 px-4 py-3 w-full text-left text-red-400 hover:bg-red-500/10 transition"
+              onClick={() => {
+                logout();
+                setMenuOpen(false);
+                navigate("/");
+              }}
+            >
+              <LogOut className="w-4 h-4" /> 로그아웃
+            </button>
+          </div>
+        )}
         </div>
       </aside>
 

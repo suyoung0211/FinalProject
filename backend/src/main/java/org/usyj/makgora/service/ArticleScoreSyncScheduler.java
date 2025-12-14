@@ -18,9 +18,8 @@ public class ArticleScoreSyncScheduler {
 
     private final StringRedisTemplate redis;
     private final RssArticleRepository articleRepo;
-    private final IssueTriggerPushService triggerPushService;
 
-    @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
+    // @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
     @Transactional
     public void syncScores() {
 
@@ -49,9 +48,6 @@ public class ArticleScoreSyncScheduler {
             article.setAiSystemScore(score);
 
             articleRepo.save(article);
-
-            // Redis Queue 에 푸시 판단
-            // triggerPushService.checkAndPush(articleId, score);
         }
     }
 

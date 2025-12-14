@@ -21,6 +21,7 @@ public class CommunityPostResponse {
     private Integer authorLevel;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updateAt;
 
     private long recommendationCount;
     private long dislikeCount;
@@ -52,6 +53,7 @@ public class CommunityPostResponse {
                 .authorId(entity.getUser().getId())
                 .authorLevel(entity.getUser().getLevel())
                 .createdAt(entity.getCreatedAt())
+                .updateAt(entity.getUpdatedAt())
                 .recommendationCount(likeCount)
                 .dislikeCount(dislikeCount)
                 .commentCount(commentCount)

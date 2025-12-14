@@ -26,31 +26,31 @@ public class IssueService {
 
     /** 🔥 관리자 승인: Issue 상태 APPROVED + Vote 생성 트리거 push */
     @Transactional
-public IssueEntity approveIssue(Integer issueId) {
+    public IssueEntity approveIssue(Integer issueId) {
 
-    IssueEntity issue = issueRepository.findById(issueId)
-            .orElseThrow(() -> new RuntimeException("Issue not found"));
+        IssueEntity issue = issueRepository.findById(issueId)
+                .orElseThrow(() -> new RuntimeException("Issue not found"));
 
-    // ENUM 올바르게 설정
-    issue.setStatus(IssueEntity.Status.APPROVED);
-    issue.setApprovedAt(LocalDateTime.now());
+        // ENUM 올바르게 설정
+        issue.setStatus(IssueEntity.Status.APPROVED);
+        issue.setApprovedAt(LocalDateTime.now());
 
-    // save()는 IssueEntity를 반환 → 저장 후 다시 변수에 담아주는 것도 가능
-    issue = issueRepository.save(issue);
+        // save()는 IssueEntity를 반환 → 저장 후 다시 변수에 담아주는 것도 가능
+        issue = issueRepository.save(issue);
 
-    // Redis 플래그 체크
-    String flagKey = "issue:" + issueId + ":voteCreated";
-    String flag = redis.opsForValue().get(flagKey);
+        // Redis 플래그 체크
+        String flagKey = "issue:" + issueId + ":voteCreated";
+        String flag = redis.opsForValue().get(flagKey);
 
-    if (!"1".equals(flag)) {
-        redis.opsForList().leftPush("VOTE_TRIGGER_QUEUE", "issue:" + issueId);
-        System.out.println("[ISSUE-APPROVE] Vote Queue push => issue:" + issueId);
-    } else {
-        System.out.println("[ISSUE-APPROVE] 이미 Vote 생성됨 → 큐 push 생략");
+        if (!"1".equals(flag)) {
+            redis.opsForList().leftPush("VOTE_TRIGGER_QUEUE", "issue:" + issueId);
+            System.out.println("[ISSUE-APPROVE] Vote Queue push => issue:" + issueId);
+        } else {
+            System.out.println("[ISSUE-APPROVE] 이미 Vote 생성됨 → 큐 push 생략");
+        }
+
+        return issue;
     }
-
-    return issue;
-}
 
 
 

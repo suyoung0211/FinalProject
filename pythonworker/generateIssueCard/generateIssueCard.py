@@ -128,7 +128,7 @@ class IssueEntity(Base):
 # --- Vote 관련 엔티티 -----------------------------
 
 class VoteEntity(Base):
-    __tablename__ = "Votes"
+    __tablename__ = "votes"
 
     id = Column("vote_id", Integer, primary_key=True, autoincrement=True)
     issue_id = Column(Integer, ForeignKey("issues.issue_id"), nullable=False)
@@ -693,25 +693,27 @@ def create_redis_client():
     port = int(REDIS_PORT) if REDIS_PORT else 6379
     pwd = REDIS_PASSWORD
 
-    # 🔥 비밀번호 없으면 password 제거
+    # Redis 객체 생성
     if pwd is None or pwd.strip() == "":
         print("[REDIS] 로컬 모드 — 비밀번호 없이 접속")
-        return redis.Redis(
-            host=host,
-            port=port,
-            db=0,
-            decode_responses=True
-        )
-    
-    # 🔥 비밀번호가 있을 때만 password 인자 사용
-    print("[REDIS] 배포 모드 — 비밀번호 인증 접속")
-    return redis.Redis(
-        host=host,
-        port=port,
-        password=pwd,
-        db=0,
-        decode_responses=True
-    )
+        r = redis.Redis(host=host, port=port, db=0, decode_responses=True)
+    else:
+        print("[REDIS] 배포 모드 — 비밀번호 인증 접속")
+        r = redis.Redis(host=host, port=port, password=pwd, db=0, decode_responses=True)
+
+    # 🔹 연결 테스트
+    try:
+        pong = r.ping()
+        if pong:
+            print(f"[REDIS] 연결 성공 — {host}:{port}")
+        else:
+            print(f"[REDIS] 연결 실패 — {host}:{port} (PING 응답 없음)")
+            raise ConnectionError("Redis PING 응답 없음")
+    except Exception as e:
+        print(f"[REDIS] 연결 오류: {e}")
+        raise e  # 여기서 에러 발생 → 프로그램 실행 중단
+
+    return r
 
 r = create_redis_client()
 QUEUE = "ISSUE_TRIGGER_QUEUE"
@@ -821,14 +823,21 @@ def trigger_vote():
 
 if __name__ == "__main__":
     import os
+    from threading import Thread
 
     print("🚀 Starting Makgora Unified Python Server (Flask + Worker)...")
+
+    # 🔥 Redis 연결 확인
+    try:
+        r = create_redis_client()
+    except Exception:
+        print("❌ Redis 연결 실패, 서버 종료")
+        exit(1)
 
     # 🔥 Redis Worker 스레드 실행
     worker_thread = Thread(target=worker, daemon=True)
     worker_thread.start()
 
     # 🔥 Flask 서버 실행
-    # 배포 환경에서는 PORT 환경변수를 사용, 없으면 로컬용 기본값 5001
     port = int(os.getenv("PORT", 5001))
     app.run(host="0.0.0.0", port=port)

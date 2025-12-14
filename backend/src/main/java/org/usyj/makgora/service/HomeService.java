@@ -1,23 +1,21 @@
 package org.usyj.makgora.service;
 
-import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.dto.home.AiBannerDto;
 import org.usyj.makgora.dto.home.HotIssueDto;
 import org.usyj.makgora.dto.home.SlideNewsDto;
-import org.usyj.makgora.dto.home.TopVoteDto;
 import org.usyj.makgora.dto.home.VoteListDto;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.repository.VoteRepository;
 import org.usyj.makgora.response.home.HomeResponse;
+import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor

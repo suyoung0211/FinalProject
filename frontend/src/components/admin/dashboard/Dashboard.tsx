@@ -4,9 +4,11 @@ import { Users, DollarSign, TrendingUp, MessageSquare, Search, Plus, Edit, Ban, 
 import { Avatar } from "../../Avatar";
 import { Button } from '../../ui/button';
 import CreateAdminModal from "./CreateAdminModal";
-import UserDetailModal from "./UserDetailModal";
 import UserActionButtons from "./UserActionButtons";
 import EditUserModal from "./EditUserModal";
+import UserProfileModal from "../../profile/UserProfileModal";
+import ProfileAvatar from "../../../pages/ProfileAvatar";
+
 
 export function Dashboard() {
   // 전체 유저 데이터
@@ -22,6 +24,8 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");             // 실제 검색 기준
   const [tempQuery, setTempQuery] = useState("");                 // 입력창 상태
 
+  // 프로필 카드 모달용
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
   
   // 🔹 검색 실행 (엔터 또는 돋보기 클릭)
   const handleSearch = () => {
@@ -52,9 +56,14 @@ export function Dashboard() {
   // 모달 관리 타입
   type ModalType =
     | { type: "CREATE_ADMIN" }
-    | { type: "USER_DETAIL"; user: any }
     | { type: "EDIT_USER"; user: any }
     | { type: null };
+
+  const resolveImage = (path?: string | null) => {
+    if (!path) return "";
+    if (path.startsWith("http")) return path;
+    return `http://localhost:8080/${path}`;
+  };
 
   const openModal = (type: ModalType["type"], user?: any) => {
     if (modal.type) return; // 관리자 모달 열려있으면 무시
@@ -98,7 +107,7 @@ export function Dashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <Users className="w-8 h-8 text-blue-400" />
-            <span className="text-green-400 text-sm font-medium">+42</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">{users.length.toLocaleString()}</div>
           <div className="text-sm text-gray-400">전체 회원</div>
@@ -106,7 +115,7 @@ export function Dashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <DollarSign className="w-8 h-8 text-yellow-400" />
-            <span className="text-green-400 text-sm font-medium">+45K</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">
             {users
@@ -119,15 +128,15 @@ export function Dashboard() {
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <TrendingUp className="w-8 h-8 text-purple-400" />
-            <span className="text-green-400 text-sm font-medium">+12</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">156</div>
+          <div className="text-3xl font-bold text-white mb-1"></div>
           <div className="text-sm text-gray-400">활성 마켓</div>
         </div>
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
             <MessageSquare className="w-8 h-8 text-pink-400" />
-            <span className="text-green-400 text-sm font-medium">+89</span>
+            <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">{users.filter(u => u.posts).length}</div>
           <div className="text-sm text-gray-400">커뮤니티 글</div>
@@ -195,16 +204,19 @@ export function Dashboard() {
                 filteredUsers.map(user => (
                   <tr
                     key={user.loginId}
-                    className="hover:bg-white/5 transition-colors"
-                    onClick={() => openModal("USER_DETAIL", user)}
+                    className="hover:bg-white/5 transition-colors cursor-pointer"
+                    onClick={() => setProfileUserId(user.id)}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg overflow-hidden">
-                          {user.avatarType && user.avatarVariant ? (
-                            <Avatar type={user.avatarType} variant={user.avatarVariant} size={40} />
+                          {user.avatarIcon ? (
+                            <ProfileAvatar
+                              avatarUrl={resolveImage(user.avatarIcon)}
+                              size={40} // 기존 Avatar size 맞추기
+                            />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full" />
                           )}
                         </div>
                         <div>
@@ -253,12 +265,12 @@ export function Dashboard() {
         />
       )}
 
-      {/* 유저 상세 */}
-      {modal.type === "USER_DETAIL" && modal.user && (
-        <UserDetailModal
+      {/* 프로필 카드 */}
+      {profileUserId && (
+        <UserProfileModal
+          userId={profileUserId}
           open={true}
-          user={modal.user}
-          onClose={() => setModal({ type: null })}
+          onClose={() => setProfileUserId(null)}
         />
       )}
 
