@@ -213,7 +213,6 @@ export function Dashboard() {
                           {user.avatarIcon ? (
                             <ProfileAvatar
                               avatarUrl={resolveImage(user.avatarIcon)}
-                              frameUrl={resolveImage(user.profileFrame)}
                               size={40} // 기존 Avatar size 맞추기
                             />
                           ) : (
