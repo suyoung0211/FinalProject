@@ -128,7 +128,7 @@ class IssueEntity(Base):
 # --- Vote 관련 엔티티 -----------------------------
 
 class VoteEntity(Base):
-    __tablename__ = "Votes"
+    __tablename__ = "votes"
 
     id = Column("vote_id", Integer, primary_key=True, autoincrement=True)
     issue_id = Column(Integer, ForeignKey("issues.issue_id"), nullable=False)
