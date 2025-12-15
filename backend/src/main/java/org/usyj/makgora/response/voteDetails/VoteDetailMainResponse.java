@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 투표 상세 전체 Response Root
@@ -19,6 +20,13 @@ public class VoteDetailMainResponse {
     private String description;
     private String category;
 
+    // ❌ 전체 단일 correctChoiceId는 의미 불일치 → 유지하되 deprecated
+    @Deprecated
+    private Integer correctChoiceId;
+
+    // ✅ 옵션별 정답 choice
+    private Map<Integer, Integer> correctChoicesByOption;
+
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime endAt;
@@ -26,24 +34,28 @@ public class VoteDetailMainResponse {
     private Integer totalParticipants; // 전체 참여자 수
     private Long totalPoints;          // 전체 베팅 포인트
 
-    private VoteDetailArticleResponse article;       // 기사 정보
-    private List<VoteDetailOptionResponse> options;  // 옵션 리스트
-    private VoteDetailOddsResponse odds;             // 배당률
-    private VoteDetailStatisticsResponse statistics; // 트렌드 그래프, 통계
+    private VoteDetailArticleResponse article;
+    private List<VoteDetailOptionResponse> options;
 
-    private VoteDetailParticipationResponse myParticipation; // 내 참여 정보
-    private List<VoteDetailCommentResponse> comments;         // 댓글 부분
-    // 선택지별 참여자 목록
+    // 🔥 의미 변경: 옵션 기준 배당률
+    private VoteDetailOddsResponse odds;
+
+    private VoteDetailStatisticsResponse statistics;
+
+    private VoteDetailParticipationResponse myParticipation;
+    private List<VoteDetailCommentResponse> comments;
+
+    // 선택지별 참여자 요약 (기존 기능 유지)
     private List<VoteDetailBettorSummaryResponse> bettors;
 
-    // 정답 확정 여부 + 정답 선택지 ID
-    private Integer correctChoiceId;
     private Boolean isResolved;
     private Boolean isRewarded;
-    // 정산 요약
+
     private VoteDetailSettlementSummaryResponse settlementSummary;
-    // 내 포지션 상태 + 예상 수익률
-    private Double expectedOdds; 
-    private Integer expectedReward; 
+
+    // 🔥 option 기준 시뮬레이션 결과
+    private Double expectedOdds;
+    private Integer expectedReward;
+
     private List<VoteActivityLogResponse> activityLog;
 }

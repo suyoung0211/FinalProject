@@ -81,11 +81,6 @@ public class VoteEntity {
        🆕 여기부터 새로 추가되는 핵심 필드
        =================================== */
 
-    /** 🏁 정답 선택지 (정산의 기준이 되는 값) */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "correct_choice_id")
-    private VoteOptionChoiceEntity correctChoice;
-
     /** 💸 보상 지급 완료 여부 */
     @Column(name = "is_rewarded")
     @Builder.Default

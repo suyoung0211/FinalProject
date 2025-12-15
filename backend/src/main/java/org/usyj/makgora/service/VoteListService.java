@@ -13,6 +13,7 @@ import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,42 +22,33 @@ public class VoteListService {
 
     private final VoteRepository voteRepository;
     private final VoteOptionRepository voteOptionRepository;
-    private final VoteOptionChoiceRepository voteOptionChoiceRepository;
-
-    private final VoteTrendHistoryRepository trendRepository;
     private final VoteUserRepository voteUserRepository;
-
+    private final VoteTrendHistoryRepository trendRepository;
     private final VoteCommentRepository voteCommentRepository;
-
-    private final ArticleRepository articleRepository;
     private final ArticleAiTitleRepository aiTitleRepository;
 
-
     /* =======================================================
-     * Main Entry: Vote Detail Response Root
+     * Main Entry
      * ======================================================= */
     public VoteDetailMainResponse getVoteDetail(Integer voteId, Integer userId) {
 
-       VoteEntity vote = voteRepository.findById(voteId)
-        .orElseThrow(() ->
-            new ResponseStatusException(HttpStatus.NOT_FOUND, "Vote not found: " + voteId)
-        );
+        VoteEntity vote = voteRepository.findById(voteId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Vote not found: " + voteId));
 
-        // 각각 서브 DTO 로딩
         VoteDetailArticleResponse article = loadArticle(vote);
-        List<VoteDetailOptionResponse> options = loadOptions(voteId);
+        List<VoteDetailOptionResponse> options = loadOptions(voteId, userId);
         VoteDetailOddsResponse odds = loadOdds(voteId);
         VoteDetailStatisticsResponse statistics = loadStatistics(voteId);
         VoteDetailParticipationResponse myParticipation = loadMyParticipation(voteId, userId);
         List<VoteDetailCommentResponse> comments = loadComments(voteId);
 
-        // 전체 총합 계산 (옵션들의 총합)
-        Long totalPoints = options.stream()
-                .mapToLong(o -> o.getTotalPoints() != null ? o.getTotalPoints() : 0L)
+        long totalPoints = options.stream()
+                .mapToLong(o -> o.getTotalPoints() == null ? 0L : o.getTotalPoints())
                 .sum();
 
-        Integer totalParticipants = options.stream()
-                .mapToInt(o -> o.getTotalParticipants() != null ? o.getTotalParticipants() : 0)
+        int totalParticipants = options.stream()
+                .mapToInt(o -> o.getTotalParticipants() == null ? 0 : o.getTotalParticipants())
                 .sum();
 
         return VoteDetailMainResponse.builder()
@@ -65,14 +57,11 @@ public class VoteListService {
                 .title(vote.getTitle())
                 .description(vote.getAiProgressSummary())
                 .category(vote.getIssue() != null ? vote.getIssue().getTitle() : null)
-
                 .status(vote.getStatus().name())
                 .createdAt(vote.getCreatedAt())
                 .endAt(vote.getEndAt())
-
-                .totalParticipants(totalParticipants)
                 .totalPoints(totalPoints)
-
+                .totalParticipants(totalParticipants)
                 .article(article)
                 .options(options)
                 .odds(odds)
@@ -82,197 +71,173 @@ public class VoteListService {
                 .build();
     }
 
-
-    /* =======================================================
-     * 1) Article 정보 로딩
-     * ======================================================= */
     private VoteDetailArticleResponse loadArticle(VoteEntity vote) {
 
-        if (vote.getIssue() == null || vote.getIssue().getArticle() == null)
-            return null;
-
-        RssArticleEntity article = vote.getIssue().getArticle();
-
-        String aiTitle = aiTitleRepository.findByArticle(article)
-                .map(ArticleAiTitleEntity::getAiTitle)
-                .orElse(null);
-
-        return VoteDetailArticleResponse.builder()
-                .articleId(article.getId())
-                .title(article.getTitle())
-                .aiTitle(aiTitle)
-                .publisher(article.getFeed().getSourceName())
-                .thumbnailUrl(article.getThumbnailUrl())
-                .link(article.getLink())
-                .categories(article.getCategories().stream().map(c -> c.getName()).toList())
-                .publishedAt(article.getPublishedAt())
-                .createdAt(article.getCreatedAt())
-                .viewCount(article.getViewCount())
-                .likeCount(article.getLikeCount())
-                .dislikeCount(article.getDislikeCount())
-                .commentCount(article.getCommentCount())
-                .build();
+    if (vote.getIssue() == null || vote.getIssue().getArticle() == null) {
+        return null;
     }
 
+    RssArticleEntity article = vote.getIssue().getArticle();
+
+    String aiTitle = aiTitleRepository.findByArticle(article)
+            .map(ArticleAiTitleEntity::getAiTitle)
+            .orElse(null);
+
+    return VoteDetailArticleResponse.builder()
+            .articleId(article.getId())
+            .title(article.getTitle())
+            .aiTitle(aiTitle)
+            .publisher(
+                    article.getFeed() != null
+                            ? article.getFeed().getSourceName()
+                            : null
+            )
+            .thumbnailUrl(article.getThumbnailUrl())
+            .link(article.getLink())
+            .categories(
+                    article.getCategories().stream()
+                            .map(ArticleCategoryEntity::getName)
+                            .toList()
+            )
+            .publishedAt(article.getPublishedAt())
+            .createdAt(article.getCreatedAt())
+            .viewCount(article.getViewCount())
+            .likeCount(article.getLikeCount())
+            .dislikeCount(article.getDislikeCount())
+            .commentCount(article.getCommentCount())
+            .build();
+}
 
     /* =======================================================
-     * 2) 옵션 + 선택지 로딩
+     * Options + Choices
      * ======================================================= */
-    private List<VoteDetailOptionResponse> loadOptions(Integer voteId) {
+    private List<VoteDetailOptionResponse> loadOptions(Integer voteId, Integer userId) {
 
-        List<VoteOptionEntity> options = voteOptionRepository.findByVoteId(voteId.longValue());
+        List<VoteOptionEntity> options =
+                voteOptionRepository.findByVoteId(voteId);
 
-        return options.stream().map(opt -> {
+        Integer myChoiceId = userId == null ? null :
+                voteUserRepository.findByUserIdAndVoteId(userId, voteId)
+                        .map(v -> v.getChoice().getId())
+                        .orElse(null);
 
-            // 모든 선택지
-            List<VoteOptionChoiceEntity> choiceEntities = opt.getChoices();
+        return options.stream().map(option -> {
 
-            // choice DTO 변환
-            List<VoteDetailChoiceResponse> choices = choiceEntities.stream()
-                    .map(c -> VoteDetailChoiceResponse.builder()
-                            .choiceId(c.getId().intValue())
-                            .text(c.getChoiceText())
-                            .participantsCount(c.getParticipantsCount())
-                            .pointsTotal(c.getPointsTotal() != null ? c.getPointsTotal().longValue() : 0L)
-                            .odds(c.getOdds() != null ? c.getOdds() : 1.0)
-                            .percent(calcPercent(c, opt))  // YES/NO 비율 계산
-                            .build()
-                    ).toList();
+            int optionParticipants = option.getParticipantsCount();
+            long optionPoints = option.getPointsTotal();
+            double optionOdds = option.getOdds();
 
-            // 옵션 전체 인원 합계
-            Integer totalParticipants = choiceEntities.stream()
-                    .mapToInt(VoteOptionChoiceEntity::getParticipantsCount)
-                    .sum();
+            List<VoteDetailChoiceResponse> choices =
+                    option.getChoices().stream().map(choice -> {
 
-            // 옵션 전체 포인트 합
-            Long totalPoints = choiceEntities.stream()
-                    .mapToLong(c -> c.getPointsTotal() == null ? 0L : c.getPointsTotal())
-                    .sum();
+                        double percent = optionParticipants > 0
+                                ? Math.round((1000.0 / option.getChoices().size())) / 10.0
+                                : 0.0;
+
+                        return VoteDetailChoiceResponse.builder()
+                                .choiceId(choice.getId().intValue())
+                                .text(choice.getChoiceText())
+                                .participantsCount(optionParticipants)
+                                .pointsTotal(optionPoints)
+                                .percent(percent)
+                                .marketShare(percent)
+                                .odds(optionOdds)
+                                .isMyChoice(
+                                        myChoiceId != null &&
+                                        myChoiceId.equals(choice.getId())
+                                )
+                                .build();
+                    }).toList();
 
             return VoteDetailOptionResponse.builder()
-                    .optionId(opt.getId().intValue())
-                    .title(opt.getOptionTitle())
-                    .totalParticipants(totalParticipants)
-                    .totalPoints(totalPoints)
+                    .optionId(option.getId().intValue())
+                    .title(option.getOptionTitle())
+                    .totalParticipants(optionParticipants)
+                    .totalPoints(optionPoints)
+                    .correctChoiceId(
+                            option.getCorrectChoice() != null
+                                    ? option.getCorrectChoice().getId().intValue()
+                                    : null
+                    )
                     .choices(choices)
                     .build();
-
         }).toList();
     }
 
-
-    /* 계산: 선택지 퍼센트 */
-    private double calcPercent(VoteOptionChoiceEntity choice, VoteOptionEntity option) {
-
-        int total = option.getChoices().stream()
-                .mapToInt(VoteOptionChoiceEntity::getParticipantsCount)
-                .sum();
-
-        if (total == 0) return 0.0;
-
-        return Math.round((choice.getParticipantsCount() * 100.0 / total) * 10) / 10.0;
-    }
-
-
     /* =======================================================
-     * 3) Odds (배당률)
+     * Odds (옵션 기준)
      * ======================================================= */
     private VoteDetailOddsResponse loadOdds(Integer voteId) {
 
-    List<VoteOptionEntity> options =
-            voteOptionRepository.findByVoteId(voteId.longValue());
+        List<VoteOptionEntity> options =
+                voteOptionRepository.findByVoteId(voteId);
 
-    List<VoteOptionChoiceEntity> choices = options.stream()
-            .flatMap(o -> o.getChoices().stream())
-            .toList();
+        List<VoteDetailOddsResponse.OddsItem> items =
+        options.stream()
+                .map(o ->
+                        VoteDetailOddsResponse.OddsItem.builder()
+                                .optionId(o.getId().intValue())
+                                .optionTitle(o.getOptionTitle())
+                                .odds(o.getOdds())   // 옵션 기준 odds
+                                .history(List.of()) // 아직 없으면 빈 리스트
+                                .build()
+                )
+                .toList();
 
-    // 🔥 1) 각 선택지 Pool 계산 (0 → 1로 보정)
-    Map<Long, Long> poolMap = choices.stream()
-            .collect(Collectors.toMap(
-                    VoteOptionChoiceEntity::getId,
-                    c -> Math.max(1L, c.getPointsTotal() == null ? 0L : c.getPointsTotal())
-            ));
-
-    // 🔥 2) 전체 Pool
-    long totalPool = poolMap.values().stream().mapToLong(Long::longValue).sum();
-
-    // 🔥 3) 배당률 계산
-    List<VoteDetailOddsResponse.OddsItem> oddsItems = choices.stream()
-            .map(c -> {
-
-                long poolC = poolMap.get(c.getId());
-
-                // raw odds
-                double rawOdds = (totalPool * 1.0) / poolC;
-
-                // 하한선 적용 (1.10x)
-                double finalOdds = Math.max(rawOdds, 1.10);
-
-                // 소수점 2자리
-                finalOdds = Math.round(finalOdds * 100.0) / 100.0;
-
-                return VoteDetailOddsResponse.OddsItem.builder()
-                        .choiceId(c.getId().intValue())
-                        .text(c.getChoiceText())
-                        .odds(finalOdds)
-                        .build();
-            })
-            .toList();
-
-    return VoteDetailOddsResponse.builder()
-            .voteId(voteId)
-            .odds(oddsItems)
-            .build();
-}
-
+        return VoteDetailOddsResponse.builder()
+                .voteId(voteId)
+                .odds(items)
+                .build();
+    }
 
     /* =======================================================
-     * 4) Trend Graph (통계 변화)
+     * Statistics / Trend
      * ======================================================= */
     private VoteDetailStatisticsResponse loadStatistics(Integer voteId) {
 
-    List<VoteTrendHistoryEntity> history =
-            trendRepository.findByVoteId(voteId);
+        List<VoteTrendHistoryEntity> history =
+                trendRepository.findByVoteId(voteId);
 
-    history.sort(Comparator.comparing(VoteTrendHistoryEntity::getRecordedAt));
+        history.sort(Comparator.comparing(VoteTrendHistoryEntity::getRecordedAt));
 
-    // 🔥 변경된 구조에 맞게 변환
-    List<VoteDetailStatisticsResponse.TrendSnapshot> snapshots =
-            history.stream().map(h -> {
-
-                VoteDetailStatisticsResponse.OptionTrendItem item =
-                        VoteDetailStatisticsResponse.OptionTrendItem.builder()
-                                .choiceId(h.getChoice().getId().intValue())
-                                .text(h.getChoice().getChoiceText())
-                                .percent(h.getPercent())
-                                .build();
-
-                return VoteDetailStatisticsResponse.TrendSnapshot.builder()
-                        .timestamp(h.getRecordedAt().toString())
-                        .optionTrends(List.of(item))
-                        .build();
-            }).toList();
-
-    return VoteDetailStatisticsResponse.builder()
-            .changes(snapshots)
-            .build();
-}
-
-
+        return VoteDetailStatisticsResponse.builder()
+                .changes(
+                        history.stream().map(h ->
+                                VoteDetailStatisticsResponse.TrendSnapshot.builder()
+                                        .timestamp(h.getRecordedAt().toString())
+                                        .optionTrends(List.of(
+                                                VoteDetailStatisticsResponse.OptionTrendItem.builder()
+                                                        .choiceId(h.getChoice().getId().intValue())
+                                                        .text(h.getChoice().getChoiceText())
+                                                        .percent(h.getPercent())
+                                                        .build()
+                                        ))
+                                        .build()
+                        ).toList()
+                )
+                .build();
+    }
 
     /* =======================================================
-     * 5) 내 참여 정보 (User Bet)
+     * My Participation
      * ======================================================= */
     private VoteDetailParticipationResponse loadMyParticipation(Integer voteId, Integer userId) {
 
+        if (userId == null) {
+            return VoteDetailParticipationResponse.builder()
+                    .hasParticipated(false)
+                    .build();
+        }
+
         return voteUserRepository.findByUserIdAndVoteId(userId, voteId)
-                .map(v -> VoteDetailParticipationResponse.builder()
-                        .hasParticipated(true)
-                        .optionId(v.getOption().getId().intValue())
-                        .choiceId(v.getChoice().getId().intValue())
-                        .pointsBet(v.getPointsBet())
-                        .votedAt(v.getCreatedAt())
-                        .build()
+                .map(v ->
+                        VoteDetailParticipationResponse.builder()
+                                .hasParticipated(true)
+                                .optionId(v.getOption().getId().intValue())
+                                .choiceId(v.getChoice().getId().intValue())
+                                .pointsBet(v.getPointsBet())
+                                .votedAt(v.getCreatedAt())
+                                .build()
                 )
                 .orElse(
                         VoteDetailParticipationResponse.builder()
@@ -281,20 +246,16 @@ public class VoteListService {
                 );
     }
 
-
     /* =======================================================
-     * 6) 댓글 로딩 (트리 구조)
+     * Comments
      * ======================================================= */
     private List<VoteDetailCommentResponse> loadComments(Integer voteId) {
 
-        List<VoteCommentEntity> comments =
-                voteCommentRepository.findByVote_IdAndParentIsNull(voteId);
-
-        return comments.stream()
+        return voteCommentRepository.findByVote_IdAndParentIsNull(voteId)
+                .stream()
                 .map(this::convertComment)
                 .toList();
     }
-
 
     private VoteDetailCommentResponse convertComment(VoteCommentEntity c) {
 
@@ -309,7 +270,12 @@ public class VoteListService {
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
                 .parentId(c.getParent() != null ? c.getParent().getCommentId().intValue() : null)
-                .children(c.getChildren().stream().map(this::convertComment).toList())
+                .children(
+                        c.getChildren().stream()
+                                .map(this::convertComment)
+                                .toList()
+                )
                 .build();
     }
 }
+
