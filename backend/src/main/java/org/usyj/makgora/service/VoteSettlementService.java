@@ -28,51 +28,50 @@ public class VoteSettlementService {
        1) 정답 확정 (FINISHED → RESOLVED)
        ============================================================ */
     @Transactional
-    public VoteDetailSettlementResponse finished(
-            Integer voteId,
-            VoteDetailResolveRequest req
-    ) {
-        VoteEntity vote = voteRepository.findById(voteId)
-                .orElseThrow(() -> new RuntimeException("Vote not found"));
+public VoteDetailSettlementResponse finished(
+        Integer voteId,
+        VoteDetailResolveRequest req
+) {
+    VoteEntity vote = voteRepository.findById(voteId)
+            .orElseThrow(() -> new RuntimeException("Vote not found"));
 
-        if (vote.getStatus() == VoteEntity.Status.ONGOING) {
-            vote.setStatus(VoteEntity.Status.FINISHED);
-        }
-
-        if (vote.getStatus() != VoteEntity.Status.FINISHED) {
-            throw new RuntimeException("정답 확정 불가한 상태입니다.");
-        }
-
-        if (req.getAnswers() == null || req.getAnswers().isEmpty()) {
-            throw new RuntimeException("옵션별 정답 정보가 필요합니다.");
-        }
-
-        for (VoteDetailResolveRequest.CorrectAnswer ans : req.getAnswers()) {
-
-            VoteOptionEntity option = optionRepository.findById(ans.getOptionId())
-                    .orElseThrow(() -> new RuntimeException("Option not found"));
-
-            if (!option.getVote().getId().equals(vote.getId())) {
-                throw new RuntimeException("Option이 Vote에 속하지 않습니다.");
-            }
-
-            VoteOptionChoiceEntity correctChoice =
-                    option.getChoices().stream()
-                            .filter(c -> c.getId().equals(ans.getChoiceId()))
-                            .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Choice not found"));
-
-            option.setCorrectChoice(correctChoice);
-            optionRepository.save(option);
-        }
-
-        vote.setStatus(VoteEntity.Status.RESOLVED);
-        vote.setUpdatedAt(LocalDateTime.now());
-        voteRepository.save(vote);
-        historyService.recordStatus(vote, VoteEntity.Status.RESOLVED);
-
-        return previewSettlement(vote);
+    if (vote.getStatus() == VoteEntity.Status.ONGOING) {
+        vote.setStatus(VoteEntity.Status.FINISHED);
     }
+
+    if (vote.getStatus() != VoteEntity.Status.FINISHED) {
+        throw new RuntimeException("정답 확정 불가한 상태입니다.");
+    }
+
+    if (req.getAnswers() == null || req.getAnswers().isEmpty()) {
+        throw new RuntimeException("옵션별 정답 정보가 필요합니다.");
+    }
+
+    for (VoteDetailResolveRequest.CorrectAnswer ans : req.getAnswers()) {
+
+        VoteOptionEntity option = optionRepository.findById(ans.getOptionId())
+                .orElseThrow(() -> new RuntimeException("Option not found"));
+
+        VoteOptionChoiceEntity correctChoice =
+                option.getChoices().stream()
+                        .filter(c -> c.getId().equals(ans.getChoiceId()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Choice not found"));
+
+        option.setCorrectChoice(correctChoice);
+        optionRepository.save(option);
+    }
+
+    vote.setStatus(VoteEntity.Status.RESOLVED);
+    vote.setUpdatedAt(LocalDateTime.now());
+    voteRepository.save(vote);
+    historyService.recordStatus(vote, VoteEntity.Status.RESOLVED);
+
+    // ⚠️ preview는 정산 로직 안 태움
+    return VoteDetailSettlementResponse.builder()
+            .voteId(vote.getId())
+            .build();
+}
     /* ============================================================
        1) 종료처리만(정답X) (FINISHED → RESOLVED)
        ============================================================ */
@@ -130,133 +129,157 @@ public void finish(Integer voteId) {
        5) 정산 공통 로직 (preview / execute)
        ============================================================ */
     private VoteDetailSettlementResponse executeSettlement(
-            VoteEntity vote,
-            boolean applyResult
-    ) {
-        double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.0;
+        VoteEntity vote,
+        boolean applyResult
+) {
+    double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.0;
 
-        List<VoteUserEntity> allBets =
-                voteUserRepository.findByVoteId(vote.getId());
+    List<VoteUserEntity> allBets =
+            voteUserRepository.findByVoteId(vote.getId());
 
-        int totalDistributed = 0;
-        int totalWinnerCount = 0;
+    int totalDistributed = 0;
+    int totalWinnerCount = 0;
 
-        List<VoteDetailSettlementResponse.OptionSettlementResult> results =
-                new ArrayList<>();
+    List<VoteDetailSettlementResponse.OptionSettlementResult> results =
+            new ArrayList<>();
 
-        for (VoteOptionEntity option : vote.getOptions()) {
+    for (VoteOptionEntity option : vote.getOptions()) {
 
-            VoteOptionChoiceEntity correct = option.getCorrectChoice();
-            if (correct == null) continue;
+        VoteOptionChoiceEntity correct = option.getCorrectChoice();
+        if (correct == null) continue;
 
-            List<VoteUserEntity> optionBets =
-                    allBets.stream()
-                            .filter(v -> v.getOption().getId().equals(option.getId()))
-                            .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
-                            .toList();
+        /* ===============================
+           옵션 참여자 / 정답자
+           =============================== */
+        List<VoteUserEntity> optionBets =
+                allBets.stream()
+                        .filter(v -> v.getOption().getId().equals(option.getId()))
+                        .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
+                        .toList();
 
-            List<VoteUserEntity> winners =
-                    optionBets.stream()
-                            .filter(v -> v.getChoice().getId().equals(correct.getId()))
-                            .toList();
+        List<VoteUserEntity> winners =
+                optionBets.stream()
+                        .filter(v -> v.getChoice().getId().equals(correct.getId()))
+                        .toList();
 
-            int optionPool = optionBets.stream()
-                    .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                    .sum();
+        int optionPool = optionBets.stream()
+                .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+                .sum();
 
-            int winnerPool = winners.stream()
-                    .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
-                    .sum();
+        int winnerPool = winners.stream()
+                .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+                .sum();
 
-            int distributablePool =
-                    (int) Math.floor(optionPool * (1.0 - feeRate));
+        int distributablePool =
+                (int) Math.floor(optionPool * (1.0 - feeRate));
 
-            double rawOdds;
+        /* ===============================
+           🔥 배당률 확정 (표시용)
+           =============================== */
+        Double odds = option.getOdds();
 
-if (winnerPool == 0) {
-    rawOdds = 0.0;
-} else if (winnerPool == optionPool) {
-    // 🔒 전원 정답 → 원금 반환
-    rawOdds = 1.0;
-} else {
-    rawOdds = (double) distributablePool / winnerPool;
+if (applyResult && (odds == null || odds <= 0)) {
+
+    double rawOdds;
+
+    if (winnerPool == 0) {
+        rawOdds = 1.0;
+    } else {
+        rawOdds = (double) distributablePool / winnerPool;
+    }
+
+    odds = Math.min(
+            MAX_ODDS,
+            Math.max(1.0, round(rawOdds))
+    );
+
+    option.setOdds(odds);
+    optionRepository.save(option);
 }
 
-// 🔥 배당률 하한선 보장
-double odds = Math.min(
-    MAX_ODDS,
-    Math.max(1.0, round(rawOdds))
-);
+        int distributedSum = 0;
 
-            int distributedSum = 0;
+        /* ===============================
+           ✅ 실제 정산 (풀 기반 안전 분배)
+           =============================== */
+        if (applyResult && winnerPool > 0) {
 
-            if (applyResult && winnerPool > 0) {
+            int remainingPool = distributablePool;
 
-                // 🔥 FINAL 배당률 스냅샷
-                option.setOdds(odds);
-                optionRepository.save(option);
+            for (int i = 0; i < winners.size(); i++) {
+                VoteUserEntity vu = winners.get(i);
+                int bet = vu.getPointsBet();
 
-                for (VoteUserEntity vu : winners) {
+                int reward;
+                if (i == winners.size() - 1) {
+                    // 🔒 마지막 승자에게 잔여 몰아주기
+                    reward = remainingPool;
+                } else {
+                    double ratio = (double) bet / winnerPool;
+                    reward = (int) Math.floor(distributablePool * ratio);
+                    remainingPool -= reward;
+                }
 
-                    int bet = vu.getPointsBet();
-                    int reward = (int) Math.floor(bet * odds);
+                distributedSum += reward;
 
-                    distributedSum += reward;
+                UserEntity user = vu.getUser();
+                user.setPoints(user.getPoints() + reward);
+                user.setLevel(user.getLevel() == null ? 1 : user.getLevel() + 1);
+                userRepository.save(user);
 
-                    UserEntity user = vu.getUser();
-                    user.setPoints(user.getPoints() + reward);
-                    user.setLevel(user.getLevel() == null ? 1 : user.getLevel() + 1);
-                    userRepository.save(user);
+                vu.setRewardPoints(reward);
+                vu.setUpdatedAt(LocalDateTime.now());
+                voteUserRepository.save(vu);
+            }
 
-                    vu.setRewardPoints(reward);
+            // 패자 처리
+            for (VoteUserEntity vu : optionBets) {
+                if (!winners.contains(vu)) {
+                    vu.setRewardPoints(0);
                     vu.setUpdatedAt(LocalDateTime.now());
                     voteUserRepository.save(vu);
                 }
-
-                // 패자 기록
-                for (VoteUserEntity vu : optionBets) {
-                    if (!winners.contains(vu)) {
-                        vu.setRewardPoints(0);
-                        voteUserRepository.save(vu);
-                    }
-                }
-
-                // 🔒 안전장치
-                if (distributedSum > distributablePool) {
-                    throw new IllegalStateException("정산 분배 초과 발생");
-                }
-
-                totalDistributed += distributedSum;
-                totalWinnerCount += winners.size();
             }
 
-            results.add(
-                    VoteDetailSettlementResponse.OptionSettlementResult.builder()
-                            .optionId(option.getId())
-                            .correctChoiceId(correct.getId())
-                            .odds(odds)
-                            .optionPool(optionPool)
-                            .winnerPool(winnerPool)
-                            .winnerCount(winners.size())
-                            .distributedSum(distributedSum)
-                            .build()
-            );
+            totalDistributed += distributedSum;
+            totalWinnerCount += winners.size();
         }
 
-        if (applyResult) {
-            vote.setRewarded(true);
-            vote.setStatus(VoteEntity.Status.REWARDED);
-            voteRepository.save(vote);
-            historyService.recordStatus(vote, VoteEntity.Status.REWARDED);
-        }
-
-        return VoteDetailSettlementResponse.builder()
-                .voteId(vote.getId())
-                .totalDistributed(totalDistributed)
-                .totalWinnerCount(totalWinnerCount)
-                .options(results)
-                .build();
+        /* ===============================
+           결과 DTO
+           =============================== */
+        results.add(
+                VoteDetailSettlementResponse.OptionSettlementResult.builder()
+                        .optionId(option.getId())
+                        .correctChoiceId(correct.getId())
+                        .odds(odds)
+                        .optionPool(optionPool)
+                        .winnerPool(winnerPool)
+                        .winnerCount(winners.size())
+                        .distributedSum(distributedSum)
+                        .build()
+        );
     }
+
+    /* ===============================
+       투표 상태 마무리
+       =============================== */
+    if (applyResult) {
+        vote.setRewarded(true);
+        vote.setStatus(VoteEntity.Status.REWARDED);
+        vote.setUpdatedAt(LocalDateTime.now());
+        voteRepository.save(vote);
+        historyService.recordStatus(vote, VoteEntity.Status.REWARDED);
+    }
+
+    return VoteDetailSettlementResponse.builder()
+            .voteId(vote.getId())
+            .totalDistributed(totalDistributed)
+            .totalWinnerCount(totalWinnerCount)
+            .options(results)
+            .build();
+}
+
 
     /* ============================================================
        REVIEWING → ONGOING
@@ -281,4 +304,43 @@ double odds = Math.min(
     private double round(double v) {
         return Math.round(v * 100.0) / 100.0;
     }
+
+
+    private double calculateFinalOdds(
+        VoteOptionEntity option,
+        List<VoteUserEntity> allBets,
+        double feeRate
+) {
+    List<VoteUserEntity> optionBets =
+            allBets.stream()
+                    .filter(v -> v.getOption().getId().equals(option.getId()))
+                    .filter(v -> !Boolean.TRUE.equals(v.getIsCancelled()))
+                    .toList();
+
+    List<VoteUserEntity> winners =
+            optionBets.stream()
+                    .filter(v -> v.getChoice().getId().equals(option.getCorrectChoice().getId()))
+                    .toList();
+
+    int optionPool = optionBets.stream()
+            .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+            .sum();
+
+    int winnerPool = winners.stream()
+            .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
+            .sum();
+
+    if (winnerPool == 0) return 1.0;
+    if (winnerPool == optionPool) return 1.0;
+
+    int distributablePool =
+            (int) Math.floor(optionPool * (1.0 - feeRate));
+
+    double rawOdds = (double) distributablePool / winnerPool;
+
+    return Math.min(
+            MAX_ODDS,
+            Math.max(1.0, round(rawOdds))
+    );
+}
 }

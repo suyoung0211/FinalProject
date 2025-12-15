@@ -425,4 +425,34 @@ ADD COLUMN is_correct BOOLEAN NOT NULL DEFAULT FALSE;
 
 ⚠️ DB 새로 업데이트 필요함!
 
+--------------------------------------------------
+12/15
+
+VoteEntity
+   /** 🏁 정답 선택지 (정산의 기준이 되는 값) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "correct_choice_id")
+    private VoteOptionChoiceEntity correctChoice;
+    삭제
+
+vote관련 id값 long에서 Integer로 대부분 수정
+
+voteoptionentity로 정답값 이관
+    // ✅ 정답 여부 (정산 시 true)
+    @Column(name = "is_correct", nullable = false)
+    @Builder.Default
+    private Boolean isCorrect = false;
+
+voteoptionchoiceentity에 값 추가
+    // ✅ 옵션에 몰린 총 배팅 포인트
+    @Column(name = "points_total", nullable = false)
+    @Builder.Default
+    private Integer pointsTotal = 0;
+
+    // ✅ 옵션에 참여한 인원 수
+    @Column(name = "participants_count", nullable = false)
+    @Builder.Default
+    private Integer participantsCount = 0;
+
+
 

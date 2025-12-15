@@ -28,6 +28,26 @@ type VoteStatus =
   | "UNKNOWN";
 
 type ConfirmAction = "OPEN" | "FINISH" | "CANCEL";
+type SortOrder = "LATEST" | "OLDEST";
+
+/* =========================
+ * Utils
+ * ========================= */
+function sortVotes<T extends { createdAt?: string; id?: number }>(
+  list: T[],
+  order: SortOrder
+) {
+  return [...list].sort((a, b) => {
+    const aTime = a.createdAt
+      ? new Date(a.createdAt).getTime()
+      : a.id ?? 0;
+    const bTime = b.createdAt
+      ? new Date(b.createdAt).getTime()
+      : b.id ?? 0;
+
+    return order === "LATEST" ? bTime - aTime : aTime - bTime;
+  });
+}
 
 /* =========================
  * Status Badge
@@ -58,6 +78,8 @@ export function Votes() {
   const location = useLocation();
 
   const [tab, setTab] = useState<"AI" | "NORMAL">("AI");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("LATEST");
+
   const [aiVotes, setAiVotes] = useState<any[]>([]);
   const [normalVotes, setNormalVotes] = useState<any[]>([]);
   const [resolveVote, setResolveVote] = useState<any | null>(null);
@@ -76,44 +98,77 @@ export function Votes() {
 
     const rawAI = aiRes.data.votes || aiRes.data || [];
 
-    setAiVotes(
-      rawAI.map((v: any) => ({
-        id: v.id,
-        title: v.title,
-        totalParticipants: v.totalParticipants ?? 0,
-        status: v.status ?? "UNKNOWN",
-      }))
-    );
+    const mappedAI = rawAI.map((v: any) => ({
+      id: v.id,
+      title: v.title,
+      totalParticipants: v.totalParticipants ?? 0,
+      status: v.status ?? "UNKNOWN",
+      createdAt: v.createdAt,
+    }));
 
-    setNormalVotes(
-      (normalRes.data.votes || []).map((v: any) => ({
-        ...v,
-        status: v.status ?? "UNKNOWN",
-      }))
-    );
+    const mappedNormal = (normalRes.data.votes || []).map((v: any) => ({
+      ...v,
+      status: v.status ?? "UNKNOWN",
+      createdAt: v.createdAt,
+    }));
+
+    setAiVotes(sortVotes(mappedAI, sortOrder));
+    setNormalVotes(sortVotes(mappedNormal, sortOrder));
   }
 
   useEffect(() => {
     loadAll();
   }, []);
 
+  /* 정렬 변경 시 재정렬 */
+  useEffect(() => {
+    setAiVotes((prev) => sortVotes(prev, sortOrder));
+    setNormalVotes((prev) => sortVotes(prev, sortOrder));
+  }, [sortOrder]);
+
   /* ================= RENDER ================= */
   return (
     <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex gap-3">
-        <Button
-          className={tab === "AI" ? "bg-purple-600" : "bg-white/10"}
-          onClick={() => setTab("AI")}
-        >
-          AI 투표
-        </Button>
-        <Button
-          className={tab === "NORMAL" ? "bg-purple-600" : "bg-white/10"}
-          onClick={() => setTab("NORMAL")}
-        >
-          일반 투표
-        </Button>
+      {/* Tabs + Sort */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-3">
+          <Button
+            className={tab === "AI" ? "bg-purple-600" : "bg-white/10"}
+            onClick={() => setTab("AI")}
+          >
+            AI 투표
+          </Button>
+          <Button
+            className={tab === "NORMAL" ? "bg-purple-600" : "bg-white/10"}
+            onClick={() => setTab("NORMAL")}
+          >
+            일반 투표
+          </Button>
+        </div>
+
+        <select
+  value={sortOrder}
+  onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+  className="
+    bg-purple-600/30 text-white text-sm
+    px-3 py-2 rounded-md
+    border border-purple-500/40
+    focus:outline-none focus:ring-2 focus:ring-purple-500
+  "
+>
+  <option
+    value="LATEST"
+    className="bg-purple-700 text-white"
+  >
+    최신순
+  </option>
+  <option
+    value="OLDEST"
+    className="bg-purple-700 text-white"
+  >
+    오래된순
+  </option>
+</select>
       </div>
 
       {/* ================= AI ================= */}
@@ -236,11 +291,6 @@ export function Votes() {
           vote={resolveVote}
           onClose={() => setResolveVote(null)}
           onSubmit={(selectedChoices: Record<number, number>) => {
-            if (!resolveVote?.voteId) {
-              alert("voteId가 없습니다.");
-              return;
-            }
-
             const answers = Object.entries(selectedChoices).map(
               ([optionId, choiceId]) => ({
                 optionId: Number(optionId),
@@ -258,7 +308,7 @@ export function Votes() {
         />
       )}
 
-      {/* ================= CONFIRM MODAL ================= */}
+      {/* ================= CONFIRM / RESULT MODALS ================= */}
       {confirmTarget && (
         <Modal>
           <p className="text-white font-bold">
@@ -274,17 +324,14 @@ export function Votes() {
               onClick={async () => {
                 if (confirmTarget.action === "OPEN") {
                   await adminOpenVote(confirmTarget.voteId);
-                  setResultMessage("투표를 개시하였습니다.");
                 }
                 if (confirmTarget.action === "FINISH") {
                   tab === "AI"
                     ? await adminFinishVote(confirmTarget.voteId)
                     : await adminFinishNormalVote(confirmTarget.voteId);
-                  setResultMessage("투표를 종료하였습니다.");
                 }
                 if (confirmTarget.action === "CANCEL") {
                   await adminCancelNormalVote(confirmTarget.voteId);
-                  setResultMessage("투표를 취소하였습니다.");
                 }
 
                 setConfirmTarget(null);
@@ -294,14 +341,6 @@ export function Votes() {
               확인
             </Button>
           </div>
-        </Modal>
-      )}
-
-      {/* ================= RESULT ================= */}
-      {resultMessage && (
-        <Modal>
-          <p className="text-white text-center">{resultMessage}</p>
-          <Button onClick={() => setResultMessage(null)}>확인</Button>
         </Modal>
       )}
     </div>
@@ -327,31 +366,23 @@ function Table({ children }: { children: React.ReactNode }) {
   );
 }
 
-type TdProps = {
-  children: React.ReactNode;
-  clickable?: boolean;
-  onClick?: () => void;
-  align?: "left" | "center" | "right";
-};
-
 function Td({
   children,
   clickable = false,
   onClick,
   align = "left",
-}: TdProps) {
+}: {
+  children: React.ReactNode;
+  clickable?: boolean;
+  onClick?: () => void;
+  align?: "left" | "center" | "right";
+}) {
   return (
     <td
       onClick={onClick}
-      className={`px-6 py-4 text-white align-middle ${
+      className={`px-6 py-4 text-white ${
         clickable ? "cursor-pointer hover:underline" : ""
-      } ${
-        align === "center"
-          ? "text-center"
-          : align === "right"
-          ? "text-right"
-          : ""
-      }`}
+      } ${align === "center" ? "text-center" : ""}`}
     >
       {children}
     </td>
