@@ -56,8 +56,12 @@ public class VoteUserEntity {
        =============================== */
 
     // 🔥 배팅 대상(돈/배당 풀) = Option
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "option_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(
+    name = "option_id",
+    nullable = true,
+    columnDefinition = "BIGINT UNSIGNED"
+)
     private VoteOptionEntity option;
 
     // 🔥 판정용(YES/NO/DRAW) = Choice (없을 수도 있음)
