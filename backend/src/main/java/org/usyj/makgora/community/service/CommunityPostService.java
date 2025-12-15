@@ -40,7 +40,7 @@ public class CommunityPostService {
                 .user(user)
                 .title(request.getTitle())
                 .content(request.getContent())
-                .postType(request.getPostType() == null ? "일반" : request.getPostType())
+                .postType(request.getPostType() == null ? "free" : request.getPostType())
                 .build();
 
         communityPostRepository.save(post);
@@ -119,7 +119,7 @@ public class CommunityPostService {
 
         post.setTitle(request.getTitle());
         post.setContent(request.getContent());
-        post.setPostType(request.getPostType() == null ? "일반" : request.getPostType());
+        post.setPostType(request.getPostType() == null ? "free" : request.getPostType());
 
         return CommunityPostResponse.fromEntityWithCounts(
                 post,
