@@ -11,7 +11,7 @@ import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.entity.VoteOptionEntity;
 
 @Repository
-public interface VoteOptionRepository extends JpaRepository<VoteOptionEntity, Integer> {
+public interface VoteOptionRepository extends JpaRepository<VoteOptionEntity, Long> {
     List<VoteOptionEntity> findByVoteId(Integer voteId);
 
     List<VoteOptionEntity> findByVote(VoteEntity vote);

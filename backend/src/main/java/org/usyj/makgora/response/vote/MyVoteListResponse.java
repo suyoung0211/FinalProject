@@ -16,7 +16,7 @@ public class MyVoteListResponse {
     private String voteTitle;         // 투표 제목
     private String issueTitle;        // 이슈 제목
     
-    private Integer choiceId;
+    private Long choiceId;
     private String choiceText;
 
     private Integer pointsBet;        // 내가 건 포인트

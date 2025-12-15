@@ -32,7 +32,7 @@ public class VoteResponse {
     @Builder
     public static class OptionResponse {
 
-        private Integer optionId;
+        private Long optionId;
         private String optionTitle;
 
         // 🔥 옵션 기준 통계/배당
@@ -66,7 +66,7 @@ public class VoteResponse {
     @Builder
     public static class ChoiceResponse {
 
-        private Integer choiceId;
+        private Long choiceId;
         private String choiceText;
 
         public static ChoiceResponse fromEntity(VoteOptionChoiceEntity e) {

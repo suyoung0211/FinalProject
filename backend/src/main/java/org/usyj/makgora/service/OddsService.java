@@ -54,7 +54,7 @@ public OddsResponse getCurrentOdds(Integer voteId) {
     List<OddsResponse.OptionOdds> options =
             vote.getOptions().stream().map(option -> {
 
-                int optionId = option.getId();
+                long optionId = option.getId().longValue();
 
                 long totalPool =
                         voteUserRepository.sumPointsByOptionId(optionId);
@@ -163,7 +163,7 @@ public OddsResponse getCurrentOdds(Integer voteId) {
     @Transactional(readOnly = true)
     public double getOptionOddsForDisplay(
             Integer voteId,
-            Integer optionId,
+            Long optionId,
             int baseBet
     ) {
         VoteEntity vote = voteRepository.findById(voteId)

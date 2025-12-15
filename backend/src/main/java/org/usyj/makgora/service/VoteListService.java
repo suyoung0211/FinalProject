@@ -116,7 +116,7 @@ public class VoteListService {
         List<VoteOptionEntity> options =
                 voteOptionRepository.findByVoteId(voteId);
 
-        Integer myChoiceId = userId == null ? null :
+        Long myChoiceId = userId == null ? null :
                 voteUserRepository.findByUserIdAndVoteId(userId, voteId)
                         .map(v -> v.getChoice().getId())
                         .orElse(null);
@@ -176,7 +176,7 @@ public class VoteListService {
         options.stream()
                 .map(o ->
                         VoteDetailOddsResponse.OddsItem.builder()
-                                .optionId(o.getId().intValue())
+                                .optionId(o.getId())
                                 .optionTitle(o.getOptionTitle())
                                 .odds(o.getOdds())   // 옵션 기준 odds
                                 .history(List.of()) // 아직 없으면 빈 리스트

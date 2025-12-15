@@ -22,7 +22,7 @@ public class OddsResponse {
     @Builder
     public static class OptionOdds {
 
-        private Integer optionId;
+        private Long optionId;
         private String optionTitle;
 
         // 옵션에 몰린 총 포인트

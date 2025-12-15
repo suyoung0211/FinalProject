@@ -22,7 +22,7 @@ public class VoteDetailResolveRequest {
     @Getter
     @Setter
     public static class CorrectAnswer {
-        private Integer optionId;
-        private Integer choiceId;
+        private Long optionId;
+        private Long choiceId;
     }
 }

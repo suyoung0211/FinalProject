@@ -394,7 +394,7 @@ public class VoteDetailService {
                 .mapToInt(v -> v.getPointsBet() == null ? 0 : v.getPointsBet())
                 .sum();
 
-        Set<Integer> correctChoiceIds =
+        Set<Long> correctChoiceIds =
                 vote.getOptions().stream()
                         .filter(o -> o.getCorrectChoice() != null)
                         .map(o -> o.getCorrectChoice().getId())
@@ -594,7 +594,7 @@ public VoteTrendChartResponse loadTrendChart(Integer voteId) {
         trendRepository.findByVote_IdOrderByRecordedAtAsc(voteId);
 
     // optionId 기준 → recordedAt 기준 그룹화
-    Map<Integer, Map<LocalDateTime, List<VoteTrendHistoryEntity>>> grouped =
+    Map<Long, Map<LocalDateTime, List<VoteTrendHistoryEntity>>> grouped =
     histories.stream().collect(Collectors.groupingBy(
         (VoteTrendHistoryEntity h) -> h.getChoice().getOption().getId(), // ✅ 타입 고정
         LinkedHashMap::new,
@@ -610,7 +610,7 @@ public VoteTrendChartResponse loadTrendChart(Integer voteId) {
 
     for (var optionEntry : grouped.entrySet()) {
 
-        Integer optionId = optionEntry.getKey();
+        Long optionId = optionEntry.getKey();
         Map<LocalDateTime, List<VoteTrendHistoryEntity>> timeMap =
             optionEntry.getValue();
 

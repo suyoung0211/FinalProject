@@ -54,7 +54,7 @@ public VoteDetailSettlementResponse finished(
 
         VoteOptionChoiceEntity correctChoice =
                 option.getChoices().stream()
-                        .filter(c -> c.getId().equals(ans.getChoiceId()))
+                        .filter(c -> c.getId().equals(ans.getChoiceId().longValue()))
                         .findFirst()
                         .orElseThrow(() -> new RuntimeException("Choice not found"));
 
