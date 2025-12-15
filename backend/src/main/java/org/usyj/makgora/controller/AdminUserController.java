@@ -30,6 +30,7 @@ public class AdminUserController {
 
     private final UserInfoService userInfoService;
     private final UserUpdateService userUpdateService;
+    private final AdminDashboardService dashboardService;
 
     // 🔹 SecurityContext에서 현재 로그인한 유저 정보 가져오기(역할 확인용)
     private UserEntity getCurrentUser() {
@@ -95,5 +96,10 @@ public class AdminUserController {
         UserEntity updatedUser = userUpdateService.updateUser(id, request, currentUser);
 
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<AdminDashboardStatsResponse> getStats() {
+        return ResponseEntity.ok(dashboardService.getDashboardStats());
     }
 }

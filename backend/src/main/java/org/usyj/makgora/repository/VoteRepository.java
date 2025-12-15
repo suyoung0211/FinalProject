@@ -12,6 +12,7 @@ import java.util.Optional;
 
 @Repository
 public interface VoteRepository extends JpaRepository<VoteEntity, Integer> {
+    long count();
 
     // 특정 이슈와 연관된 투표 조회
     List<VoteEntity> findByIssue(IssueEntity issue);
