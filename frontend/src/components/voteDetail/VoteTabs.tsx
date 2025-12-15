@@ -113,7 +113,15 @@ export function VoteTabs({
     </div>
   );
 }
+const getChoiceColorClass = (text: string) => {
+  const t = text?.toUpperCase();
 
+  if (t === "YES") return "bg-green-500";
+  if (t === "NO") return "bg-red-500";
+  if (t === "DRAW") return "bg-gray-400";
+
+  return "bg-purple-500"; // 예외 대비
+};
 /* =========================================================
    AI Vote Chart
    chartData = [{ step, YES, NO, DRAW }]
@@ -136,6 +144,8 @@ function ChartAI({ chartData }: any) {
     NO: "#ef4444",
     DRAW: "#9ca3af",
   };
+
+  
 
   return (
     <div className="h-64 mb-6">
@@ -192,38 +202,48 @@ function CustomTooltip({ active, payload, label }: any) {
 /* =========================================================
    Normal Vote Chart (기존 유지)
    ========================================================= */
-function ChartNormal({ data, getPercent }: any) {
+function ChartNormal({ data }: any) {
   return (
     <div className="space-y-4">
-      {data.options?.map((opt: any) => (
-        <div
-          key={opt.optionId}
-          className="bg-white/5 rounded-xl p-4 border border-white/10"
-        >
-          <p className="text-white font-semibold mb-3">{opt.title}</p>
+      {data.options?.map((opt: any) => {
+        const total = opt.choices?.reduce(
+          (sum: number, c: any) => sum + Number(c.participantsCount ?? 0),
+          0
+        );
 
-          {opt.choices?.map((ch: any) => {
-            const percent = getPercent(ch, opt);
-            return (
-              <div key={ch.choiceId} className="mb-3">
-                <div className="flex justify-between text-xs text-gray-300 mb-1">
-                  <span>{ch.text ?? ch.choiceText}</span>
-                  <span>
-                    {ch.participantsCount ?? 0}명 ({percent}%)
-                  </span>
-                </div>
+        return (
+          <div
+            key={opt.optionId}
+            className="bg-white/5 rounded-xl p-4 border border-white/10"
+          >
+            <p className="text-white font-semibold mb-3">{opt.title}</p>
 
-                <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-purple-500"
-                    style={{ width: `${percent}%` }}
-                  />
+            {opt.choices?.map((ch: any) => {
+              const count = Number(ch.participantsCount ?? 0);
+              const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+              const label = ch.text ?? ch.choiceText;
+
+              return (
+                <div key={ch.choiceId} className="mb-3">
+                  <div className="flex justify-between text-xs text-gray-300 mb-1">
+                    <span>{label}</span>
+                    <span>
+                      {count}명 ({percent}%)
+                    </span>
+                  </div>
+
+                  <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${getChoiceColorClass(label)}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ))}
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }

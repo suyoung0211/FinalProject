@@ -40,7 +40,7 @@ public class NormalVoteParticipateService {
 
         // 중복 참여 방지
         Optional<VoteUserEntity> existing = 
-    voteUserRepository.findByNormalVote_IdAndUser_Id(normalVoteId, userId);
+    voteUserRepository.findByNormalVote_IdAndUser_Id(normalVoteId.longValue(), userId);
 
 if (existing.isPresent()) {
     throw new RuntimeException("이미 참여한 투표입니다.");

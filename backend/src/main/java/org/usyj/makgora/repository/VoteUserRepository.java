@@ -32,7 +32,7 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
        Normal Vote
        =============================== */
 
-    Optional<VoteUserEntity> findByNormalVote_IdAndUser_Id(Integer voteId, Integer userId);
+    Optional<VoteUserEntity> findByNormalVote_IdAndUser_Id(Long normalVoteId, Integer userId);
 
     // 🔵 NormalVote 참여자 총 수
     int countByNormalVote_Id(Integer normalVoteId);

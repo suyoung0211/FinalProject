@@ -127,6 +127,21 @@ function buildResolvePayload() {
   };
 }
 
+function getNormalChoicePercent(choice: any, option: any) {
+  const total =
+    option.choices?.reduce(
+      (sum: number, c: any) =>
+        sum + (c.participantsCount ?? 0),
+      0
+    ) ?? 0;
+
+  if (total === 0) return 0;
+
+  return Math.round(
+    ((choice.participantsCount ?? 0) / total) * 100
+  );
+}
+
 async function handleAdminResolve(withSettle: boolean) {
   if (!data) return;
 
@@ -220,10 +235,24 @@ async function handleAdminSettleOnly() {
   }
 
   async function handleParticipateNormal(choiceId: number) {
-    if (!user) return alert("로그인이 필요합니다.");
-    await participateNormalVote(marketId, choiceId);
-    load();
+  if (!user) {
+    alert("로그인이 필요합니다.");
+    return;
   }
+
+  try {
+    await participateNormalVote(marketId, choiceId);
+    alert("투표가 완료되었습니다.");
+    await load(); // 재조회
+  } catch (e: any) {
+    const message =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      "이미 이 투표에 참여하셨습니다.";
+
+    alert(message);
+  }
+}
 
   /* ================= RENDER ================= */
   return (
@@ -254,7 +283,7 @@ async function handleAdminSettleOnly() {
                 isAIVote={isAIVote}
                 data={data}
                 chartData={trendChart} // 🔥 진짜 데이터  
-                getNormalChoicePercent={() => 0}
+                getNormalChoicePercent={getNormalChoicePercent}
               />
             </>
           )}

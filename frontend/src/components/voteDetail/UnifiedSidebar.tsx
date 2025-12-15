@@ -10,13 +10,15 @@ export function UnifiedSidebar({
 }: any) {
   const safeOptions = data?.options ?? [];
   const myParticipation = data?.myParticipation;
+  const hasParticipated = !!myParticipation?.hasParticipated;
 
   const isFinished =
-    data?.status === "RESOLVED" || data?.status === "REWARDED";
-
+    data?.status === "RESOLVED" ||
+    data?.status === "REWARDED" ||
+    data?.status === "FINISHED";
 
   /* ===============================================================
-     2️⃣ 라벨 정규화
+     1️⃣ 라벨 정규화
      =============================================================== */
   function normalizeLabel(label: any): "YES" | "NO" | "DRAW" | "UNKNOWN" {
     if (!label) return "UNKNOWN";
@@ -28,31 +30,26 @@ export function UnifiedSidebar({
   }
 
   /* ===============================================================
-     3️⃣ 옵션 가공 (🔥 핵심 로직)
+     2️⃣ 옵션 가공
      =============================================================== */
   const processedOptions = safeOptions.map((opt: any) => {
     const optionId = Number(opt.optionId ?? opt.id);
     const correctChoiceId = opt.correctChoiceId ?? null;
 
-    // --- choice 정규화 ---
     const normalizedChoices = (opt.choices ?? []).map((c: any) => {
-  const finalChoiceId = Number(c.choiceId ?? c.id);
+      const finalChoiceId = Number(c.choiceId ?? c.id);
 
-  return {
-    ...c,
-    finalChoiceId,
-    label: c.choiceText ?? c.text ?? "",
-    normalized: normalizeLabel(c.choiceText ?? c.text),
-    isCorrect: isFinished && correctChoiceId === finalChoiceId,
+      return {
+        ...c,
+        finalChoiceId,
+        label: c.choiceText ?? c.text ?? "",
+        normalized: normalizeLabel(c.choiceText ?? c.text),
+        isCorrect: isFinished && correctChoiceId === finalChoiceId,
+        odds: typeof c.odds === "number" ? c.odds : 1.0,
+        participantsCount: Number(c.participantsCount ?? 0),
+      };
+    });
 
-    // ✅ 여기만 사용
-    odds: typeof c.odds === "number" ? c.odds : 1.0,
-
-    participantsCount: Number(c.participantsCount ?? 0),
-  };
-});
-
-    // --- option 내부 total 기준 ---
     const total = normalizedChoices.reduce(
       (sum: number, c: any) => sum + c.participantsCount,
       0
@@ -64,7 +61,6 @@ export function UnifiedSidebar({
         : 0;
     });
 
-    // --- YES / NO / DRAW ---
     const yes = normalizedChoices
       .filter((c: any) => c.normalized === "YES")
       .reduce((a: number, c: any) => a + c.participantsCount, 0);
@@ -82,7 +78,6 @@ export function UnifiedSidebar({
       optionId,
       optionTitle: opt.optionTitle ?? opt.title,
       choices: normalizedChoices,
-
       yesP: total ? Math.round((yes / total) * 100) : 0,
       noP: total ? Math.round((no / total) * 100) : 0,
       drawP:
@@ -95,7 +90,7 @@ export function UnifiedSidebar({
   });
 
   /* ===============================================================
-     4️⃣ 내 선택
+     3️⃣ 내 선택 정보
      =============================================================== */
   let myChoice: any = null;
 
@@ -119,11 +114,11 @@ export function UnifiedSidebar({
     : "(선택지 정보 없음)";
 
   /* ===============================================================
-     5️⃣ RENDER
+     4️⃣ RENDER
      =============================================================== */
   return (
     <div className="relative bg-white/5 border border-white/10 rounded-2xl p-4 space-y-4">
-      {myParticipation?.hasParticipated && (
+      {hasParticipated && (
         <div className="absolute top-2 right-3 bg-green-600/70 text-white text-xs font-semibold px-2 py-1 rounded-md">
           참여 완료
         </div>
@@ -161,19 +156,34 @@ export function UnifiedSidebar({
             return (
               <button
                 key={c.finalChoiceId}
-                disabled={isFinished}
-                onClick={() =>
-                  isAIVote
-                    ? openVoteModal(c.finalChoiceId)
-                    : handleParticipateNormal(c.finalChoiceId)
-                }
+                disabled={hasParticipated || isFinished}
+                onClick={() => {
+                  if (hasParticipated) {
+                    window.alert("이미 이 투표에 참여하셨습니다.");
+                    return;
+                  }
+
+                  if (isAIVote) {
+                    openVoteModal(c.finalChoiceId);
+                    return;
+                  }
+
+                  const ok = window.confirm(
+                    `"${opt.optionTitle} - ${c.label}"에 투표하시겠습니까?`
+                  );
+                  if (!ok) return;
+
+                  handleParticipateNormal(c.finalChoiceId);
+                }}
                 className={`
                   w-full flex justify-between items-center
                   rounded-lg px-3 py-3 mb-2 text-sm text-white
                   ${color}
                   ${isSelected ? "ring-2 ring-yellow-400" : ""}
                   ${c.isCorrect ? "ring-2 ring-green-400" : ""}
-                  ${isFinished ? "opacity-50 cursor-not-allowed" : ""}
+                  ${hasParticipated || isFinished
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""}
                 `}
               >
                 <span>{c.label}</span>
@@ -193,8 +203,8 @@ export function UnifiedSidebar({
         </div>
       ))}
 
-      {/* 포인트 선택 */}
-      {isAIVote && !myParticipation?.hasParticipated && !isFinished && (
+      {/* 포인트 선택 (AI 전용) */}
+      {isAIVote && !hasParticipated && !isFinished && (
         <>
           <div className="grid grid-cols-3 gap-2 mt-2">
             {[50, 100, 250, 500, 1000].map((amt) => (
@@ -223,16 +233,20 @@ export function UnifiedSidebar({
         </>
       )}
 
-      {isAIVote && myParticipation?.hasParticipated && (
+      {/* 내 참여 정보 (AI / Normal 공통) */}
+      {hasParticipated && (
         <div className="mt-4 bg-purple-600/20 border border-purple-400/30 rounded-lg p-3 text-white">
           <div className="font-semibold mb-1 text-sm">내 참여 정보</div>
           <div className="text-sm">
             선택: <b>{myChoiceText}</b>
           </div>
-          <div className="text-sm mt-1">
-            배팅:{" "}
-            <b>{myParticipation.pointsBet?.toLocaleString()} pt</b>
-          </div>
+
+          {isAIVote && (
+            <div className="text-sm mt-1">
+              배팅:{" "}
+              <b>{myParticipation.pointsBet?.toLocaleString()} pt</b>
+            </div>
+          )}
         </div>
       )}
     </div>
