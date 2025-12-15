@@ -18,6 +18,12 @@ export default defineConfig({
         target: "http://localhost:8080",   // ⭐ 백엔드 스프링부트 주소
         changeOrigin: true,
         secure: false,
+      },
+      // 🔥 추가: /uploads 경로도 백엔드로 프록시
+      "/uploads": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
       }
     }
   }
