@@ -30,6 +30,11 @@ public class AdminVoteController {
         return voteSettlementService.finished(voteId, req);
     }
 
+    @PostMapping("/{voteId}/finish-only")
+public void finishOnly(@PathVariable Integer voteId) {
+    voteSettlementService.finish(voteId);
+}
+
     /** ✔ 정답 선택 + 즉시 정산 (정산 결과 반환) */
     @PostMapping("/{voteId}/resolve-and-settle")
     public ResponseEntity<VoteDetailSettlementResponse> resolveAndSettle(

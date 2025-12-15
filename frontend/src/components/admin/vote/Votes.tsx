@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../ui/button";
-import { AxiosResponse } from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { fetchVoteList, fetchVoteDetail } from "../../../api/voteApi";
@@ -8,57 +7,67 @@ import { fetchNormalVoteList } from "../../../api/normalVoteApi";
 
 import {
   adminResolveAndSettleVote,
-  adminSettleVote,
   adminFinishNormalVote,
   adminCancelNormalVote,
   adminOpenVote,
+  adminFinishVote,
 } from "../../../api/adminAPI";
 
 import { ResolveVoteModal } from "./ResolveVoteModal";
 
-/* ======================================================
- * 옵션 / Choice ID → 텍스트 매핑 (순수 유틸)
- * ====================================================== */
-function buildOptionLookup(vote: any) {
-  const optionMap = new Map<number, string>();
-  const choiceMap = new Map<number, string>();
+/* =========================
+ * Types
+ * ========================= */
+type VoteStatus =
+  | "REVIEWING"
+  | "ONGOING"
+  | "FINISHED"
+  | "RESOLVED"
+  | "REWARDED"
+  | "CANCELLED"
+  | "UNKNOWN";
 
-  if (!vote?.options) return { optionMap, choiceMap };
+type ConfirmAction = "OPEN" | "FINISH" | "CANCEL";
 
-  vote.options.forEach((opt: any) => {
-    const optionId = opt.optionId ?? opt.id;
+/* =========================
+ * Status Badge
+ * ========================= */
+function StatusBadge({ status }: { status: VoteStatus }) {
+  const map: Record<VoteStatus, string> = {
+    REVIEWING: "bg-gray-500/20 text-gray-300",
+    ONGOING: "bg-green-500/20 text-green-300",
+    FINISHED: "bg-yellow-500/20 text-yellow-300",
+    RESOLVED: "bg-blue-500/20 text-blue-300",
+    REWARDED: "bg-purple-500/20 text-purple-300",
+    CANCELLED: "bg-red-500/20 text-red-300",
+    UNKNOWN: "bg-white/10 text-gray-300",
+  };
 
-    optionMap.set(
-      optionId,
-      opt.optionTitle ?? opt.title ?? `옵션 ${optionId}`
-    );
-
-    opt.choices?.forEach((c: any) => {
-      const choiceId = c.choiceId ?? c.id;
-      choiceMap.set(
-        choiceId,
-        c.text ?? c.choiceText ?? `선택지 ${choiceId}`
-      );
-    });
-  });
-
-  return { optionMap, choiceMap };
+  return (
+    <span className={`px-2 py-1 rounded text-xs ${map[status]}`}>
+      {status}
+    </span>
+  );
 }
 
+/* =========================
+ * Main
+ * ========================= */
 export function Votes() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [tab, setTab] = useState<"AI" | "NORMAL">("AI");
-
   const [aiVotes, setAiVotes] = useState<any[]>([]);
   const [normalVotes, setNormalVotes] = useState<any[]>([]);
-
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("latest");
-
   const [resolveVote, setResolveVote] = useState<any | null>(null);
-  const [settlementResult, setSettlementResult] = useState<any | null>(null);
+
+  const [confirmTarget, setConfirmTarget] = useState<{
+    voteId: number;
+    action: ConfirmAction;
+  } | null>(null);
+
+  const [resultMessage, setResultMessage] = useState<string | null>(null);
 
   /* ================= 데이터 로드 ================= */
   async function loadAll() {
@@ -76,25 +85,22 @@ export function Votes() {
       }))
     );
 
-    setNormalVotes(normalRes.data.votes || []);
+    setNormalVotes(
+      (normalRes.data.votes || []).map((v: any) => ({
+        ...v,
+        status: v.status ?? "UNKNOWN",
+      }))
+    );
   }
 
   useEffect(() => {
     loadAll();
   }, []);
 
-  /* ================= 필터 ================= */
-  const filteredAI = aiVotes
-    .filter((v) => v.title?.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => (sort === "latest" ? b.id - a.id : a.id - b.id));
-
-  const filteredNormal = normalVotes
-    .filter((v) => v.title?.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => (sort === "latest" ? b.id - a.id : a.id - b.id));
-
+  /* ================= RENDER ================= */
   return (
     <div className="space-y-6">
-      {/* ================= Tabs ================= */}
+      {/* Tabs */}
       <div className="flex gap-3">
         <Button
           className={tab === "AI" ? "bg-purple-600" : "bg-white/10"}
@@ -110,95 +116,118 @@ export function Votes() {
         </Button>
       </div>
 
-      {/* ================= 검색 ================= */}
-      <div className="flex gap-4">
-        <input
-          className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-          placeholder="검색 (제목)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="latest">최신순</option>
-          <option value="oldest">오래된순</option>
-        </select>
-      </div>
-
-      {/* ================= AI Votes ================= */}
+      {/* ================= AI ================= */}
       {tab === "AI" && (
-        <VoteTable
-          votes={filteredAI}
-          voteType="AI"
-          navigate={navigate}
-          location={location}
-          onOpenResolve={async (id) => {
-            const res = await fetchVoteDetail(id);
-            setResolveVote(res.data);
-          }}
-          onReload={loadAll}
-        />
-      )}
+        <Table>
+          {aiVotes.map((v) => (
+            <tr key={v.id}>
+              <Td
+                clickable
+                onClick={() =>
+                  navigate(`/votes/${v.id}`, {
+                    state: { voteType: "AI", background: location },
+                  })
+                }
+              >
+                {v.title}
+              </Td>
 
-      {/* ================= NORMAL Votes ================= */}
-      {tab === "NORMAL" && (
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-6 py-3 text-xs text-gray-400">제목</th>
-                <th className="px-6 py-3 text-xs text-gray-400">참여자</th>
-                <th className="px-6 py-3 text-xs text-gray-400">관리</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredNormal.map((v) => (
-                <tr key={v.id}>
-                  {/* 🔥 제목 클릭 → NORMAL 상세 모달 */}
-                  <td
-                    className="px-6 py-4 text-white cursor-pointer hover:underline"
-                    onClick={() =>
-                      navigate(`/votes/${v.id}`, {
-                        state: {
-                          voteType: "NORMAL",
-                          background: location,
-                        },
-                      })
-                    }
-                  >
-                    {v.title}
-                  </td>
+              <Td align="center">{v.totalParticipants}</Td>
+              <Td align="center">
+                <StatusBadge status={v.status} />
+              </Td>
 
-                  <td className="px-6 py-4 text-white">
-                    {v.totalParticipants ?? 0}
-                  </td>
+              <Td align="center">
+                <div className="flex justify-center gap-2 min-h-[32px]">
+                  {v.status === "REVIEWING" && (
+                    <Button
+                      className="bg-blue-500/20 text-blue-300 text-xs"
+                      onClick={() =>
+                        setConfirmTarget({ voteId: v.id, action: "OPEN" })
+                      }
+                    >
+                      투표 개시
+                    </Button>
+                  )}
 
-                  <td className="px-6 py-4 flex gap-2">
+                  {v.status === "ONGOING" && (
                     <Button
                       className="bg-green-500/20 text-green-300 text-xs"
                       onClick={() =>
-                        adminFinishNormalVote(v.id).then(loadAll)
+                        setConfirmTarget({ voteId: v.id, action: "FINISH" })
                       }
                     >
-                      종료
+                      투표 종료
                     </Button>
+                  )}
+
+                  {v.status === "FINISHED" && (
                     <Button
-                      className="bg-red-500/20 text-red-300 text-xs"
-                      onClick={() =>
-                        adminCancelNormalVote(v.id).then(loadAll)
-                      }
+                      className="bg-purple-500/20 text-purple-300 text-xs"
+                      onClick={async () => {
+                        const res = await fetchVoteDetail(v.id);
+                        setResolveVote(res.data);
+                      }}
                     >
-                      취소
+                      정답 선택
                     </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </div>
+              </Td>
+            </tr>
+          ))}
+        </Table>
+      )}
+
+      {/* ================= NORMAL ================= */}
+      {tab === "NORMAL" && (
+        <Table>
+          {normalVotes.map((v) => (
+            <tr key={v.id}>
+              <Td
+                clickable
+                onClick={() =>
+                  navigate(`/votes/${v.id}`, {
+                    state: { voteType: "NORMAL", background: location },
+                  })
+                }
+              >
+                {v.title}
+              </Td>
+
+              <Td align="center">{v.totalParticipants}</Td>
+              <Td align="center">
+                <StatusBadge status={v.status} />
+              </Td>
+
+              <Td align="center">
+                <div className="flex justify-center gap-2 min-h-[32px]">
+                  {v.status === "ONGOING" && (
+                    <>
+                      <Button
+                        className="bg-green-500/20 text-green-300 text-xs"
+                        onClick={() =>
+                          setConfirmTarget({ voteId: v.id, action: "FINISH" })
+                        }
+                      >
+                        종료
+                      </Button>
+
+                      <Button
+                        className="bg-red-500/20 text-red-300 text-xs"
+                        onClick={() =>
+                          setConfirmTarget({ voteId: v.id, action: "CANCEL" })
+                        }
+                      >
+                        취소
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </Td>
+            </tr>
+          ))}
+        </Table>
       )}
 
       {/* ================= Resolve Modal ================= */}
@@ -206,8 +235,12 @@ export function Votes() {
         <ResolveVoteModal
           vote={resolveVote}
           onClose={() => setResolveVote(null)}
-          onSubmit={(selectedChoices) => {
-            const voteId = resolveVote.voteId ?? resolveVote.id;
+          onSubmit={(selectedChoices: Record<number, number>) => {
+            if (!resolveVote?.voteId) {
+              alert("voteId가 없습니다.");
+              return;
+            }
+
             const answers = Object.entries(selectedChoices).map(
               ([optionId, choiceId]) => ({
                 optionId: Number(optionId),
@@ -215,10 +248,9 @@ export function Votes() {
               })
             );
 
-            adminResolveAndSettleVote(voteId, { answers }).then(
-              (res: AxiosResponse<any>) => {
+            adminResolveAndSettleVote(resolveVote.voteId, { answers }).then(
+              () => {
                 setResolveVote(null);
-                setSettlementResult(res.data);
                 loadAll();
               }
             );
@@ -226,45 +258,58 @@ export function Votes() {
         />
       )}
 
-      {/* ================= Settlement Result ================= */}
-      {settlementResult && (() => {
-        const { optionMap, choiceMap } = buildOptionLookup(resolveVote);
+      {/* ================= CONFIRM MODAL ================= */}
+      {confirmTarget && (
+        <Modal>
+          <p className="text-white font-bold">
+            {confirmTarget.action === "OPEN" && "투표를 개시하시겠습니까?"}
+            {confirmTarget.action === "FINISH" && "투표를 종료하시겠습니까?"}
+            {confirmTarget.action === "CANCEL" && "투표를 취소하시겠습니까?"}
+          </p>
 
-        return (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-slate-900 border border-white/10 rounded-xl p-6 w-[520px] space-y-4">
-              <h2 className="text-white font-bold text-lg">정산 결과</h2>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setConfirmTarget(null)}>취소</Button>
+            <Button
+              className="bg-purple-600"
+              onClick={async () => {
+                if (confirmTarget.action === "OPEN") {
+                  await adminOpenVote(confirmTarget.voteId);
+                  setResultMessage("투표를 개시하였습니다.");
+                }
+                if (confirmTarget.action === "FINISH") {
+                  tab === "AI"
+                    ? await adminFinishVote(confirmTarget.voteId)
+                    : await adminFinishNormalVote(confirmTarget.voteId);
+                  setResultMessage("투표를 종료하였습니다.");
+                }
+                if (confirmTarget.action === "CANCEL") {
+                  await adminCancelNormalVote(confirmTarget.voteId);
+                  setResultMessage("투표를 취소하였습니다.");
+                }
 
-              <div className="text-sm text-gray-300 space-y-1">
-                <p>총 당첨자 수: {settlementResult.totalWinnerCount}</p>
-                <p>총 지급 포인트: {settlementResult.totalDistributed}</p>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  className="bg-purple-600"
-                  onClick={() => setSettlementResult(null)}
-                >
-                  확인
-                </Button>
-              </div>
-            </div>
+                setConfirmTarget(null);
+                loadAll();
+              }}
+            >
+              확인
+            </Button>
           </div>
-        );
-      })()}
+        </Modal>
+      )}
+
+      {/* ================= RESULT ================= */}
+      {resultMessage && (
+        <Modal>
+          <p className="text-white text-center">{resultMessage}</p>
+          <Button onClick={() => setResultMessage(null)}>확인</Button>
+        </Modal>
+      )}
     </div>
   );
 }
 
-/* ================= 공용 AI 테이블 ================= */
-function VoteTable({
-  votes,
-  voteType,
-  navigate,
-  location,
-  onOpenResolve,
-  onReload,
-}: any) {
+/* ================= UI Helpers ================= */
+function Table({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
       <table className="w-full">
@@ -272,37 +317,53 @@ function VoteTable({
           <tr>
             <th className="px-6 py-3 text-xs text-gray-400">제목</th>
             <th className="px-6 py-3 text-xs text-gray-400">참여자</th>
+            <th className="px-6 py-3 text-xs text-gray-400">상태</th>
             <th className="px-6 py-3 text-xs text-gray-400">관리</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
-          {votes.map((v: any) => (
-            <tr key={v.id}>
-              <td
-                className="px-6 py-4 text-white cursor-pointer hover:underline"
-                onClick={() =>
-                  navigate(`/votes/${v.id}`, {
-                    state: { voteType, background: location },
-                  })
-                }
-              >
-                {v.title}
-              </td>
-              <td className="px-6 py-4 text-white">
-                {v.totalParticipants}
-              </td>
-              <td className="px-6 py-4">
-                <Button
-                  className="bg-purple-500/20 text-purple-300 text-xs"
-                  onClick={() => onOpenResolve(v.id)}
-                >
-                  정답 선택
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+        <tbody className="divide-y divide-white/5">{children}</tbody>
       </table>
+    </div>
+  );
+}
+
+type TdProps = {
+  children: React.ReactNode;
+  clickable?: boolean;
+  onClick?: () => void;
+  align?: "left" | "center" | "right";
+};
+
+function Td({
+  children,
+  clickable = false,
+  onClick,
+  align = "left",
+}: TdProps) {
+  return (
+    <td
+      onClick={onClick}
+      className={`px-6 py-4 text-white align-middle ${
+        clickable ? "cursor-pointer hover:underline" : ""
+      } ${
+        align === "center"
+          ? "text-center"
+          : align === "right"
+          ? "text-right"
+          : ""
+      }`}
+    >
+      {children}
+    </td>
+  );
+}
+
+function Modal({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+      <div className="bg-slate-900 border border-white/10 rounded-xl p-6 w-[420px] space-y-4">
+        {children}
+      </div>
     </div>
   );
 }

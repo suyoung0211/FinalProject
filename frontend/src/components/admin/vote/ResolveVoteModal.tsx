@@ -1,10 +1,17 @@
 import { Button } from "../../ui/button";
 import { useState } from "react";
 
-export function ResolveVoteModal({ vote, onClose, onSubmit }: any) {
-  const [selectedChoices, setSelectedChoices] = useState<Record<number, number>>(
-    {}
-  );
+export function ResolveVoteModal({
+  vote,
+  onClose,
+  onSubmit,
+}: {
+  vote: any;
+  onClose: () => void;
+  onSubmit: (selectedChoices: Record<number, number>) => void;
+}) {
+  const [selectedChoices, setSelectedChoices] =
+    useState<Record<number, number>>({});
 
   if (!vote) return null;
 
@@ -17,7 +24,6 @@ export function ResolveVoteModal({ vote, onClose, onSubmit }: any) {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-slate-900 border border-white/10 rounded-xl p-6 w-[420px] space-y-4">
-
         <h2 className="text-white font-bold text-lg">
           정답 선택 — {vote.title}
         </h2>
@@ -36,15 +42,8 @@ export function ResolveVoteModal({ vote, onClose, onSubmit }: any) {
                     : "border-white/10"
                 }`}
               >
-                <p className="text-sm mb-2 flex items-center gap-2">
-                  <span className="text-gray-300">
-                    {opt.optionTitle ?? opt.title}
-                  </span>
-                  {notSelected && (
-                    <span className="text-xs text-red-400">
-                      (정답 선택 필요)
-                    </span>
-                  )}
+                <p className="text-sm mb-2 text-gray-300">
+                  {opt.optionTitle ?? opt.title}
                 </p>
 
                 {opt.choices.map((c: any) => (
@@ -72,10 +71,7 @@ export function ResolveVoteModal({ vote, onClose, onSubmit }: any) {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            className="flex-1 bg-gray-600/30"
-            onClick={onClose}
-          >
+          <Button className="flex-1 bg-gray-600/30" onClick={onClose}>
             취소
           </Button>
           <Button

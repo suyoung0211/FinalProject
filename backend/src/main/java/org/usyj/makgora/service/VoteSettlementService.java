@@ -73,6 +73,23 @@ public class VoteSettlementService {
 
         return previewSettlement(vote);
     }
+    /* ============================================================
+       1) 종료처리만(정답X) (FINISHED → RESOLVED)
+       ============================================================ */
+
+    @Transactional
+public void finish(Integer voteId) {
+    VoteEntity vote = voteRepository.findById(voteId)
+        .orElseThrow();
+
+    if (vote.getStatus() != VoteEntity.Status.ONGOING) {
+        throw new RuntimeException("종료 불가 상태");
+    }
+
+    vote.setStatus(VoteEntity.Status.FINISHED);
+    voteRepository.save(vote);
+    historyService.recordStatus(vote, VoteEntity.Status.FINISHED);
+}
 
     /* ============================================================
        2) 정답 확정 + 즉시 정산
