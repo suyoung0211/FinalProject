@@ -106,9 +106,7 @@ useEffect(() => {
           id: String(post.postId),  // Long → string
           title: post.title,
           content: post.content,
-          category: post.postType === '이슈추천' ? 'prediction' 
-                  : post.postType === '포인트자랑' ? 'strategy' 
-                  : 'free',  // postType → category 변환
+          category: post.postType || 'free',
           author: post.author || post.authorNickname,
           authorName: post.authorNickname || post.author,
           authorLevel: post.authorLevel || 0,

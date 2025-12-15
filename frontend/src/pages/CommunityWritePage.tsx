@@ -85,15 +85,8 @@ export function CommunityWritePage({
     initialPost?.content || ""
   );
 
-  // postType → category 매핑
-  const mapPostTypeToCategory = (postType: string): string => {
-    if (postType === "이슈추천") return "prediction";
-    if (postType === "포인트자랑") return "strategy";
-    return "free";
-  };
-
   const [newPostCategory, setNewPostCategory] = useState(
-    initialPost ? mapPostTypeToCategory(initialPost.postType) : "free"
+  initialPost?.postType || "free"
   );
   const [newPostTags, setNewPostTags] = useState(
     initialPost?.tags?.join(", ") || ""
@@ -137,7 +130,7 @@ export function CommunityWritePage({
       setNewPostTitle(initialPost.title || "");
       setNewPostContent(initialPost.content || "");
       setPreviewContent(initialPost.content || "");
-      setNewPostCategory(mapPostTypeToCategory(initialPost.postType || "일반"));
+      setNewPostCategory(initialPost.postType || "free");
       setNewPostTags(initialPost.tags?.join(", ") || "");
       setCurrentPostId(initialPost.postId);
 
@@ -268,9 +261,7 @@ export function CommunityWritePage({
 
   // category → postType 매핑
   const mapCategoryToPostType = (category: string): string => {
-    if (category === "prediction") return "이슈추천";
-    if (category === "strategy") return "포인트자랑";
-    return "일반";
+    return category;
   };
 
   const handleSubmit = async () => {
@@ -289,7 +280,7 @@ export function CommunityWritePage({
     try {
       setIsSubmitting(true);
 
-      const postType = mapCategoryToPostType(newPostCategory);
+      const postType = newPostCategory;
 
       const requestBody = {
         title: newPostTitle.trim(),
