@@ -1,4 +1,5 @@
 // src/components/vote/comments/VoteCommentSection.tsx
+
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import {
@@ -24,8 +25,25 @@ import { useAuth } from "../../../hooks/useAuth";
 type TargetType = "VOTE" | "NORMAL";
 
 interface VoteCommentSectionProps {
-  targetType: TargetType; // "VOTE" → AI Vote / "NORMAL" → NormalVote
+  targetType: TargetType;
   targetId: number;
+}
+
+/* =========================================================
+   🔥 댓글 + 대댓글 포함 개수 계산 (재귀)
+   ========================================================= */
+function countCommentsWithChildren(comments: any[] = []): number {
+  let count = 0;
+
+  for (const c of comments) {
+    if (!c.deleted) count += 1;
+
+    if (c.children && c.children.length > 0) {
+      count += countCommentsWithChildren(c.children);
+    }
+  }
+
+  return count;
 }
 
 export function VoteCommentSection({
@@ -36,24 +54,6 @@ export function VoteCommentSection({
   const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
-
- /* ============================================
- * 댓글 수정
- * ============================================ */
-async function handleEdit(commentId: number, content: string) {
-  try {
-    if (targetType === "VOTE") {
-      await updateVoteComment(commentId, content);
-    } else {
-      await updateNormalVoteComment(commentId, content);
-    }
-    await load();
-  } catch (e) {
-    console.error(e);
-    alert("댓글 수정 실패");
-  }
-}
-
 
   /* ============================================
    * 댓글 목록 불러오기
@@ -69,6 +69,7 @@ async function handleEdit(commentId: number, content: string) {
         res = await fetchNormalVoteComments(targetId);
       }
 
+      // ⚠️ 여기서 이미 트리 구조로 내려옴
       setComments(res.data ?? []);
     } catch (e) {
       console.error("[댓글 불러오기 실패]", e);
@@ -114,6 +115,23 @@ async function handleEdit(commentId: number, content: string) {
   }
 
   /* ============================================
+   * 댓글 수정
+   * ============================================ */
+  async function handleEdit(commentId: number, content: string) {
+    try {
+      if (targetType === "VOTE") {
+        await updateVoteComment(commentId, content);
+      } else {
+        await updateNormalVoteComment(commentId, content);
+      }
+      await load();
+    } catch (e) {
+      console.error(e);
+      alert("댓글 수정 실패");
+    }
+  }
+
+  /* ============================================
    * 좋아요 / 싫어요
    * ============================================ */
   async function handleReact(commentId: number, like: boolean) {
@@ -150,12 +168,15 @@ async function handleEdit(commentId: number, content: string) {
   }
 
   /* ============================================
-   * UI 렌더링
+   * UI
    * ============================================ */
+  const totalCommentCount = countCommentsWithChildren(comments);
+
   return (
     <div className="space-y-4">
       <h3 className="text-white font-semibold flex items-center gap-2">
-        <MessageCircle className="w-5 h-5" /> 댓글 ({comments.length})
+        <MessageCircle className="w-5 h-5" />
+        댓글 ({totalCommentCount})
       </h3>
 
       {/* 입력창 */}
@@ -169,34 +190,38 @@ async function handleEdit(commentId: number, content: string) {
       )}
 
       {!loading && comments.length === 0 && (
-        <div className="text-gray-400 text-sm">첫 댓글을 남겨보세요!</div>
+        <div className="text-gray-400 text-sm">
+          첫 댓글을 남겨보세요!
+        </div>
       )}
 
       {/* 댓글 리스트 */}
       <div className="space-y-3">
         {comments.map((c: any) => (
           <VoteCommentItem
-  key={c.commentId}
-  comment={c}
-  depth={0}
-  onReply={(id) => setReplyTargetId(id)}
-  onReact={handleReact}
-  onDelete={handleDelete}
-  onEdit={handleEdit}   // ← 추가됨
-  currentUserId={user?.id ?? null}
-/>
+            key={c.commentId}
+            comment={c}
+            depth={0}
+            onReply={(id) => setReplyTargetId(id)}
+            onReact={handleReact}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+            currentUserId={user?.id ?? null}
+          />
         ))}
       </div>
 
       {/* 대댓글 입력 */}
       {replyTargetId && (
         <div className="mt-4 bg-white/5 rounded-xl p-3">
-          <div className="text-xs text-gray-300 mb-1">대댓글 작성 중...</div>
+          <div className="text-xs text-gray-300 mb-1">
+            대댓글 작성 중...
+          </div>
           <VoteCommentInput
             autoFocus
             placeholder="대댓글을 입력하세요"
             onSubmit={(content) =>
-              handleSubmit(content, replyTargetId ?? undefined)
+              handleSubmit(content, replyTargetId)
             }
             onCancel={() => setReplyTargetId(null)}
           />

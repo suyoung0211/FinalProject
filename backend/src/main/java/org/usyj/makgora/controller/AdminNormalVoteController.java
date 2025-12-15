@@ -3,7 +3,10 @@ package org.usyj.makgora.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.response.normalvote.NormalVoteResponse;
+import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.NormalVoteService;
 
 @RestController
@@ -20,9 +23,13 @@ public class AdminNormalVoteController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOne(@PathVariable Integer id) {
-        return ResponseEntity.ok(normalVoteService.getDetailForAdmin(id));
-    }
+public ResponseEntity<NormalVoteResponse> getDetail(
+        @PathVariable Integer id,
+        @AuthenticationPrincipal CustomUserDetails user
+) {
+    Integer userId = user != null ? user.getId() : null;
+    return ResponseEntity.ok(normalVoteService.getDetail(id, userId));
+}
 
     @PostMapping("/{id}/finish")
     public ResponseEntity<?> finish(@PathVariable Integer id) {

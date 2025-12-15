@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getAllAdminUsersApi } from "../../../api/adminAPI";
+import { getAllAdminUsersApi, getAdminDashboardStatsApi } from "../../../api/adminAPI";
 import { Users, DollarSign, TrendingUp, MessageSquare, Search, Plus, Edit, Ban, Trash2 } from "lucide-react";
 import { Avatar } from "../../Avatar";
 import { Button } from '../../ui/button';
@@ -26,6 +26,21 @@ export function Dashboard() {
 
   // 프로필 카드 모달용
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
+
+  // 📊 대시보드 통계
+  const [dashboardStats, setDashboardStats] = useState<{
+    totalVotes: number;
+    totalCommunityPosts: number;
+  } | null>(null);
+
+  const fetchDashboardStats = async () => {
+  try {
+    const res = await getAdminDashboardStatsApi();
+    setDashboardStats(res.data);
+  } catch (err) {
+    console.error("대시보드 통계 조회 실패", err);
+  }
+};
   
   // 🔹 검색 실행 (엔터 또는 돋보기 클릭)
   const handleSearch = () => {
@@ -82,6 +97,7 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchUsers();
+    fetchDashboardStats();
   }, []);
 
   const getStatusBadge = (status: string) => {
@@ -130,7 +146,9 @@ export function Dashboard() {
             <TrendingUp className="w-8 h-8 text-purple-400" />
             <span className="text-green-400 text-sm font-medium"></span>
           </div>
-          <div className="text-3xl font-bold text-white mb-1"></div>
+          <div className="text-3xl font-bold text-white mb-1">
+          {dashboardStats?.totalVotes?.toLocaleString() ?? "-"}
+          </div>
           <div className="text-sm text-gray-400">활성 마켓</div>
         </div>
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
@@ -138,10 +156,12 @@ export function Dashboard() {
             <MessageSquare className="w-8 h-8 text-pink-400" />
             <span className="text-green-400 text-sm font-medium"></span>
           </div>
-          <div className="text-3xl font-bold text-white mb-1">{users.filter(u => u.posts).length}</div>
+          <div className="text-3xl font-bold text-white mb-1">
+            {dashboardStats?.totalCommunityPosts?.toLocaleString() ?? "-"}
+          </div>
           <div className="text-sm text-gray-400">커뮤니티 글</div>
         </div>
-      </div>
+      </div>  
 
       {/* 🔹 검색 영역 - 엔터/아이콘 클릭으로 검색 */}
       <div className="p-6 mb-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">

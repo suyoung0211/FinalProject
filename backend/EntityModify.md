@@ -405,3 +405,55 @@ name = "Vote_Users",
 댓글 부모자식관계 fetch = FetchType.EAGER 붙여줌
 
 ALTERTABLE필수! 그냥 create로
+--------------------------------------------------
+12/12
+voteoptionchoiceentity 에 컬럼 추가
+
+옵션 당 초이스 방식 채용
+
+/* =========================
+     🆕 정답 여부 (핵심)
+     ========================= */
+  @Column(name = "is_correct", nullable = false)
+  @Builder.Default
+  private Boolean isCorrect = false;
+
+
+컬럼 추가 쿼리문 사용할거면 밑에꺼 사용
+ALTER TABLE Vote_Option_Choices
+ADD COLUMN is_correct BOOLEAN NOT NULL DEFAULT FALSE;
+
+⚠️ DB 새로 업데이트 필요함!
+
+--------------------------------------------------
+12/15
+
+VoteEntity
+   /** 🏁 정답 선택지 (정산의 기준이 되는 값) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "correct_choice_id")
+    private VoteOptionChoiceEntity correctChoice;
+    삭제
+
+vote관련 id값 long에서 Integer로 대부분 수정
+
+voteoptionentity로 정답값 이관
+    // ✅ 정답 여부 (정산 시 true)
+    @Column(name = "is_correct", nullable = false)
+    @Builder.Default
+    private Boolean isCorrect = false;
+
+voteoptionchoiceentity에 값 추가
+    // ✅ 옵션에 몰린 총 배팅 포인트
+    @Column(name = "points_total", nullable = false)
+    @Builder.Default
+    private Integer pointsTotal = 0;
+
+    // ✅ 옵션에 참여한 인원 수
+    @Column(name = "participants_count", nullable = false)
+    @Builder.Default
+    private Integer participantsCount = 0;
+
+⚠️ DB 새로 업데이트 필요함!
+----------------------------------------
+

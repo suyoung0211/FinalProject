@@ -17,7 +17,7 @@ import { Button } from "../components/ui/button";
 import { useAuth } from "../hooks/useAuth";
 
 import {
-  fetchVoteDetailFull,
+  fetchVoteDetail,
   participateVote,
 } from "../api/voteApi";
 
@@ -87,7 +87,7 @@ export function VoteDetailPage({ onBack, voteId, voteType }: VoteDetailPageProps
         setData(null);
 
         const res = isAIVote
-          ? await fetchVoteDetailFull(voteId)
+          ? await fetchVoteDetail(voteId)
           : await fetchNormalVoteDetail(voteId);
 
         if (!cancelled) {
@@ -298,7 +298,7 @@ export function VoteDetailPage({ onBack, voteId, voteType }: VoteDetailPageProps
       // 투표 후 데이터 새로고침
       try {
         const res = isAIVote
-          ? await fetchVoteDetailFull(voteIdentifier)
+          ? await fetchVoteDetail(voteIdentifier)
           : await fetchNormalVoteDetail(voteIdentifier);
         setData(res.data);
       } catch (e) {

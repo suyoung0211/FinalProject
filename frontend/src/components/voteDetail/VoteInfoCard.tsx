@@ -11,39 +11,45 @@ export function VoteInfoCard({
   setData,
   handleSaveEdit,
 
-  // 관리자용 props
-  adminCorrectChoiceId,
-  setAdminCorrectChoiceId,
+  adminAnswers,
+  setAdminAnswers,
   handleAdminResolve,
   handleAdminSettleOnly,
+  settlementResult,
 }: any) {
 
-  // =============================
-  // 🔥 DEBUG LOGGING
-  // =============================
-  console.log("🔥 [ADMIN] adminCorrectChoiceId:", adminCorrectChoiceId);
-  console.log("🔥 [ADMIN] raw options:", data?.options);
+  /* ===============================
+      옵션별 총 포인트 계산
+     =============================== */
+  const optionTotalPointsMap: Record<number, number> = {};
 
+  data.options?.forEach((opt: any) => {
+    const optionId = opt.optionId ?? opt.id;
+    optionTotalPointsMap[optionId] =
+      opt.choices?.reduce(
+        (sum: number, c: any) => sum + (c.pointsTotal ?? 0),
+        0
+      ) ?? 0;
+  });
+  
+
+  /* ===============================
+      최대 배당률 (choice 기준)
+     =============================== */
   const maxOdds = isAIVote
-  ? Math.max(...(data?.odds?.odds?.map((o: any) => o.odds) ?? [0]))
+  ? Math.max(
+      ...(
+        data?.options
+          ?.flatMap((opt: any) => opt.choices ?? [])
+          ?.map((c: any) => c.odds ?? 0) ?? [0]
+      )
+    )
   : null;
-
-  // ⚡ 옵션을 문자열 id로 통일
-  const parsedOptions =
-  data?.options?.flatMap((opt: any) =>
-    (opt?.choices ?? []).map((c: any) => ({
-      id: c.choiceId ?? c.id,
-      text: `${opt.optionTitle ?? opt.title ?? ""} - ${c.text ?? c.choiceText ?? ""}`,
-    }))
-  ) ?? [];
-
-  console.log("🔥 [ADMIN] parsed options:", parsedOptions);
-
 
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
 
-      {/* 🔥 ARTICLE THUMBNAIL */}
+      {/* ARTICLE */}
       {data.article?.thumbnailUrl && (
         <div className="w-full rounded-xl overflow-hidden mb-4">
           <img
@@ -54,7 +60,7 @@ export function VoteInfoCard({
         </div>
       )}
 
-      {/* CATEGORY + EDIT */}
+      {/* CATEGORY */}
       <div className="flex items-center gap-3 mb-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 rounded-full border border-purple-500/30">
           <span className="text-sm text-purple-300 font-medium">
@@ -64,84 +70,123 @@ export function VoteInfoCard({
       </div>
 
       {/* TITLE */}
-      {isNormalVote && (isOwner || isAdmin) ? (
-        <input
-          value={data.title}
-          onChange={(e) => setData({ ...data, title: e.target.value })}
-          className="w-full bg-white/10 text-white rounded-lg p-2 mb-4"
-        />
-      ) : (
-        <h1 className="text-lg font-bold text-white mb-3">{data.title}</h1>
-      )}
+      <h1 className="text-lg font-bold text-white mb-3">
+        {data.title}
+      </h1>
 
-      {/* DESCRIPTION */}
-      {isNormalVote && (isOwner || isAdmin) ? (
-        <textarea
-          value={data.description ?? ""}
-          onChange={(e) => setData({ ...data, description: e.target.value })}
-          className="w-full bg-white/10 text-white rounded-lg p-2 mb-6"
-        />
-      ) : data.description ? (
+      {data.description && (
         <p className="text-gray-300 leading-relaxed mb-6">
           {data.description}
         </p>
-      ) : null}
+      )}
 
-      {/* SUMMARY STATS */}
+      {/* SUMMARY */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="참여자" value={data.totalParticipants ?? 0} />
 
         {isAIVote && (
-          <StatCard label="총 포인트" value={data.totalPoints ?? 0} />
+          <StatCard
+            label="총 포인트"
+            value={Object.values(optionTotalPointsMap).reduce(
+              (a: number, b: number) => a + b,
+              0
+            )}
+          />
         )}
 
-        {/* 🔥 상태 대신 최대 배당 표시 */}
-  {isAIVote ? (
-    <StatCard
-      label="최대 배당률"
-      value={maxOdds ? `x${maxOdds.toFixed(2)}` : "-"}
-    />
-  ) : (
-    <StatCard label="상태" value={data.status} />
-  )}
+        {isAIVote ? (
+          <StatCard
+            label="최대 배당률"
+            value={maxOdds ? `x${maxOdds.toFixed(2)}` : "-"}
+          />
+        ) : (
+          <StatCard label="상태" value={data.status} />
+        )}
 
         <StatCard
-          label="마감일"
-          value={data.endAt ? new Date(data.endAt).toLocaleString() : "-"}
-        />
+  label="마감일"
+  value={
+    data.endAt
+      ? new Date(data.endAt)
+          .toISOString()
+          .slice(0, 10)
+          .replaceAll("-", "/")
+      : "-"
+  }
+/>
       </div>
 
-      {/* =============================== */}
-      {/* 🔥 ADMIN PANEL – 관리자만 보임 */}
-      {/* =============================== */}
+      {/* ===============================
+          ADMIN PANEL
+         =============================== */}
       {isAdmin && isAIVote && (
-        <div className="mt-8 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
-          <h2 className="text-red-300 font-bold mb-4 text-lg">관리자 패널</h2>
+        <div className="mt-10 p-5 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <h2 className="text-red-300 font-bold mb-4 text-lg">
+            관리자 패널
+          </h2>
 
-          {/* 정답 선택 */}
-          <label className="text-white text-sm mb-2 block">정답 선택</label>
+          {data.options.map((opt: any) => {
+            const optionId = opt.optionId ?? opt.id;
+            const optionTotal = optionTotalPointsMap[optionId];
 
-          <select
-  value={adminCorrectChoiceId ? String(adminCorrectChoiceId) : ""}
-  onChange={(e) => setAdminCorrectChoiceId(Number(e.target.value))}
-  className="
-      w-full bg-purple-600/40 text-white p-2 rounded-lg mb-4
-      border border-purple-400/40
-      focus:outline-none focus:ring-2 focus:ring-purple-400
-  "
->
-  <option value="">정답을 선택하세요</option>
+            return (
+              <div key={optionId} className="mb-4 p-3 bg-white/5 rounded-lg">
+                <p className="text-white font-semibold mb-2">
+                  {opt.optionTitle ?? opt.title}
+                </p>
 
-  {parsedOptions.map((c: any) => (
-    <option key={c.id} value={String(c.id)} className="text-white bg-purple-700">
-      {c.text}
-    </option>
-  ))}
-</select>
+                <p className="text-xs text-gray-400 mb-2">
+                  옵션 총 포인트: {optionTotal.toLocaleString()} pt
+                </p>
 
-          <div className="flex gap-2 flex-wrap">
+                {opt.choices.map((c: any) => {
+                  const choiceId = c.choiceId ?? c.id;
+                  const choicePoints = c.pointsTotal ?? 0;
+
+                  const probability = optionTotal
+                    ? (choicePoints / optionTotal) * 100
+                    : 0;
+
+                  const currentOdds =
+                  data.odds?.odds?.find(
+                  (o: any) => o.optionId === optionId
+                  )?.odds ?? null;
+
+                  return (
+                    <label
+                      key={choiceId}
+                      className="flex items-center justify-between gap-3 mb-1 text-white"
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name={`option-${optionId}`}
+                          checked={adminAnswers?.[optionId] === choiceId}
+                          onChange={() =>
+                            setAdminAnswers((prev: any) => ({
+                              ...prev,
+                              [optionId]: choiceId,
+                            }))
+                          }
+                        />
+                        <span>{c.text ?? c.choiceText}</span>
+                      </div>
+
+                      <div className="text-xs text-gray-300">
+                        {probability.toFixed(1)}% ·
+                        {currentOdds ? ` x${currentOdds.toFixed(2)}` : " -"}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          <div className="flex gap-2 mt-4 flex-wrap">
             <Button
               className="bg-red-600 text-white"
+              disabled={data.status !== "ONGOING"}
               onClick={() => handleAdminResolve(false)}
             >
               투표 종료
@@ -149,6 +194,7 @@ export function VoteInfoCard({
 
             <Button
               className="bg-orange-500 text-white"
+              disabled={data.status !== "ONGOING"}
               onClick={() => handleAdminResolve(true)}
             >
               종료 + 정산
@@ -156,6 +202,7 @@ export function VoteInfoCard({
 
             <Button
               className="bg-blue-600 text-white"
+              disabled={data.status !== "RESOLVED"}
               onClick={handleAdminSettleOnly}
             >
               정산만 실행

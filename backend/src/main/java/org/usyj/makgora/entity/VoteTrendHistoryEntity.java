@@ -26,9 +26,14 @@ public class VoteTrendHistoryEntity {
     @JoinColumn(name = "vote_id", nullable = false)
     private VoteEntity vote;
 
+    /** 🔥 어떤 옵션인지 (추가됨) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "option_id", nullable = false)
+    private VoteOptionEntity option;
+
     /** 📌 어떤 선택지(YES / NO 등)에 대한 기록인지 */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "choice_id", nullable = false)
+    @JoinColumn(name = "choice_id", nullable = false, columnDefinition = "INT UNSIGNED")
     private VoteOptionChoiceEntity choice;
 
     /** 📊 시점별 퍼센트 (0 ~ 100 사이 값) */
