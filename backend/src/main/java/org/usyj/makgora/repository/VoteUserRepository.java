@@ -72,7 +72,7 @@ public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> 
     where v.choice.id = :choiceId
       and v.isCancelled = false
 """)
-int sumPointsByChoiceId(@Param("choiceId") Long choiceId);
+int sumPointsByChoiceId(@Param("choiceId") Integer choiceId);
 
     // 🔥 vote + choice 기준 참여자 수
     int countByVote_IdAndChoice_Id(Integer voteId, Integer choiceId);
@@ -84,7 +84,7 @@ int sumPointsByChoiceId(@Param("choiceId") Long choiceId);
         where v.option.id = :optionId
           and v.isCancelled = false
     """)
-    long sumPointsByOptionId(@Param("optionId") Long optionId);
+    Integer sumPointsByOptionId(@Param("optionId") Integer optionId);
 
     // 🔥 AI Vote 전체 베팅 포인트 합
 @Query("""

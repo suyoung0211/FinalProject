@@ -23,7 +23,7 @@ public class VoteDetailOddsResponse {
     @AllArgsConstructor
     public static class OddsItem {
 
-        private Long optionId;
+        private Integer optionId;
         private String optionTitle;
 
         // 현재 옵션 배당률

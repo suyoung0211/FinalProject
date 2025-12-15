@@ -54,9 +54,9 @@ public OddsResponse getCurrentOdds(Integer voteId) {
     List<OddsResponse.OptionOdds> options =
             vote.getOptions().stream().map(option -> {
 
-                long optionId = option.getId().longValue();
+                Integer optionId = option.getId();
 
-                long totalPool =
+                Integer totalPool =
                         voteUserRepository.sumPointsByOptionId(optionId);
 
                 // 🔥 정답 choice 풀
@@ -126,10 +126,10 @@ public OddsResponse getCurrentOdds(Integer voteId) {
 
         double feeRate = vote.getFeeRate() != null ? vote.getFeeRate() : 0.10;
 
-        long optionPool =
+        Integer optionPool =
                 voteUserRepository.sumPointsByOptionId(option.getId());
 
-        long choicePool =
+        Integer choicePool =
                 voteUserRepository.sumPointsByChoiceId(choice.getId());
 
         long newOptionPool = optionPool + pointsBet;
