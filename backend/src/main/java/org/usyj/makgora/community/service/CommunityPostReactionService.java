@@ -10,6 +10,7 @@ import org.usyj.makgora.community.repository.CommunityPostRepository;
 import org.usyj.makgora.entity.CommunityPostEntity;
 import org.usyj.makgora.entity.CommunityPostReactionEntity;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.service.IssueTriggerPushService; // 🔥 [MODIFIED] 추가
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,8 @@ public class CommunityPostReactionService {
     private final CommunityPostReactionRepository reactionRepository;
 
     private final StringRedisTemplate redis;
+    private final IssueTriggerPushService triggerPushService; // 🔥 [MODIFIED] 추가
+
     private static final String PREFIX = "cp:";
 
     /* ========================== 키 생성 =========================== */
@@ -30,6 +33,17 @@ public class CommunityPostReactionService {
     private long getCount(Long postId, String type) {
         String v = redis.opsForValue().get(key(postId, type));
         return (v == null) ? 0L : Long.parseLong(v);
+    }
+
+    /* ========================== 점수 계산 ========================= */
+    // 🔥 [MODIFIED] 추가
+    private int calcScore(Long postId) {
+        long view = getCount(postId, "view");
+        long like = getCount(postId, "like");
+        long comment = getCount(postId, "comment");
+
+        // Scheduler와 동일한 공식 유지
+        return (int) (view * 0.05 + like * 2 + comment * 2);
     }
 
     /* ========================== Safe Decrement ==================== */
@@ -49,12 +63,19 @@ public class CommunityPostReactionService {
 
     public void addView(Long postId) {
         redis.opsForValue().increment(key(postId, "view"));
+
+    // 🔥 [MODIFIED] 점수 계산 + 즉시 트리거
+        int score = calcScore(postId);
+        triggerPushService.checkAndPushCommunity(postId, score);
     }
 
     /* ========================== 댓글수 증가 ======================== */
 
     public void addComment(Long postId) {
         redis.opsForValue().increment(key(postId, "comment"));
+
+        int score = calcScore(postId);
+        triggerPushService.checkAndPushCommunity(postId, score);
     }
 
     /* ========================== 추천/비추천 ======================== */
@@ -117,6 +138,10 @@ public class CommunityPostReactionService {
 
         long like = getCount(postId, "like");
         long dislike = getCount(postId, "dislike");
+
+        // 🔥 [MODIFIED] 반응 변경 후 즉시 트리거
+        int score = calcScore(postId);
+        triggerPushService.checkAndPushCommunity(postId, score);
 
         return new CommunityPostReactionResponse(postId, like, dislike, newValue);
     }
