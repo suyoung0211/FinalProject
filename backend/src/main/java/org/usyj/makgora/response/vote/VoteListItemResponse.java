@@ -27,7 +27,7 @@ public class VoteListItemResponse {
     @Data
     @Builder
     public static class OptionItem {
-        private Integer optionId;
+        private Long optionId;
         private String title;   // optionTitle 매핑
         private List<ChoiceItem> choices;
     }
@@ -35,7 +35,7 @@ public class VoteListItemResponse {
     @Data
     @Builder
     public static class ChoiceItem {
-        private Integer choiceId;
+        private Long choiceId;
         private String text;    // choiceText 매핑
     }
 }

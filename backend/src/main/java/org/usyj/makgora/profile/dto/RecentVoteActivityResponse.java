@@ -26,7 +26,7 @@ public class RecentVoteActivityResponse {
     private String issueTitle;
 
     /** 내가 선택한 choice 정보 */
-    private Integer choiceId;
+    private Long choiceId;
     private String choiceText;
 
     /** 내가 건 포인트 */

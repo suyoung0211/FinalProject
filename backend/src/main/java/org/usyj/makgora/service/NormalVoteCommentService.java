@@ -81,75 +81,52 @@ public class NormalVoteCommentService {
         return convertComment(comment, userId);
     }
 
-    private void ensureKey(String key) {
-    if (redis.opsForValue().get(key) == null) {
-        redis.opsForValue().set(key, "0");
-    }
-}
-
-private void safeDecrement(String key) {
-    String v = redis.opsForValue().get(key);
-    long cur = (v == null) ? 0 : Long.parseLong(v);
-    if (cur > 0) redis.opsForValue().increment(key, -1);
-    else redis.opsForValue().set(key, "0");
-}
-
     /* =========================================================
        🔵 3) 댓글 좋아요 / 싫어요 (Redis 기반)
        ========================================================= */
     public VoteDetailCommentResponse react(Long commentId, Integer userId, boolean like) {
 
-    NormalVoteCommentEntity comment = commentRepository.findById(commentId)
-            .orElseThrow(() -> new RuntimeException("댓글 없음"));
+        NormalVoteCommentEntity comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("댓글 없음"));
 
-    String keyLike = "normalvote:comment:" + commentId + ":likes";
-    String keyDislike = "normalvote:comment:" + commentId + ":dislikes";
-    String setLike = "normalvote:comment:" + commentId + ":likes:users";
-    String setDislike = "normalvote:comment:" + commentId + ":dislikes:users";
+        String keyLike = "normalvote:comment:" + commentId + ":likes";
+        String keyDislike = "normalvote:comment:" + commentId + ":dislikes";
+        String setLike = "normalvote:comment:" + commentId + ":likes:users";
+        String setDislike = "normalvote:comment:" + commentId + ":dislikes:users";
 
-    String userStr = userId.toString();
+        String userStr = userId.toString();
 
-    // 🔐 key 초기화 (없으면 0)
-    ensureKey(keyLike);
-    ensureKey(keyDislike);
+        boolean alreadyLike = Boolean.TRUE.equals(redis.opsForSet().isMember(setLike, userStr));
+        boolean alreadyDislike = Boolean.TRUE.equals(redis.opsForSet().isMember(setDislike, userStr));
 
-    boolean alreadyLike =
-            Boolean.TRUE.equals(redis.opsForSet().isMember(setLike, userStr));
-    boolean alreadyDislike =
-            Boolean.TRUE.equals(redis.opsForSet().isMember(setDislike, userStr));
-
-    if (like) {
-        if (alreadyLike) {
-            // 👍 → 취소
-            redis.opsForSet().remove(setLike, userStr);
-            safeDecrement(keyLike);
-        } else {
-            // 👎 → 👍 전환
-            if (alreadyDislike) {
-                redis.opsForSet().remove(setDislike, userStr);
-                safeDecrement(keyDislike);
-            }
-            redis.opsForSet().add(setLike, userStr);
-            redis.opsForValue().increment(keyLike);
-        }
-    } else {
-        if (alreadyDislike) {
-            // 👎 → 취소
-            redis.opsForSet().remove(setDislike, userStr);
-            safeDecrement(keyDislike);
-        } else {
-            // 👍 → 👎 전환
+        if (like) {
             if (alreadyLike) {
                 redis.opsForSet().remove(setLike, userStr);
-                safeDecrement(keyLike);
+                redis.opsForValue().decrement(keyLike);
+            } else {
+                if (alreadyDislike) {
+                    redis.opsForSet().remove(setDislike, userStr);
+                    redis.opsForValue().decrement(keyDislike);
+                }
+                redis.opsForSet().add(setLike, userStr);
+                redis.opsForValue().increment(keyLike);
             }
-            redis.opsForSet().add(setDislike, userStr);
-            redis.opsForValue().increment(keyDislike);
+        } else {
+            if (alreadyDislike) {
+                redis.opsForSet().remove(setDislike, userStr);
+                redis.opsForValue().decrement(keyDislike);
+            } else {
+                if (alreadyLike) {
+                    redis.opsForSet().remove(setLike, userStr);
+                    redis.opsForValue().decrement(keyLike);
+                }
+                redis.opsForSet().add(setDislike, userStr);
+                redis.opsForValue().increment(keyDislike);
+            }
         }
-    }
 
-    return convertComment(comment, userId);
-}
+        return convertComment(comment, userId);
+    }
 
     /* =========================================================
        🔵 4) 댓글 삭제 (Soft Delete)
@@ -174,34 +151,10 @@ private void safeDecrement(String key) {
     /* =========================================================
        🔵 5) 엔티티 → DTO 변환 (재귀)
        ========================================================= */
-    private VoteDetailCommentResponse convertComment(
-        NormalVoteCommentEntity c,
-        Integer userId
-) {
-    String keyLike = "normalvote:comment:" + c.getId() + ":likes";
-    String keyDislike = "normalvote:comment:" + c.getId() + ":dislikes";
-    String setLike = "normalvote:comment:" + c.getId() + ":likes:users";
-    String setDislike = "normalvote:comment:" + c.getId() + ":dislikes:users";
-
-    String likeStr = redis.opsForValue().get(keyLike);
-    String dislikeStr = redis.opsForValue().get(keyDislike);
-
-    long likeCount = (likeStr == null) ? 0L : Long.parseLong(likeStr);
-    long dislikeCount = (dislikeStr == null) ? 0L : Long.parseLong(dislikeStr);
-
-    boolean myLike = userId != null &&
-            Boolean.TRUE.equals(
-                    redis.opsForSet().isMember(setLike, userId.toString())
-            );
-
-    boolean myDislike = userId != null &&
-            Boolean.TRUE.equals(
-                    redis.opsForSet().isMember(setDislike, userId.toString())
-            );
+    private VoteDetailCommentResponse convertComment(NormalVoteCommentEntity c, Integer userId) {
 
     List<VoteDetailCommentResponse> children =
-            c.getChildren() == null
-                    ? List.of()
+            c.getChildren() == null ? List.of()
                     : c.getChildren().stream()
                       .map(child -> convertComment(child, userId))
                       .toList();
@@ -209,26 +162,28 @@ private void safeDecrement(String key) {
     return VoteDetailCommentResponse.builder()
             .commentId(c.getId().intValue())
             .normalVoteId(c.getNormalVote().getId().intValue())
+
             .userId(c.getUser().getId())
             .username(c.getUser().getNickname())
+
             .content(Boolean.TRUE.equals(c.getIsDeleted())
                     ? "(삭제된 댓글입니다.)"
                     : c.getContent())
-            .likeCount((int) likeCount)
-            .dislikeCount((int) dislikeCount)
-            .myLike(myLike)
-            .myDislike(myDislike)
-            .parentId(
-                    c.getParent() != null
-                            ? c.getParent().getId().intValue()
-                            : null
-            )
+
+            .likeCount(c.getLikeCount() != null ? c.getLikeCount() : 0)
+            .dislikeCount(c.getDislikeCount() != null ? c.getDislikeCount() : 0)
+
+            // NormalVoteCommentEntity에는 user reaction 리스트가 존재하지 않음 → 항상 false
+            .myLike(false)
+            .myDislike(false)
+
+            .parentId(c.getParent() != null ? c.getParent().getId().intValue() : null)
             .children(children)
+
             .createdAt(c.getCreatedAt())
             .updatedAt(c.getUpdatedAt())
             .build();
 }
-
 /* =========================================================
    🔵 6) 댓글 수정
    ========================================================= */

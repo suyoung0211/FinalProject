@@ -4,20 +4,13 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 
-type VoteCategory =
-  | "POLITICS"
-  | "BUSINESS"
-  | "CRYPTO"
-  | "SPORTS"
-  | "ENTERTAINMENT"
-  | "TECHNOLOGY";
 interface CreateVoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate?: (voteData: {
     question: string;
     description: string;
-    category: VoteCategory;
+    category: string;
     endDate: string;
   }) => void;
 }
@@ -25,23 +18,17 @@ interface CreateVoteModalProps {
 export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalProps) {
   const [question, setQuestion] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<'POLITICS' | 'BUSINESS' | 'CRYPTO' | 'SPORTS' | 'ENTERTAINMENT' | 'TECHNOLOGY'>(
-  'POLITICS'
-);
+  const [category, setCategory] = useState('politics');
   const [endDateTime, setEndDateTime] = useState('');
 
-  const categories: {
-  value: VoteCategory;
-  label: string;
-  color: string;
-}[] = [
-  { value: "POLITICS", label: "정치", color: "from-red-500 to-orange-500" },
-  { value: "BUSINESS", label: "경제", color: "from-blue-500 to-cyan-500" },
-  { value: "CRYPTO", label: "크립토", color: "from-yellow-500 to-orange-500" },
-  { value: "SPORTS", label: "스포츠", color: "from-green-500 to-emerald-500" },
-  { value: "ENTERTAINMENT", label: "엔터테인먼트", color: "from-pink-500 to-purple-500" },
-  { value: "TECHNOLOGY", label: "기술", color: "from-indigo-500 to-purple-500" },
-];
+  const categories = [
+    { value: 'politics', label: '정치', color: 'from-red-500 to-orange-500' },
+    { value: 'business', label: '경제', color: 'from-blue-500 to-cyan-500' },
+    { value: 'crypto', label: '크립토', color: 'from-yellow-500 to-orange-500' },
+    { value: 'sports', label: '스포츠', color: 'from-green-500 to-emerald-500' },
+    { value: 'entertainment', label: '엔터테인먼트', color: 'from-pink-500 to-purple-500' },
+    { value: 'tech', label: '기술', color: 'from-indigo-500 to-purple-500' },
+  ];
 
   const handleSubmit = () => {
     if (!question.trim() || !endDateTime) {
@@ -59,7 +46,7 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
     // Reset form
     setQuestion('');
     setDescription('');
-    setCategory('POLITICS');
+    setCategory('politics');
     setEndDateTime('');
     onClose();
   };

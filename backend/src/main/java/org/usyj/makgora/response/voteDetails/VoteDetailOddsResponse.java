@@ -12,8 +12,6 @@ import java.util.List;
 public class VoteDetailOddsResponse {
 
     private Integer voteId;
-
-    // 🔥 옵션 기준 odds 리스트
     private List<OddsItem> odds;
 
     @Getter
@@ -22,15 +20,10 @@ public class VoteDetailOddsResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OddsItem {
-
-        private Integer optionId;
-        private String optionTitle;
-
-        // 현재 옵션 배당률
-        private Double odds;
-
-        // 🔥 옵션 기준 히스토리
-        private List<OddsHistoryItem> history;
+        private Integer choiceId;
+        private String text;
+        private Double odds;   // 현재 배당률
+        private List<OddsHistoryItem> history;   // 🔥 히스토리 리스트
     }
 
     @Getter
@@ -39,10 +32,9 @@ public class VoteDetailOddsResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OddsHistoryItem {
-
-        private Double odds;          // 당시 옵션 배당률
-        private Double percent;       // 옵션 점유율 %
-        private Integer totalPoints;  // 전체 포인트
-        private String timestamp;
+        private Double odds;        // 🔥 그 시점의 배당률 (프론트에서 chartData로 씀)
+        private Double percent;     // 선택지 점유율 %
+        private Integer totalPoints;// 당시 총 포인트
+        private String timestamp;   // 기록된 시각 (문자열)
     }
 }

@@ -58,10 +58,6 @@ export const getCategories = () =>
 export const adminResolveVote = (voteId, body) =>
   api.post(`/admin/votes/${voteId}/finish`, body);
 
-// 🔥 관리자: 투표 종료 스테이터스만 변경
-export const adminFinishVote = (voteId) =>
-  api.post(`/admin/votes/${voteId}/finish-only`);
-
 // 🔥 관리자: 정답 선택 + 즉시 정산
 export const adminResolveAndSettleVote = (voteId, body) =>
   api.post(`/admin/votes/${voteId}/resolve-and-settle`, body);
