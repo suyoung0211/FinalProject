@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getAllAdminUsersApi, getAdminDashboardStatsApi } from "../../../api/adminAPI";
-import { Users, DollarSign, HowToVote, MessageSquare, Search, Plus, Edit, Ban, Trash2 } from "lucide-react";
+import { Users, DollarSign, Vote, MessageSquare, Search, Plus, Edit, Ban, Trash2 } from "lucide-react";
 import { Avatar } from "../../Avatar";
 import { Button } from '../../ui/button';
 import CreateAdminModal from "./CreateAdminModal";
@@ -143,7 +143,7 @@ export function Dashboard() {
         </div>
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-6">
           <div className="flex items-center justify-between mb-2">
-            <HowToVote className="w-8 h-8 text-purple-400" />
+            <Vote className="w-8 h-8 text-purple-400" />
             <span className="text-green-400 text-sm font-medium"></span>
           </div>
           <div className="text-3xl font-bold text-white mb-1">
