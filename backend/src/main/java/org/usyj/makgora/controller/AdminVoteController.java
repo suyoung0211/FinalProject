@@ -30,25 +30,21 @@ public class AdminVoteController {
         return voteSettlementService.finished(voteId, req);
     }
 
-    @PostMapping("/{voteId}/finish-only")
-public void finishOnly(@PathVariable Integer voteId) {
-    voteSettlementService.finish(voteId);
+    /** ✔ 정답 선택 + 즉시 정산 */
+/** ✔ 정답 선택 + 즉시 정산 */
+@PostMapping("/{voteId}/resolve-and-settle")
+public ResponseEntity<?> resolveAndSettle(
+        @PathVariable Integer voteId,
+        @RequestBody VoteDetailResolveRequest req,
+        @AuthenticationPrincipal CustomUserDetails admin
+) {
+    req.setAdminUserId(admin.getId());
+
+    // 🔥 정답 확정 + 상태 FINISHED + 정산 → 한 번에 처리됨
+    voteSettlementService.finishAndSettle(voteId, req);
+
+    return ResponseEntity.ok(Map.of("message", "정답 확정 및 정산 완료"));
 }
-
-    /** ✔ 정답 선택 + 즉시 정산 (정산 결과 반환) */
-    @PostMapping("/{voteId}/resolve-and-settle")
-    public ResponseEntity<VoteDetailSettlementResponse> resolveAndSettle(
-            @PathVariable Integer voteId,
-            @RequestBody VoteDetailResolveRequest req,
-            @AuthenticationPrincipal CustomUserDetails admin
-    ) {
-        req.setAdminUserId(admin.getId());
-
-        VoteDetailSettlementResponse result =
-                voteSettlementService.finishAndSettle(voteId, req);
-
-        return ResponseEntity.ok(result);
-    }
 
     /** ✔ 이미 정답 설정된 투표 정산만 */
     @PostMapping("/{voteId}/settle")
@@ -58,14 +54,14 @@ public void finishOnly(@PathVariable Integer voteId) {
         return voteSettlementService.settle(voteId);
     }
 
-    /** ✔ REVIEWING → ONGOING */
+
+
+    /** 🔥 NEW: REVIEWING → ONGOING 전환 API */
     @PostMapping("/{voteId}/open")
     public ResponseEntity<?> openVote(
             @PathVariable Integer voteId
     ) {
-        voteSettlementService.openVote(voteId);
-        return ResponseEntity.ok(
-                Map.of("message", "투표 상태가 REVIEWING → ONGOING 으로 변경되었습니다.")
-        );
+        voteSettlementService.openVote(voteId); // 서비스에서 구현한 메서드 호출
+        return ResponseEntity.ok(Map.of("message", "투표 상태가 REVIEWING → ONGOING 으로 변경되었습니다."));
     }
 }

@@ -13,8 +13,6 @@ public class MyParticipationResponse {
     private Integer optionId;
     private Integer choiceId;
     private Long pointsBet;
-    private Double oddsAtParticipation;   // 🔥 참여 시점 배당
-    private Integer expectedReward;        // 🔥 pointsBet * odds
     private LocalDateTime votedAt;
     private LocalDateTime canceledAt;
     

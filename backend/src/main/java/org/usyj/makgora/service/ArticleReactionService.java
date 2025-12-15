@@ -55,71 +55,64 @@ public class ArticleReactionService {
     /* ======================= 좋아요/싫어요 ======================== */
 
     @Transactional
-public ArticleReactionResponse react(int articleId, int userId, int newValue) {
+    public ArticleReactionResponse react(int articleId, int userId, int newValue) {
 
-    RssArticleEntity article = articleRepo.findById(articleId)
-            .orElseThrow(() -> new IllegalArgumentException("기사 없음: id=" + articleId));
+        RssArticleEntity article = articleRepo.findById(articleId)
+                .orElseThrow(() -> new IllegalArgumentException("기사 없음: id=" + articleId));
 
-    ArticleReactionEntity existing =
-            reactionRepo.findByArticleIdAndUserId(articleId, userId)
-                    .orElse(null);
+        ArticleReactionEntity existing =
+                reactionRepo.findByArticleIdAndUserId(articleId, userId)
+                        .orElse(null);
 
-    int oldValue = (existing != null) ? existing.getReactionValue() : 0;
+        int oldValue = (existing != null) ? existing.getReactionValue() : 0;
 
-    String likeKey = key(articleId, "like");
-    String dislikeKey = key(articleId, "dislike");
+        String likeKey = key(articleId, "like");
+        String dislikeKey = key(articleId, "dislike");
 
-    /* =====================================================
-       0️⃣ 동일 클릭 → 토글 OFF (👍 → 0, 👎 → 0)
-       ===================================================== */
-    if (oldValue == newValue) {
-        newValue = 0;
-    }
-
-    /* =====================================================
-       1️⃣ old 반응 제거
-       ===================================================== */
-    if (oldValue == 1) safeDecrement(likeKey);
-    if (oldValue == -1) safeDecrement(dislikeKey);
-
-    /* =====================================================
-       2️⃣ new 반응 적용
-       ===================================================== */
-    if (newValue == 1) redis.opsForValue().increment(likeKey);
-    if (newValue == -1) redis.opsForValue().increment(dislikeKey);
-
-    /* =====================================================
-       3️⃣ DB 반응 기록
-       ===================================================== */
-    if (newValue == 0) {
-        if (existing != null) {
-            reactionRepo.delete(existing);
-        }
-    } else {
-        if (existing == null) {
-            reactionRepo.save(
-                    ArticleReactionEntity.builder()
-                            .article(article)
-                            .user(UserEntity.builder().id(userId).build())
-                            .reactionValue(newValue)
-                            .build()
+        // 0) 동일 클릭 → 변화 없음
+        if (oldValue == newValue) {
+            return new ArticleReactionResponse(
+                    articleId,
+                    getCount(articleId, "like"),
+                    getCount(articleId, "dislike"),
+                    newValue
             );
-        } else {
-            existing.setReactionValue(newValue);
         }
+
+        // 1) old 반응 제거
+        if (oldValue == 1) safeDecrement(likeKey);
+        if (oldValue == -1) safeDecrement(dislikeKey);
+
+        // 2) new 반응 적용
+        if (newValue == 1) redis.opsForValue().increment(likeKey);
+        if (newValue == -1) redis.opsForValue().increment(dislikeKey);
+
+        // 3) DB ReactionEntity 기록
+        if (newValue == 0) {
+            if (existing != null) reactionRepo.delete(existing);
+        } else {
+            if (existing == null) {
+                reactionRepo.save(
+                        ArticleReactionEntity.builder()
+                                .article(article)
+                                .user(UserEntity.builder().id(userId).build())
+                                .reactionValue(newValue)
+                                .build()
+                );
+            } else {
+                existing.setReactionValue(newValue);
+            }
+        }
+
+        long like = getCount(articleId, "like");
+        long dislike = getCount(articleId, "dislike");
+
+        // 4) 점수 → 트리거
+        int score = calcScore(articleId);
+        triggerPushService.checkAndPush(articleId, score);
+
+        return new ArticleReactionResponse(articleId, like, dislike, newValue);
     }
-
-    long like = getCount(articleId, "like");
-    long dislike = getCount(articleId, "dislike");
-
-    /* =====================================================
-       4️⃣ 점수 계산 → 트리거
-       ===================================================== */
-    int score = calcScore(articleId);
-    triggerPushService.checkAndPush(articleId, score);
-
-    return new ArticleReactionResponse(articleId, like, dislike, newValue);
-}
 
     /* ======================= Score 계산 로직 ======================== */
 

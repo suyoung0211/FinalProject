@@ -115,12 +115,8 @@ public List<RecentCommunityActivityResponse> getRecentCommunityActivities(Intege
             // ② 정산까지 끝난 투표 → WIN / LOSE + 금액 계산
             else if (vote.getStatus() == VoteEntity.Status.REWARDED) {
 
-                VoteOptionChoiceEntity correctChoice =
-                choice.getOption().getCorrectChoice();
-
-                boolean win =
-                correctChoice != null &&
-                correctChoice.getId().equals(choice.getId());
+                boolean win = vote.getCorrectChoice() != null &&
+                        vote.getCorrectChoice().getId().equals(choice.getId());
 
                 // 같은 voteId에 참여한 모든 베팅 재조회 (성능 이슈 크지 않다고 가정)
                 List<VoteUserEntity> allBets =
@@ -129,24 +125,18 @@ public List<RecentCommunityActivityResponse> getRecentCommunityActivities(Intege
                                 .filter(x -> !Boolean.TRUE.equals(x.getIsCancelled()))
                                 .toList();
 
-                int optionPool = allBets.stream()
-                .filter(x -> x.getChoice().getOption().getId()
-                .equals(choice.getOption().getId()))
-                .mapToInt(VoteUserEntity::getPointsBet)
-                .sum();
+                int totalPool = allBets.stream()
+                        .mapToInt(VoteUserEntity::getPointsBet)
+                        .sum();
 
                 int correctPool = allBets.stream()
-                .filter(x ->
-                x.getChoice().getOption().getId().equals(choice.getOption().getId()) &&
-                correctChoice != null &&
-                x.getChoice().getId().equals(correctChoice.getId())
-                )
-                .mapToInt(VoteUserEntity::getPointsBet)
-                .sum();
+                        .filter(x -> x.getChoice().getId().equals(vote.getCorrectChoice().getId()))
+                        .mapToInt(VoteUserEntity::getPointsBet)
+                        .sum();
 
                 double odds = correctPool > 0
-                    ? (double) optionPool / (double) correctPool
-                : 0.0;
+                        ? (double) totalPool / (double) correctPool
+                        : 0.0;
 
                 double feeRate = vote.getFeeRate();
 
@@ -167,12 +157,8 @@ public List<RecentCommunityActivityResponse> getRecentCommunityActivities(Intege
             // ③ 정답은 확정되었지만 아직 정산 전
             else if (vote.getStatus() == VoteEntity.Status.RESOLVED) {
 
-                VoteOptionChoiceEntity correctChoice =
-                choice.getOption().getCorrectChoice();
-
-                boolean win =
-                correctChoice != null &&
-                correctChoice.getId().equals(choice.getId());
+                boolean win = vote.getCorrectChoice() != null &&
+                        vote.getCorrectChoice().getId().equals(choice.getId());
 
                 resultStatus = win ? "WIN" : "LOSE";
                 rewardAmount = null; // 정산 전이라 금액은 아직 모름

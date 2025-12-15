@@ -167,17 +167,10 @@ class VoteOptionEntity(Base):
     start_date = Column(Date)
     end_date = Column(Date)
 
-    # 🔥 Option 통계
-    points_total = Column(Integer, nullable=False, default=0)
-    participants_count = Column(Integer, nullable=False, default=0)
-
-    # 🔥 배당률
-    odds = Column(Float, nullable=False, default=1.0)
-
-    is_deleted = Column(Boolean, nullable=False, default=False)
-
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    is_deleted = Column(Boolean, default=False)
 
 
 class VoteOptionChoiceEntity(Base):
@@ -187,16 +180,13 @@ class VoteOptionChoiceEntity(Base):
     option_id = Column(BigInteger, ForeignKey("Vote_Options.option_id"), nullable=False)
 
     choice_text = Column(String(255), nullable=False)
-
-    # 🔥 필수 통계 필드
-    points_total = Column(Integer, nullable=False, default=0)
-    participants_count = Column(Integer, nullable=False, default=0)
-
-    # 🔥 정답 여부 (DB 필수)
-    is_correct = Column(Boolean, nullable=False, default=False)
+    points_total = Column(Integer, default=0)
+    participants_count = Column(Integer, default=0)
 
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    odds = Column(Float)
 
 
 class VoteRuleEntity(Base):

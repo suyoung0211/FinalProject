@@ -51,7 +51,7 @@
           {/* MENU */}
           <nav className="flex items-center gap-8 text-gray-300">
             {[
-              { name: "투표", path: "/votes" },
+              { name: "투표", path: "/vote" },
               { name: "커뮤니티", path: "/community" },
               { name: "뉴스", path: "/article" },
               { name: "리더보드", path: "/leaderboard" },

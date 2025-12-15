@@ -5,7 +5,7 @@ export function VoteCard({ vote }: any) {
 
   return (
     <div
-      onClick={() => navigate(`/votes/${vote.voteId}`)}
+      onClick={() => navigate(`/vote/${vote.voteId}`)}
       className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition cursor-pointer"
     >
       <h3 className="text-white text-lg font-semibold">

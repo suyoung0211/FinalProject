@@ -2,36 +2,28 @@ package org.usyj.makgora.response.vote;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
 @Getter
+@Setter
 @Builder
 public class OddsResponse {
 
     private Integer voteId;
-    private Double feeRate;
+    private Integer totalPool;
 
-    // 🔥 옵션 기준 배당 정보
-    private List<OptionOdds> options;
+    private List<ChoiceOdds> choices;
 
-    /* ===============================
-       🔹 OptionOdds (옵션 기준)
-       =============================== */
     @Getter
+    @Setter
     @Builder
-    public static class OptionOdds {
-
-        private Integer optionId;
-        private String optionTitle;
-
-        // 옵션에 몰린 총 포인트
-        private Integer optionPool;
-
-        // 옵션 참여자 수
+    public static class ChoiceOdds {
+        private Long choiceId;
+        private String choiceText;
+        private Integer pointsTotal;
         private Integer participantsCount;
-
-        // 🔥 옵션 기준 현재 배당률
-        private Double odds;
+        private Double odds;  // null이면 아직 베팅이 없는 선택지
     }
 }

@@ -1,24 +1,8 @@
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
-import { useState, useEffect } from "react";
+// src/components/voteDetail/VoteTabs.tsx
+
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 import { VoteCommentSection } from "../vote/comments/VoteCommentSection";
 
-/* =========================================================
-   VoteTabs
-   chartData = [
-     {
-       optionId,
-       optionTitle,
-       chart: [{ step, YES, NO, DRAW }]
-     }
-   ]
-   ========================================================= */
 export function VoteTabs({
   selectedTab,
   setSelectedTab,
@@ -27,27 +11,9 @@ export function VoteTabs({
   data,
   getNormalChoicePercent,
 }: any) {
-  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
-
-  /** ✅ 최초 옵션 자동 선택 */
-  useEffect(() => {
-    if (
-      isAIVote &&
-      selectedOptionId == null &&
-      Array.isArray(chartData) &&
-      chartData.length > 0
-    ) {
-      setSelectedOptionId(chartData[0].optionId);
-    }
-  }, [chartData, isAIVote, selectedOptionId]);
-
-  const selectedOption = Array.isArray(chartData)
-    ? chartData.find((o: any) => o.optionId === selectedOptionId)
-    : null;
-
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl overflow-hidden">
-      {/* ================= TAB HEADER ================= */}
+
       <div className="flex border-b border-white/10">
         {["chart", "discussion"].map((tab) => (
           <button
@@ -60,45 +26,30 @@ export function VoteTabs({
             }`}
           >
             {tab === "chart"
-              ? isAIVote
-                ? "배당 / 차트"
-                : "결과 분포"
+              ? isAIVote ? "배당 / 차트" : "결과 분포"
               : "토론"}
           </button>
         ))}
       </div>
 
-      {/* ================= CONTENT ================= */}
       <div className="p-6">
         {selectedTab === "chart" ? (
           isAIVote ? (
             <>
-              {/* ===== 옵션 선택 ===== */}
-              <div className="flex gap-2 mb-4 flex-wrap">
-                {Array.isArray(chartData) &&
-                  chartData.map((opt: any) => (
-                    <button
-                      key={opt.optionId}
-                      onClick={() => setSelectedOptionId(opt.optionId)}
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                        selectedOptionId === opt.optionId
-                          ? "bg-purple-600 text-white"
-                          : "bg-white/10 text-gray-300 hover:bg-white/20"
-                      }`}
-                    >
-                      {opt.optionTitle ?? `옵션 ${opt.optionId}`}
-                    </button>
-                  ))}
+              {/* 🔥 배당률 테이블 */}
+              <div className="mb-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                {data.odds?.odds?.map((o: any) => (
+                  <div key={o.choiceId} className="flex justify-between py-1 text-gray-200">
+                    <span>{o.text}</span>
+                    <span className="text-green-300 font-semibold">
+                      x{o.odds?.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
               </div>
 
-              {/* ===== 차트 ===== */}
-              {selectedOption?.chart ? (
-                <ChartAI chartData={selectedOption.chart} />
-              ) : (
-                <div className="text-gray-400 text-sm text-center py-8">
-                  📉 차트 데이터가 없습니다
-                </div>
-              )}
+              {/* 기존 차트 */}
+              <ChartAI chartData={chartData} data={data} />
             </>
           ) : (
             <ChartNormal data={data} getPercent={getNormalChoicePercent} />
@@ -114,50 +65,48 @@ export function VoteTabs({
   );
 }
 
-/* =========================================================
-   AI Vote Chart
-   chartData = [{ step, YES, NO, DRAW }]
-   ========================================================= */
-function ChartAI({ chartData }: any) {
-  if (!Array.isArray(chartData) || chartData.length === 0) {
+function ChartAI({ chartData, data }: any) {
+  if (!data?.odds?.odds) {
     return (
       <div className="text-gray-400 text-sm p-4 text-center">
-        📉 배당률 히스토리가 없습니다.
+        📉 배당률 정보가 없습니다.
       </div>
     );
   }
 
-  const keys = Object.keys(chartData[0]).filter(
-    (k) => k !== "step"
-  );
+  const choices = data.odds.odds;
 
-  const colors: Record<string, string> = {
-    YES: "#22c55e",
-    NO: "#ef4444",
-    DRAW: "#9ca3af",
-  };
+  let finalData = chartData;
+
+  // chartData 없으면 현재 배당률로 단일 데이터 생성
+  if (!chartData || chartData.length === 0) {
+    const single: Record<string, number> = { count: 1 };
+
+    choices.forEach((c: any) => {
+      single[c.text] = c.odds ?? 1.0;
+    });
+
+    finalData = [single];
+  }
 
   return (
     <div className="h-64 mb-6">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={chartData}>
-          <XAxis
-            dataKey="step"
-            stroke="#aaa"
-            tickFormatter={(v) => `참여 ${v}`}
-          />
-          <YAxis stroke="#aaa" domain={[1, 10]} />
-          <Tooltip content={<CustomTooltip />} />
+        <AreaChart data={finalData}>
+          <XAxis dataKey="count" stroke="#aaa" label={{ value: "투표자 수", dy: 10 }} />
+          <YAxis stroke="#aaa" label={{ value: "배당률", angle: -90, dx: -10 }} />
+          <Tooltip />
 
-          {keys.map((key) => (
+          {/* 🔥 choiceId를 key로 사용 => 절대 중복되지 않음 */}
+          {choices.map((c: any, idx: number) => (
             <Area
-              key={key}
+              key={c.choiceId}
               type="monotone"
-              dataKey={key}
-              stroke={colors[key] ?? "#8884d8"}
-              fill={colors[key] ?? "#8884d8"}
-              fillOpacity={0.25}
-              name={key}
+              dataKey={c.text}
+              stroke={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
+              strokeWidth={2}
+              fillOpacity={0.2}
+              fill={["#22c55e", "#ef4444", "#9ca3af"][idx % 3]}
             />
           ))}
         </AreaChart>
@@ -166,32 +115,6 @@ function ChartAI({ chartData }: any) {
   );
 }
 
-/* =========================================================
-   Tooltip
-   ========================================================= */
-function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload || payload.length === 0) return null;
-
-  return (
-    <div className="bg-black/80 border border-white/20 rounded-lg px-3 py-2 text-xs text-white">
-      <div className="font-semibold mb-1">참여자 {label}명</div>
-      {payload.map((p: any) => (
-        <div
-          key={p.dataKey}
-          className="flex justify-between gap-4"
-          style={{ color: p.color }}
-        >
-          <span>{p.dataKey}</span>
-          <span>x{Number(p.value).toFixed(2)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* =========================================================
-   Normal Vote Chart (기존 유지)
-   ========================================================= */
 function ChartNormal({ data, getPercent }: any) {
   return (
     <div className="space-y-4">
@@ -206,6 +129,7 @@ function ChartNormal({ data, getPercent }: any) {
             const percent = getPercent(ch, opt);
             return (
               <div key={ch.choiceId} className="mb-3">
+                
                 <div className="flex justify-between text-xs text-gray-300 mb-1">
                   <span>{ch.text ?? ch.choiceText}</span>
                   <span>
@@ -215,7 +139,7 @@ function ChartNormal({ data, getPercent }: any) {
 
                 <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-purple-500"
+                    className="h-full bg-purple-500 transition-all"
                     style={{ width: `${percent}%` }}
                   />
                 </div>

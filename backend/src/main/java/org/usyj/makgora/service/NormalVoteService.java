@@ -188,40 +188,33 @@ private NormalVoteParticipateResponse toParticipateResponse(VoteUserEntity vu) {
         List<NormalVoteEntity> list = normalVoteRepository.findAll();
 
         List<NormalVoteListItemResponse> items =
-        list.stream().map(v -> {
-
-            int totalParticipants = v.getOptions().stream()
-                    .flatMap(opt -> opt.getChoices().stream())
-                    .mapToInt(c -> c.getParticipantsCount() != null ? c.getParticipantsCount() : 0)
-                    .sum();
-
-            return NormalVoteListItemResponse.builder()
-                    .id(v.getId())
-                    .title(v.getTitle())
-                    .description(v.getDescription())
-                    .status(v.getStatus().name())
-                    .createdAt(v.getCreatedAt())
-                    .endAt(v.getEndAt())
-                    .totalParticipants(totalParticipants) // ✅ 여기!
-                    .options(
-                            v.getOptions().stream()
-                                    .map(opt -> NormalVoteOptionResponse.builder()
-                                            .optionId(opt.getId())
-                                            .title(opt.getOptionTitle())
-                                            .choices(
-                                                    opt.getChoices().stream()
-                                                            .map(c -> NormalVoteChoiceResponse.builder()
-                                                                    .choiceId(c.getId())
-                                                                    .text(c.getChoiceText())
-                                                                    .participantsCount(c.getParticipantsCount())
-                                                                    .build())
-                                                            .toList()
-                                            )
-                                            .build())
-                                    .toList()
-                    )
-                    .build();
-        }).toList();
+                list.stream().map(v -> NormalVoteListItemResponse.builder()
+                        .id(v.getId())
+                        .title(v.getTitle())
+                        .description(v.getDescription())
+                        .status(v.getStatus().name())
+                        .createdAt(v.getCreatedAt())
+                        .endAt(v.getEndAt())
+                        .totalParticipants(v.getTotalParticipants())
+                        .options(
+                                v.getOptions().stream()
+                                        .map(opt -> NormalVoteOptionResponse.builder()
+                                                .optionId(opt.getId())
+                                                .title(opt.getOptionTitle())
+                                                .choices(
+                                                        opt.getChoices().stream()
+                                                                .map(c -> NormalVoteChoiceResponse.builder()
+                                                                        .choiceId(c.getId())
+                                                                        .text(c.getChoiceText())
+                                                                        .participantsCount(c.getParticipantsCount())
+                                                                        .build())
+                                                                .toList()
+                                                )
+                                                .build())
+                                        .toList()
+                        )
+                        .build()
+                ).toList();
 
         return NormalVoteListResponse.builder()
                 .votes(items)

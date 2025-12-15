@@ -16,7 +16,7 @@ export function VoteListPage() {
   const navigate = useNavigate();
 
   const onMarketClick = (id: number, type: "AI" | "NORMAL") => {
-    navigate(`/votes/${id}`, { state: { voteType: type } });
+    navigate(`/vote/${id}`, { state: { voteType: type } });
   };
 
   const [aiVotes, setAiVotes] = useState<any[]>([]);

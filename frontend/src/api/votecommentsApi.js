@@ -4,60 +4,23 @@ import api from "./api";
  * AI Vote 댓글
  * ============================================ */
 
+export const fetchVoteComments = (voteId) =>
+  api.get(`/comments`, { params: { voteId } });
 
-/**
- * 🔥 AI Vote 댓글 목록 조회
- * GET /api/comments?voteId=1
- */
-export const fetchVoteComments = (voteId) => {
-  return api.get("/comments", {
-    params: { voteId },
+export const addVoteComment = (body) =>
+  api.post(`/comments`, body);
+
+export const reactVoteComment = (commentId, like) =>
+  api.post(`/comments/${commentId}/react`, null, {
+    params: { like },
   });
-};
 
-/**
- * 🔥 AI Vote 댓글 작성
- * POST /api/comments
- */
-export const addVoteComment = (data) => {
-  return api.post("/comments", {
-    voteId: data.voteId,
-    content: data.content,
-    parentId: data.parentId ?? null,
-  });
-};
+export const deleteVoteComment = (commentId) =>
+  api.delete(`/comments/${commentId}`);
 
-/**
- * 🔥 AI Vote 댓글 좋아요 / 싫어요
- * POST /api/comments/{id}/react?like=true|false
- */
-export const reactVoteComment = (commentId, like) => {
-  return api.post(
-    `/comments/${commentId}/react`,
-    null,
-    {
-      params: { like },
-    }
-  );
-};
-
-/**
- * 🔥 AI Vote 댓글 수정
- * PUT /api/comments/{id}
- */
-export const updateVoteComment = (commentId, content) => {
-  return api.put(`/comments/${commentId}`, {
-    content,
-  });
-};
-
-/**
- * 🔥 AI Vote 댓글 삭제 (Soft Delete)
- * DELETE /api/comments/{id}
- */
-export const deleteVoteComment = (commentId) => {
-  return api.delete(`/api/comments/${commentId}`);
-};
+// 🔹 댓글 수정  ⭐ 수정된 부분
+export const updateVoteComment = (commentId, content) =>
+  api.put(`/comments/${commentId}`, { content });
 
 
 

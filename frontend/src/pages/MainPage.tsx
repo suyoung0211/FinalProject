@@ -125,17 +125,6 @@ export function MainPage() {
     }
   }, [selectedCategory, hotIssues]);
 
-   // -------------------------------------------------------
-  // 🔍 검색 필터링
-  // -------------------------------------------------------
-  const finalFiltered = filteredIssues.filter((item) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      item.title?.toLowerCase().includes(q) ||
-      item.aiTitle?.toLowerCase().includes(q)
-    );
-  });
-
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <Header activeMenu="" />
