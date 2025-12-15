@@ -47,7 +47,7 @@ public class CommunityPostService {
 
         Long postId = post.getPostId();
 
-        // 🔥 Redis 초기값 세팅 (안정성)
+        // Redis 초기값 세팅 (안정성)
         redis.opsForValue().set("cp:" + postId + ":view", "0");
         redis.opsForValue().set("cp:" + postId + ":comment", "0");
         redis.opsForValue().set("cp:" + postId + ":like", "0");

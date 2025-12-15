@@ -25,7 +25,7 @@ public class CommunityPostController {
     private final CommunityPostReactionService communityPostReactionService;
     
 
-    // ⭐ GET /api/community/posts – 전체 목록 조회
+    // GET /api/community/posts – 전체 목록 조회
     @GetMapping
     public ResponseEntity<List<CommunityPostResponse>> getPosts() {
         System.out.println("📋 게시글 목록 조회 요청");
@@ -34,17 +34,17 @@ public class CommunityPostController {
         return ResponseEntity.ok(posts);
     }
 
-    // ⭐ 단일 게시글 조회
+    // 단일 게시글 조회
     @GetMapping("/{postId}")
     public ResponseEntity<CommunityPostResponse> getPost(@PathVariable Long postId) {
         System.out.println("📄 게시글 단건 조회 요청, id = " + postId);
-        // ⭐ 조회수 증가
+        // 조회수 증가
         communityPostReactionService.addView(postId);
         CommunityPostResponse post = communityPostService.getPostById(postId);
         return ResponseEntity.ok(post);
     }
 
-    // ⭐ 게시글 작성
+    // 게시글 작성
     @PostMapping
     public CommunityPostResponse createPost(
             @Valid @RequestBody CommunityPostCreateRequest request,
@@ -65,7 +65,7 @@ public class CommunityPostController {
         return response;
     }
 
-    // ⭐ 게시글 수정 (작성자만)
+    // 게시글 수정 (작성자만)
     @PutMapping("/{postId}")
     public CommunityPostResponse updatePost(
             @PathVariable Long postId,
@@ -85,7 +85,7 @@ public class CommunityPostController {
         return response;
     }
 
-    // ⭐ 게시글 추천/비추천 반응
+    // 게시글 추천/비추천 반응
     @PostMapping("/{postId}/reactions")
     public ResponseEntity<CommunityPostReactionResponse> reactToPost(
             @PathVariable Long postId,
