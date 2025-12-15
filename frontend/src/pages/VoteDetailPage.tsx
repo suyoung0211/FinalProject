@@ -31,7 +31,11 @@ import { UnifiedSidebar } from "../components/voteDetail/UnifiedSidebar";
 type VoteType = "AI" | "NORMAL";
 
 /* ================= ROUTE ================= */
-export function VoteDetailRouteWrapper() {
+export function VoteDetailRouteWrapper({
+  isModal = false,
+}: {
+  isModal?: boolean;
+}) {
   const navigate = useNavigate();
   const { voteId } = useParams();
   const location = useLocation();
@@ -43,6 +47,7 @@ export function VoteDetailRouteWrapper() {
       onBack={() => navigate(-1)}
       marketId={Number(voteId)}
       voteType={voteType}
+      isModal={isModal}
     />
   );
 }
@@ -52,10 +57,12 @@ export function VoteDetailPage({
   onBack,
   marketId,
   voteType,
+  isModal = false,
 }: {
   onBack: () => void;
   marketId: number;
   voteType: VoteType;
+  isModal?: boolean;
 }) {
   const { user } = useAuth();
 
@@ -220,8 +227,8 @@ async function handleAdminSettleOnly() {
 
   /* ================= RENDER ================= */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <Header activeMenu="VoteDetailPage" />
+  <div className={isModal ? "" : "min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"}>
+    {!isModal && <Header activeMenu="VoteDetailPage" />}
 
       <div className="container mx-auto px-4 py-8 mt-20 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">

@@ -29,6 +29,7 @@ import { ArticleListPage } from "./pages/ArticleListPage";
 import { AdminProtectedRoute } from './components/admin/AdminProtectedRoute';
 import { Toaster } from "react-hot-toast";
 import { ProfilePageWrapper } from './pages/ProfilePageWrapper';
+import { VoteDetailModal } from "./pages/VoteDetailModal"; // ⭐ 실제 파일 import
 import "./styles/glow.css";
 
 /* =========================
@@ -43,19 +44,6 @@ function CommunityWriteRouteWrapper() {
       onBack={() => navigate(-1)}
       onSubmit={() => navigate('/community')}
     />
-  );
-}
-
-/* =========================
- * Vote Detail Modal Wrapper (⭐ 추가)
- * ========================= */
-function VoteDetailModal() {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-      <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-xl">
-        <VoteDetailRouteWrapper />
-      </div>
-    </div>
   );
 }
 
