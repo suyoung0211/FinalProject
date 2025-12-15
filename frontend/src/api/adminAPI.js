@@ -147,4 +147,8 @@ export const adminCancelNormalVote = (id) =>
 export const adminOpenVote = (voteId) =>
   api.post(`/admin/votes/${voteId}/open`);
 
+// 커뮤니티 글 수, 투표 수
+export const getAdminDashboardStatsApi = () =>
+  api.get("/admin/users/stats");
+
 
