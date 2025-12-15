@@ -9,6 +9,7 @@ import {
   participateVote,
   fetchExpectedOdds,
   fetchVoteOdds,
+  fetchVoteTrendChart,
 } from "../api/voteApi";
 import {
   fetchNormalVoteDetail,
@@ -64,6 +65,7 @@ export function VoteDetailPage({
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [trendChart, setTrendChart] = useState<any[]>([]);
 
   const [selectedTab, setSelectedTab] =
     useState<"chart" | "discussion">("chart");
@@ -87,21 +89,77 @@ export function VoteDetailPage({
     setLoading(true);
 
     if (isAIVote) {
-      const [detailRes, oddsRes] = await Promise.all([
+      const [detailRes, oddsRes, trendRes] = await Promise.all([
         fetchVoteDetail(marketId),
         fetchVoteOdds(marketId), // 🔥 추가
+        fetchVoteTrendChart(marketId),
       ]);
-
+      console.log("📊 chartData", trendRes.data);
       setData({
         ...detailRes.data,
         odds: oddsRes.data, // 🔥 핵심
       });
+      setTrendChart(trendRes.data.options); // 🔥 차트 데이터 저장
     } else {
       const res = await fetchNormalVoteDetail(marketId);
       setData(res.data);
     }
   } finally {
     setLoading(false);
+  }
+}
+
+function buildResolvePayload() {
+  return {
+    answers: Object.entries(adminAnswers).map(
+      ([optionId, choiceId]) => ({
+        optionId: Number(optionId),
+        choiceId: Number(choiceId),
+      })
+    ),
+  };
+}
+
+async function handleAdminResolve(withSettle: boolean) {
+  if (!data) return;
+
+  const payload = buildResolvePayload();
+
+  if (payload.answers.length === 0) {
+    alert("정답을 하나 이상 선택해야 합니다.");
+    return;
+  }
+
+  try {
+    if (withSettle) {
+      // 🔥 종료 + 정산
+      const res = await adminResolveAndSettleVote(
+        data.voteId,
+        payload
+      );
+      setSettlementResult(res.data);
+    } else {
+      // 🔥 종료만
+      await adminResolveVote(data.voteId, payload);
+    }
+
+    await load(); // 상태/데이터 갱신
+  } catch (e) {
+    console.error(e);
+    alert("관리자 처리 실패");
+  }
+}
+
+async function handleAdminSettleOnly() {
+  if (!data) return;
+
+  try {
+    const res = await adminSettleVote(data.voteId);
+    setSettlementResult(res.data);
+    await load();
+  } catch (e) {
+    console.error(e);
+    alert("정산 실패");
   }
 }
 
@@ -172,15 +230,15 @@ export function VoteDetailPage({
           ) : (
             <>
               <VoteInfoCard
-                data={data}
-                isAIVote={isAIVote}
-                isNormalVote={isNormalVote}
-                isAdmin={isAdmin}
-                adminAnswers={adminAnswers}
-                setAdminAnswers={setAdminAnswers}
-                handleAdminResolve={() => {}}
-                handleAdminSettleOnly={() => {}}
-                settlementResult={settlementResult}
+              data={data}
+              isAIVote={isAIVote}
+              isNormalVote={isNormalVote}
+              isAdmin={isAdmin}
+              adminAnswers={adminAnswers}
+              setAdminAnswers={setAdminAnswers}
+              handleAdminResolve={handleAdminResolve}
+              handleAdminSettleOnly={handleAdminSettleOnly}
+              settlementResult={settlementResult}
               />
 
               <VoteTabs
@@ -188,7 +246,7 @@ export function VoteDetailPage({
                 setSelectedTab={setSelectedTab}
                 isAIVote={isAIVote}
                 data={data}
-                chartData={[]}
+                chartData={trendChart} // 🔥 진짜 데이터  
                 getNormalChoicePercent={() => 0}
               />
             </>

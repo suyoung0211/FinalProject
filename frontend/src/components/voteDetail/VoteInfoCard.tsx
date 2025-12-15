@@ -31,13 +31,20 @@ export function VoteInfoCard({
         0
       ) ?? 0;
   });
+  
 
   /* ===============================
       최대 배당률 (choice 기준)
      =============================== */
   const maxOdds = isAIVote
-    ? Math.max(...(data?.odds?.odds?.map((o: any) => o.odds ?? 0) ?? [0]))
-    : null;
+  ? Math.max(
+      ...(
+        data?.options
+          ?.flatMap((opt: any) => opt.choices ?? [])
+          ?.map((c: any) => c.odds ?? 0) ?? [0]
+      )
+    )
+  : null;
 
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
@@ -97,13 +104,16 @@ export function VoteInfoCard({
         )}
 
         <StatCard
-          label="마감일"
-          value={
-            data.endAt
-              ? new Date(data.endAt).toLocaleString()
-              : "-"
-          }
-        />
+  label="마감일"
+  value={
+    data.endAt
+      ? new Date(data.endAt)
+          .toISOString()
+          .slice(0, 10)
+          .replaceAll("-", "/")
+      : "-"
+  }
+/>
       </div>
 
       {/* ===============================

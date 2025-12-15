@@ -6,6 +6,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import org.usyj.makgora.request.vote.*;
+import org.usyj.makgora.response.VoteTrendChartResponse;
 import org.usyj.makgora.response.vote.OddsResponse;
 import org.usyj.makgora.response.voteDetails.*;
 import org.usyj.makgora.security.CustomUserDetails;
@@ -139,6 +140,16 @@ public ResponseEntity<MyParticipationResponse> getMyParticipation(
     return ResponseEntity.ok(
             voteDetailService.getMyParticipationOnly(voteId, user.getId())
     );
+}
+
+/**
+     * 📊 배당률/퍼센트 히스토리 차트
+     */
+    @GetMapping("/{voteId}/trend-chart")
+public ResponseEntity<VoteTrendChartResponse> getTrendChart(
+        @PathVariable Integer voteId
+) {
+    return ResponseEntity.ok(voteDetailService.loadTrendChart(voteId));
 }
 
     /* =====================================================

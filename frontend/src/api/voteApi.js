@@ -21,6 +21,10 @@ export const fetchExpectedOdds = (voteId, choiceId, amount) =>
 export const fetchMyParticipation = (voteId) =>
   api.get(`/votes/${voteId}/my`);
 
+// 📊 투표 배당률 히스토리 차트
+export const fetchVoteTrendChart = (voteId) =>
+  api.get(`/votes/${voteId}/trend-chart`);
+
 /* ==========================================================
  * 유저: 투표 참여
  * ========================================================== */

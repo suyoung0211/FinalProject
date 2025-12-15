@@ -1,6 +1,7 @@
 package org.usyj.makgora.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -195,4 +196,56 @@ public OddsResponse getCurrentOdds(Integer voteId) {
     private double round(double v) {
         return Math.round(v * 100.0) / 100.0;
     }
+
+    public double calculateCurrentOdds(VoteEntity vote, VoteOptionChoiceEntity choice) {
+
+        VoteOptionEntity option = choice.getOption();
+
+        long optionTotalPoints =
+                option.getPointsTotal() != null
+                        ? option.getPointsTotal()
+                        : 0;
+
+        long choicePoints =
+                choice.getPointsTotal() != null
+                        ? choice.getPointsTotal()
+                        : 0;
+
+        double feeRate =
+                vote.getFeeRate() != null
+                        ? vote.getFeeRate()
+                        : 0.0;
+
+        if (choicePoints <= 0) {
+            return MAX_ODDS;
+        }
+
+        double rawOdds =
+                (double) optionTotalPoints * (1.0 - feeRate) / choicePoints;
+
+        return Math.max(1.0, Math.min(MAX_ODDS, rawOdds));
+    }
+
+    public double calculateChoiceOdds(
+        VoteEntity vote,
+        VoteOptionEntity option,
+        VoteOptionChoiceEntity choice
+) {
+    long totalPoints =
+        Optional.ofNullable(option.getPointsTotal()).orElse(0);
+
+    long choicePoints =
+        Optional.ofNullable(choice.getPointsTotal()).orElse(0);
+
+    double feeRate =
+        Optional.ofNullable(vote.getFeeRate()).orElse(0.0);
+
+    if (choicePoints == 0) return 10.0;
+
+    double odds =
+        (totalPoints * (1.0 - feeRate)) / choicePoints;
+
+    return Math.min(10.0, Math.max(1.0, odds));
+}
+
 }

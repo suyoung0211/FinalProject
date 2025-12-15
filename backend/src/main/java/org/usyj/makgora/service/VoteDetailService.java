@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
+import org.usyj.makgora.response.VoteTrendChartResponse;
 import org.usyj.makgora.response.vote.OddsResponse;
 import org.usyj.makgora.response.voteDetails.*;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
@@ -30,6 +31,7 @@ public class VoteDetailService {
     private final OddsService oddsService;
 
     private static final double MAX_ODDS = 10.0;
+    private static final double FEE_RATE = 0.01;
 
     /* =======================================================
      * Main Entry
@@ -584,4 +586,114 @@ public class VoteDetailService {
                                 .build()
                 );
     }
+
+    @Transactional(readOnly = true)
+public VoteTrendChartResponse loadTrendChart(Integer voteId) {
+
+    List<VoteTrendHistoryEntity> histories =
+        trendRepository.findByVote_IdOrderByRecordedAtAsc(voteId);
+
+    // optionId 기준 → recordedAt 기준 그룹화
+    Map<Integer, Map<LocalDateTime, List<VoteTrendHistoryEntity>>> grouped =
+    histories.stream().collect(Collectors.groupingBy(
+        (VoteTrendHistoryEntity h) -> h.getChoice().getOption().getId(), // ✅ 타입 고정
+        LinkedHashMap::new,
+        Collectors.groupingBy(
+            VoteTrendHistoryEntity::getRecordedAt,
+            LinkedHashMap::new,
+            Collectors.toList()
+        )
+    ));
+
+    List<VoteTrendChartResponse.OptionTrendChart> optionCharts =
+        new ArrayList<>();
+
+    for (var optionEntry : grouped.entrySet()) {
+
+        Integer optionId = optionEntry.getKey();
+        Map<LocalDateTime, List<VoteTrendHistoryEntity>> timeMap =
+            optionEntry.getValue();
+
+        List<Map<String, Object>> chart = new ArrayList<>();
+        int step = 1;
+
+        for (var timeEntry : timeMap.entrySet()) {
+            Map<String, Object> point = new LinkedHashMap<>();
+            point.put("step", step++);
+
+            for (VoteTrendHistoryEntity h : timeEntry.getValue()) {
+                point.put(
+                    h.getChoice().getChoiceText(), // YES / NO / DRAW
+                    h.getOdds()
+                );
+            }
+
+            chart.add(point);
+        }
+
+        String optionTitle =
+            timeMap.values().stream()
+                .flatMap(List::stream)
+                .findFirst()
+                .map(h -> h.getChoice().getOption().getOptionTitle())
+                .orElse(null);
+
+        optionCharts.add(
+            VoteTrendChartResponse.OptionTrendChart.builder()
+                .optionId(optionId.intValue())
+                .optionTitle(optionTitle)
+                .chart(chart)
+                .build()
+        );
+    }
+
+    return VoteTrendChartResponse.builder()
+        .voteId(voteId)
+        .options(optionCharts)
+        .build();
+}
+
+
+
+    @Transactional
+public void recordSnapshot(VoteEntity vote) {
+
+    LocalDateTime now = LocalDateTime.now();
+
+    for (VoteOptionEntity option : vote.getOptions()) {
+
+        int optionTotal =
+            Optional.ofNullable(option.getParticipantsCount()).orElse(0);
+
+        for (VoteOptionChoiceEntity choice : option.getChoices()) {
+
+            int choiceCount =
+                Optional.ofNullable(choice.getParticipantsCount()).orElse(0);
+
+            double percent =
+                optionTotal == 0
+                    ? 0
+                    : (choiceCount * 100.0 / optionTotal);
+
+            double odds =
+                oddsService.calculateChoiceOdds(vote, option, choice);
+
+            VoteTrendHistoryEntity history =
+                VoteTrendHistoryEntity.builder()
+                    .vote(vote)
+                    .option(option)          // 🔥 핵심
+                    .choice(choice)
+                    .percent(percent)
+                    .odds(odds)
+                    .totalPoints(
+                        Optional.ofNullable(choice.getPointsTotal()).orElse(0)
+                    )
+                    .recordedAt(now)
+                    .build();
+
+            trendRepository.save(history);
+        }
+    }
+}
+
 }

@@ -19,7 +19,7 @@ public class VoteOptionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "option_id")
+    @Column(name = "option_id", columnDefinition = "INT UNSIGNED")
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)

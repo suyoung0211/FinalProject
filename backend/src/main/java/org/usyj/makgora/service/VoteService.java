@@ -220,6 +220,13 @@ public VoteDetailMainResponse participateVote(
     userRepository.save(user);
 
     // ===============================
+// 8.5️⃣ 🔥 트렌드 스냅샷 저장 (여기!)
+// - 누적값 반영된 최신 상태로 기록됨
+// - recordSnapshot 내부에서 options/choices의 pointsTotal/participantsCount를 읽어서 odds/percent 계산
+// ===============================
+        voteDetailService.recordSnapshot(vote);
+
+    // ===============================
     // 9️⃣ 최신 상세 응답 반환
     // ===============================
     return voteDetailService.getVoteDetail(voteId, userId);
