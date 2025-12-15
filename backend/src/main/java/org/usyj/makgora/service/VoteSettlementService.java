@@ -154,12 +154,22 @@ public class VoteSettlementService {
             int distributablePool =
                     (int) Math.floor(optionPool * (1.0 - feeRate));
 
-            double rawOdds =
-            winnerPool > 0
-                ? (double) distributablePool / winnerPool
-                : 0.0;
+            double rawOdds;
 
-                double odds = Math.min(MAX_ODDS, round(rawOdds));
+if (winnerPool == 0) {
+    rawOdds = 0.0;
+} else if (winnerPool == optionPool) {
+    // 🔒 전원 정답 → 원금 반환
+    rawOdds = 1.0;
+} else {
+    rawOdds = (double) distributablePool / winnerPool;
+}
+
+// 🔥 배당률 하한선 보장
+double odds = Math.min(
+    MAX_ODDS,
+    Math.max(1.0, round(rawOdds))
+);
 
             int distributedSum = 0;
 

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../ui/button";
+import { AxiosResponse } from "axios";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { fetchVoteList, fetchVoteDetail } from "../../../api/voteApi";
-import { fetchNormalVoteList, updateNormalVote } from "../../../api/normalVoteApi";
+import { fetchNormalVoteList } from "../../../api/normalVoteApi";
 
 import {
   adminResolveAndSettleVote,
@@ -14,7 +16,39 @@ import {
 
 import { ResolveVoteModal } from "./ResolveVoteModal";
 
+/* ======================================================
+ * 옵션 / Choice ID → 텍스트 매핑 (순수 유틸)
+ * ====================================================== */
+function buildOptionLookup(vote: any) {
+  const optionMap = new Map<number, string>();
+  const choiceMap = new Map<number, string>();
+
+  if (!vote?.options) return { optionMap, choiceMap };
+
+  vote.options.forEach((opt: any) => {
+    const optionId = opt.optionId ?? opt.id;
+
+    optionMap.set(
+      optionId,
+      opt.optionTitle ?? opt.title ?? `옵션 ${optionId}`
+    );
+
+    opt.choices?.forEach((c: any) => {
+      const choiceId = c.choiceId ?? c.id;
+      choiceMap.set(
+        choiceId,
+        c.text ?? c.choiceText ?? `선택지 ${choiceId}`
+      );
+    });
+  });
+
+  return { optionMap, choiceMap };
+}
+
 export function Votes() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [tab, setTab] = useState<"AI" | "NORMAL">("AI");
 
   const [aiVotes, setAiVotes] = useState<any[]>([]);
@@ -24,26 +58,24 @@ export function Votes() {
   const [sort, setSort] = useState("latest");
 
   const [resolveVote, setResolveVote] = useState<any | null>(null);
+  const [settlementResult, setSettlementResult] = useState<any | null>(null);
 
-  // 🔥 리스트 로드
+  /* ================= 데이터 로드 ================= */
   async function loadAll() {
     const aiRes = await fetchVoteList();
     const normalRes = await fetchNormalVoteList();
 
-    console.log("🔥 AI Vote Response:", aiRes.data);
-    console.log("🔥 Normal Vote Response:", normalRes.data);
-
     const rawAI = aiRes.data.votes || aiRes.data || [];
 
-    const mappedAI = rawAI.map((v: any) => ({
-      id: v.id,
-      title: v.title,
-      description: v.description,
-      totalParticipants: v.totalParticipants ?? 0,
-      status: v.status ?? "UNKNOWN",
-    }));
+    setAiVotes(
+      rawAI.map((v: any) => ({
+        id: v.id,
+        title: v.title,
+        totalParticipants: v.totalParticipants ?? 0,
+        status: v.status ?? "UNKNOWN",
+      }))
+    );
 
-    setAiVotes(mappedAI);
     setNormalVotes(normalRes.data.votes || []);
   }
 
@@ -51,43 +83,41 @@ export function Votes() {
     loadAll();
   }, []);
 
+  /* ================= 필터 ================= */
   const filteredAI = aiVotes
-    .filter((v) => (v.title || "").toLowerCase().includes(search.toLowerCase()))
+    .filter((v) => v.title?.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (sort === "latest" ? b.id - a.id : a.id - b.id));
 
   const filteredNormal = normalVotes
-    .filter((v) => (v.title || "").toLowerCase().includes(search.toLowerCase()))
+    .filter((v) => v.title?.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => (sort === "latest" ? b.id - a.id : a.id - b.id));
 
   return (
     <div className="space-y-6">
-
-      {/* Tabs */}
+      {/* ================= Tabs ================= */}
       <div className="flex gap-3">
         <Button
-          className={`px-4 py-2 rounded-xl ${tab === "AI" ? "bg-purple-600" : "bg-white/10"}`}
+          className={tab === "AI" ? "bg-purple-600" : "bg-white/10"}
           onClick={() => setTab("AI")}
         >
           AI 투표
         </Button>
-
         <Button
-          className={`px-4 py-2 rounded-xl ${tab === "NORMAL" ? "bg-purple-600" : "bg-white/10"}`}
+          className={tab === "NORMAL" ? "bg-purple-600" : "bg-white/10"}
           onClick={() => setTab("NORMAL")}
         >
           일반 투표
         </Button>
       </div>
 
-      {/* 검색 + 정렬 */}
-      <div className="flex gap-4 items-center">
+      {/* ================= 검색 ================= */}
+      <div className="flex gap-4">
         <input
           className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
           placeholder="검색 (제목)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
         <select
           className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white"
           value={sort}
@@ -98,169 +128,181 @@ export function Votes() {
         </select>
       </div>
 
-      {/* ----------------------------- */}
-      {/* AI Votes */}
-      {/* ----------------------------- */}
+      {/* ================= AI Votes ================= */}
       {tab === "AI" && (
-        <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs text-gray-400">제목</th>
-                <th className="px-6 py-3 text-left text-xs text-gray-400">참여자</th>
-                <th className="px-6 py-3 text-left text-xs text-gray-400">관리</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-white/5">
-              {filteredAI.map((v) => (
-                <tr key={v.id} className="hover:bg-white/5">
-                  <td className="px-6 py-4 text-white">{v.title}</td>
-                  <td className="px-6 py-4 text-white">{v.totalParticipants}</td>
-
-                  <td className="px-6 py-4 flex gap-2 items-center">
-
-  {/* 🔥 상태 라벨 */}
-  <span
-    className={`
-      text-xs px-2 py-1 rounded-full font-semibold
-      ${
-        v.status === "REVIEWING"
-          ? "bg-yellow-500/20 text-yellow-300"
-        : v.status === "ONGOING"
-          ? "bg-green-500/20 text-green-300"
-        : v.status === "FINISHED"
-          ? "bg-blue-500/20 text-blue-300"
-        : v.status === "RESOLVED"
-          ? "bg-purple-500/20 text-purple-300"
-        : v.status === "REWARDED"
-          ? "bg-gray-500/20 text-gray-300"
-        : "bg-white/10 text-gray-300"
-      }
-    `}
-  >
-    {v.status}
-  </span>
-
-  {/* ------------------------------------------------------- */}
-  {/* 🔥 REVIEWING → 오픈 버튼 (ON) */}
-  {/* ------------------------------------------------------- */}
-  {v.status === "REVIEWING" && (
-    <Button
-      className="bg-yellow-500/20 text-yellow-300 text-xs"
-      onClick={() => adminOpenVote(v.id).then(loadAll)}
-    >
-      오픈
-    </Button>
-  )}
-
-  {/* ------------------------------------------------------- */}
-  {/* 🔥 ONGOING → 정답 선택 버튼 */}
-  {/* ------------------------------------------------------- */}
-  {v.status === "ONGOING" && (
-    <Button
-      className="bg-purple-500/20 text-purple-300 text-xs"
-      onClick={async () => {
-        const detail = await fetchVoteDetail(v.id);
-        setResolveVote(detail.data);
-      }}
-    >
-      정답 선택
-    </Button>
-  )}
-
-  {/* ------------------------------------------------------- */}
-  {/* 🔥 FINISHED → 정산 버튼 */}
-  {/* ------------------------------------------------------- */}
-  {v.status === "FINISHED" && (
-    <Button
-      className="bg-blue-500/20 text-blue-300 text-xs"
-      onClick={() => adminSettleVote(v.id).then(loadAll)}
-    >
-      정산
-    </Button>
-  )}
-
-  {/* ------------------------------------------------------- */}
-  {/* 🔒 RESOLVED / REWARDED 상태에서는 모든 조작 비활성 */}
-  {/* ------------------------------------------------------- */}
-  {(v.status === "RESOLVED" || v.status === "REWARDED") && (
-    <span className="text-xs text-gray-400">완료됨</span>
-  )}
-</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <VoteTable
+          votes={filteredAI}
+          voteType="AI"
+          navigate={navigate}
+          location={location}
+          onOpenResolve={async (id) => {
+            const res = await fetchVoteDetail(id);
+            setResolveVote(res.data);
+          }}
+          onReload={loadAll}
+        />
       )}
 
-      {/* ----------------------------- */}
-      {/* Normal Votes */}
-      {/* ----------------------------- */}
+      {/* ================= NORMAL Votes ================= */}
       {tab === "NORMAL" && (
         <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-3 text-left text-xs text-gray-400">제목</th>
-                <th className="px-6 py-3 text-left text-xs text-gray-400">참여</th>
-                <th className="px-6 py-3 text-left text-xs text-gray-400">관리</th>
+                <th className="px-6 py-3 text-xs text-gray-400">제목</th>
+                <th className="px-6 py-3 text-xs text-gray-400">참여자</th>
+                <th className="px-6 py-3 text-xs text-gray-400">관리</th>
               </tr>
             </thead>
-
             <tbody className="divide-y divide-white/5">
               {filteredNormal.map((v) => (
-                <tr key={v.id} className="hover:bg-white/5">
-                  <td className="px-6 py-4 text-white">
-  <div className="font-semibold">{v.title}</div>
+                <tr key={v.id}>
+                  {/* 🔥 제목 클릭 → NORMAL 상세 모달 */}
+                  <td
+                    className="px-6 py-4 text-white cursor-pointer hover:underline"
+                    onClick={() =>
+                      navigate(`/votes/${v.id}`, {
+                        state: {
+                          voteType: "NORMAL",
+                          background: location,
+                        },
+                      })
+                    }
+                  >
+                    {v.title}
+                  </td>
 
-  <div className="text-gray-400 text-xs mt-1 line-clamp-2">
-    {v.description}
-  </div>
-</td>                  
-                  <td className="px-6 py-4 text-white">{v.totalParticipants}</td>
+                  <td className="px-6 py-4 text-white">
+                    {v.totalParticipants ?? 0}
+                  </td>
 
                   <td className="px-6 py-4 flex gap-2">
                     <Button
                       className="bg-green-500/20 text-green-300 text-xs"
-                      onClick={() => adminFinishNormalVote(v.id).then(loadAll)}
+                      onClick={() =>
+                        adminFinishNormalVote(v.id).then(loadAll)
+                      }
                     >
                       종료
                     </Button>
-
                     <Button
                       className="bg-red-500/20 text-red-300 text-xs"
-                      onClick={() => adminCancelNormalVote(v.id).then(loadAll)}
+                      onClick={() =>
+                        adminCancelNormalVote(v.id).then(loadAll)
+                      }
                     >
                       취소
                     </Button>
-                  {/* 여기 하드 코딩 됬던거 빠졋음 */}
                   </td>
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       )}
-      {/* ----------------------------- */}
-      {/* Modals */}
-      {/* ----------------------------- */}
+
+      {/* ================= Resolve Modal ================= */}
       {resolveVote && (
         <ResolveVoteModal
           vote={resolveVote}
           onClose={() => setResolveVote(null)}
-          onSubmit={(choiceId: number) =>
-            adminResolveAndSettleVote(resolveVote.voteId ?? resolveVote.id, {
-              correctChoiceId: choiceId,
-            }).then(() => {
-              setResolveVote(null);
-              loadAll();
-            })
-          }
+          onSubmit={(selectedChoices) => {
+            const voteId = resolveVote.voteId ?? resolveVote.id;
+            const answers = Object.entries(selectedChoices).map(
+              ([optionId, choiceId]) => ({
+                optionId: Number(optionId),
+                choiceId: Number(choiceId),
+              })
+            );
+
+            adminResolveAndSettleVote(voteId, { answers }).then(
+              (res: AxiosResponse<any>) => {
+                setResolveVote(null);
+                setSettlementResult(res.data);
+                loadAll();
+              }
+            );
+          }}
         />
       )}
+
+      {/* ================= Settlement Result ================= */}
+      {settlementResult && (() => {
+        const { optionMap, choiceMap } = buildOptionLookup(resolveVote);
+
+        return (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-slate-900 border border-white/10 rounded-xl p-6 w-[520px] space-y-4">
+              <h2 className="text-white font-bold text-lg">정산 결과</h2>
+
+              <div className="text-sm text-gray-300 space-y-1">
+                <p>총 당첨자 수: {settlementResult.totalWinnerCount}</p>
+                <p>총 지급 포인트: {settlementResult.totalDistributed}</p>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  className="bg-purple-600"
+                  onClick={() => setSettlementResult(null)}
+                >
+                  확인
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+/* ================= 공용 AI 테이블 ================= */
+function VoteTable({
+  votes,
+  voteType,
+  navigate,
+  location,
+  onOpenResolve,
+  onReload,
+}: any) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+      <table className="w-full">
+        <thead className="bg-white/5">
+          <tr>
+            <th className="px-6 py-3 text-xs text-gray-400">제목</th>
+            <th className="px-6 py-3 text-xs text-gray-400">참여자</th>
+            <th className="px-6 py-3 text-xs text-gray-400">관리</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/5">
+          {votes.map((v: any) => (
+            <tr key={v.id}>
+              <td
+                className="px-6 py-4 text-white cursor-pointer hover:underline"
+                onClick={() =>
+                  navigate(`/votes/${v.id}`, {
+                    state: { voteType, background: location },
+                  })
+                }
+              >
+                {v.title}
+              </td>
+              <td className="px-6 py-4 text-white">
+                {v.totalParticipants}
+              </td>
+              <td className="px-6 py-4">
+                <Button
+                  className="bg-purple-500/20 text-purple-300 text-xs"
+                  onClick={() => onOpenResolve(v.id)}
+                >
+                  정답 선택
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
