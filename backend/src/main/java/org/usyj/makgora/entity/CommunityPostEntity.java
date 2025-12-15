@@ -95,7 +95,7 @@ public class CommunityPostEntity {
         if (recommendationCount == null) recommendationCount = 0;
         if (viewCount == null) viewCount = 0;
         
-        if (postType == null) postType = "일반";
+        if (postType == null) postType = "free";
         if (recommendationCount == null) recommendationCount = 0;
         if (dislikeCount == null) dislikeCount = 0;
     }
