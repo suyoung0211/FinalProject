@@ -19,12 +19,8 @@ public class VoteOptionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(
-    name = "option_id",
-    nullable = false,
-    columnDefinition = "BIGINT UNSIGNED"
-    )
-    private Long id;
+    @Column(name = "option_id")
+    private Integer id; // 🔥 Integer
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vote_id", nullable = false)
