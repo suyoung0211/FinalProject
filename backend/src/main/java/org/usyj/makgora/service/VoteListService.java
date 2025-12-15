@@ -116,7 +116,7 @@ public class VoteListService {
         List<VoteOptionEntity> options =
                 voteOptionRepository.findByVoteId(voteId);
 
-        Long myChoiceId = userId == null ? null :
+        Integer myChoiceId = userId == null ? null :
                 voteUserRepository.findByUserIdAndVoteId(userId, voteId)
                         .map(v -> v.getChoice().getId())
                         .orElse(null);
