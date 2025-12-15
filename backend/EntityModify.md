@@ -454,5 +454,5 @@ voteoptionchoiceentity에 값 추가
     @Builder.Default
     private Integer participantsCount = 0;
 
-
+⚠️ DB 새로 업데이트 필요함!
 
