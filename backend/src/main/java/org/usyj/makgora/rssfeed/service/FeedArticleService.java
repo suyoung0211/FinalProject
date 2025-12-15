@@ -276,7 +276,7 @@ public class FeedArticleService {
             conn2.setInstanceFollowRedirects(true);
             conn2.setConnectTimeout(3000);
             conn2.setReadTimeout(3000);
-            conn2.setRequestProperty("User-Agent", "MakgoraRSS/1.0 (+https://yourdomain.example)");
+            conn2.setRequestProperty("User-Agent", "Makgora (https://makgora.store)");
             int code2 = conn2.getResponseCode();
             return (code2 >= 200 && code2 < 400);
         } catch (Exception e) {
