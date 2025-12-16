@@ -60,7 +60,9 @@ export default function LatestNewsSidebar({ items }: { items: HotIssue[] }) {
             <p className="text-white font-semibold line-clamp-2">
               {n.aiTitle || n.title}
             </p>
-            <p className="text-gray-400 text-sm mt-1">{n.publishedAt}</p>
+            <p className="text-gray-400 text-sm mt-1">
+  {n.publishedAt?.slice(0, 10)}
+</p>
           </div>
           </div>
         ))}
