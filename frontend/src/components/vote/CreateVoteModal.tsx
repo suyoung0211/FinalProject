@@ -29,7 +29,7 @@ export function CreateVoteModal({ isOpen, onClose, onCreate }: CreateVoteModalPr
     { value: "crypto", label: "크립토", color: "from-yellow-500 to-orange-500" },
     { value: "sports", label: "스포츠", color: "from-green-500 to-emerald-500" },
     { value: "entertainment", label: "엔터테인먼트", color: "from-pink-500 to-purple-500" },
-    { value: "tech", label: "기술", color: "from-indigo-500 to-purple-500" },
+    { value: "technology", label: "기술", color: "from-indigo-500 to-purple-500" },
   ];
 
   // 🔥 옵션 그룹 추가 (최대 5개)

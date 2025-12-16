@@ -557,7 +557,7 @@ export function NewsDetailModal() {
 {article.connectedVoteId && article.connectedVoteStatus === "ONGOING" && (
   <button
     onClick={() =>
-  window.open(`/vote/${article.connectedVoteId}?type=AI`, "_blank")
+  window.open(`/votes/${article.connectedVoteId}?type=AI`, "_blank")
 }
     className="flex items-center gap-2 px-4 py-2 border border-green-500 text-green-300 rounded-full hover:bg-green-900/40 transition"
   >

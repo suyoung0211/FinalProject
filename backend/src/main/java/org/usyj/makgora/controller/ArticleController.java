@@ -1,39 +1,41 @@
 // src/main/java/org/usyj/makgora/controller/ArticleController.java
 package org.usyj.makgora.controller;
 
-import lombok.RequiredArgsConstructor;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.ArticleCategoryEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.repository.ArticleRepository;
 import org.usyj.makgora.request.article.ArticleCommentRequest;
 import org.usyj.makgora.response.article.ArticleCommentResponse;
-import org.usyj.makgora.response.article.ArticleReactionResponse;
-import org.usyj.makgora.response.article.ArticleListResponse;
 import org.usyj.makgora.response.article.ArticleDetailResponse;
-
+import org.usyj.makgora.response.article.ArticleListResponse;
 import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
-
 import org.usyj.makgora.security.CustomUserDetails;
-
 import org.usyj.makgora.service.ArticleCommentService;
+import org.usyj.makgora.service.ArticleDetailService;
 import org.usyj.makgora.service.ArticleReactionService;
 import org.usyj.makgora.service.ArticleViewService;
-import org.usyj.makgora.service.ArticleDetailService;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/articles")

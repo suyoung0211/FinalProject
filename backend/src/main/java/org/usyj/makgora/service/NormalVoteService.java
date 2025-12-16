@@ -1,8 +1,12 @@
 package org.usyj.makgora.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
@@ -14,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NormalVoteService {
@@ -89,13 +94,29 @@ public class NormalVoteService {
        2) 상세 조회
        ============================================================ */
     @Transactional(readOnly = true)
-    public NormalVoteResponse getDetail(Integer id) {
-        return toResponse(
-                normalVoteRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."))
-        );
-    }
+public NormalVoteResponse getDetail(Integer id, Integer userId) {
 
+    NormalVoteEntity vote = normalVoteRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("투표를 찾을 수 없습니다."));
+
+    NormalVoteResponse.MyParticipationResponse myParticipation =
+    (userId == null)
+        ? null
+        : voteUserRepository
+            .findByNormalVote_IdAndUser_Id(id.longValue(), userId)
+            .map(vu -> NormalVoteResponse.MyParticipationResponse.builder()
+                .hasParticipated(true)
+                .optionId(vu.getNormalOption().getId())
+                .choiceId(vu.getNormalChoice().getId())
+                .votedAt(vu.getCreatedAt())
+                .build()
+            )
+            .orElse(null);
+
+    NormalVoteResponse res = toResponse(vote);
+    res.setMyParticipation(myParticipation);
+    return res;
+}
     /* ============================================================
    3) 전체 수정
    ============================================================ */
@@ -130,54 +151,84 @@ public NormalVoteResponse updateVote(Integer voteId, NormalVoteFullUpdateRequest
        4) 투표 참여
        ============================================================ */
     @Transactional
-public NormalVoteParticipateResponse participate(Integer voteId, Integer choiceId, Integer userId) {
+    public NormalVoteParticipateResponse participate(
+            Integer voteId,
+            Integer choiceId,
+            Integer userId
+    ) {
+        log.info("🔥 [NORMAL VOTE PARTICIPATE] voteId={}, choiceId={}, userId={}",
+                voteId, choiceId, userId);
 
-    NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
-        .orElseThrow(() -> new RuntimeException("선택지를 찾을 수 없습니다."));
+        NormalVoteChoiceEntity choice = choiceRepository.findById(choiceId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "선택지를 찾을 수 없습니다."
+                        )
+                );
 
-    NormalVoteOptionEntity option = choice.getNormalOption();
-    NormalVoteEntity vote = option.getNormalVote();
-    voteUserRepository.findByNormalVote_IdAndUser_Id(voteId, userId)
-    .ifPresent(v -> {
-        throw new RuntimeException("이미 일반투표에 참여했습니다.");
-    });
+        NormalVoteOptionEntity option = choice.getNormalOption();
+        NormalVoteEntity vote = option.getNormalVote();
 
-    // 안전한 타입 비교
-    if (!Objects.equals(vote.getId(), Long.valueOf(voteId))) {
-        throw new RuntimeException("선택지가 해당 투표에 속하지 않습니다.");
+        log.info("🔥 선택지에 연결된 voteId={}", vote.getId());
+
+        voteUserRepository
+                .findByNormalVote_IdAndUser_Id(voteId.longValue(), userId)
+                .ifPresent(v -> {
+                    log.warn("🚨 이미 일반투표 참여 기록 존재: voteUserId={}", v.getId());
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "이미 일반투표에 참여했습니다."
+                    );
+                });
+
+        if (!Objects.equals(vote.getId(), voteId.longValue())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "선택지가 해당 투표에 속하지 않습니다."
+            );
+        }
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "유저 정보를 찾을 수 없습니다."
+                        )
+                );
+
+        VoteUserEntity vu = VoteUserEntity.builder()
+                .user(user)
+                .normalVote(vote)
+                .normalOption(option)
+                .normalChoice(choice)
+                .isCancelled(false)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        voteUserRepository.save(vu);
+
+        choice.setParticipantsCount(
+                (choice.getParticipantsCount() == null ? 0 : choice.getParticipantsCount()) + 1
+        );
+        choiceRepository.save(choice);
+
+        log.info("✅ NORMAL VOTE 참여 완료: voteUserId={}, choiceId={}",
+                vu.getId(), choice.getId());
+
+        return toParticipateResponse(vu);
     }
 
-    UserEntity user = userRepository.findById(userId)
-        .orElseThrow(() -> new RuntimeException("유저 정보를 찾을 수 없습니다."));
-
-    VoteUserEntity vu = VoteUserEntity.builder()
-        .user(user)
-        .normalVote(vote)
-        .normalOption(option)
-        .normalChoice(choice)
-        .isCancelled(false)
-        .createdAt(LocalDateTime.now())
-        .updatedAt(LocalDateTime.now())
-        .build();
-
-    voteUserRepository.save(vu);
-
-    choice.setParticipantsCount(choice.getParticipantsCount() + 1);
-    choiceRepository.save(choice);
-
-    return toParticipateResponse(vu);
-}
-
-private NormalVoteParticipateResponse toParticipateResponse(VoteUserEntity vu) {
-    return NormalVoteParticipateResponse.builder()
-            .voteId(vu.getNormalVote().getId())
-            .optionId(vu.getNormalOption().getId())
-            .choiceId(vu.getNormalChoice().getId())
-            .userId(vu.getUser().getId())
-            .participantsCount(vu.getNormalChoice().getParticipantsCount())
-            .build();
-}
-
+    private NormalVoteParticipateResponse toParticipateResponse(VoteUserEntity vu) {
+        return NormalVoteParticipateResponse.builder()
+                .voteId(vu.getNormalVote().getId())
+                .optionId(vu.getNormalOption().getId())
+                .choiceId(vu.getNormalChoice().getId())
+                .userId(vu.getUser().getId())
+                .participantsCount(vu.getNormalChoice().getParticipantsCount())
+                .build();
+    }
 
     /* ============================================================
        5) 전체 조회
@@ -188,33 +239,40 @@ private NormalVoteParticipateResponse toParticipateResponse(VoteUserEntity vu) {
         List<NormalVoteEntity> list = normalVoteRepository.findAll();
 
         List<NormalVoteListItemResponse> items =
-                list.stream().map(v -> NormalVoteListItemResponse.builder()
-                        .id(v.getId())
-                        .title(v.getTitle())
-                        .description(v.getDescription())
-                        .status(v.getStatus().name())
-                        .createdAt(v.getCreatedAt())
-                        .endAt(v.getEndAt())
-                        .totalParticipants(v.getTotalParticipants())
-                        .options(
-                                v.getOptions().stream()
-                                        .map(opt -> NormalVoteOptionResponse.builder()
-                                                .optionId(opt.getId())
-                                                .title(opt.getOptionTitle())
-                                                .choices(
-                                                        opt.getChoices().stream()
-                                                                .map(c -> NormalVoteChoiceResponse.builder()
-                                                                        .choiceId(c.getId())
-                                                                        .text(c.getChoiceText())
-                                                                        .participantsCount(c.getParticipantsCount())
-                                                                        .build())
-                                                                .toList()
-                                                )
-                                                .build())
-                                        .toList()
-                        )
-                        .build()
-                ).toList();
+        list.stream().map(v -> {
+
+            int totalParticipants = v.getOptions().stream()
+                    .flatMap(opt -> opt.getChoices().stream())
+                    .mapToInt(c -> c.getParticipantsCount() != null ? c.getParticipantsCount() : 0)
+                    .sum();
+
+            return NormalVoteListItemResponse.builder()
+                    .id(v.getId())
+                    .title(v.getTitle())
+                    .description(v.getDescription())
+                    .status(v.getStatus().name())
+                    .createdAt(v.getCreatedAt())
+                    .endAt(v.getEndAt())
+                    .totalParticipants(totalParticipants) // ✅ 여기!
+                    .options(
+                            v.getOptions().stream()
+                                    .map(opt -> NormalVoteOptionResponse.builder()
+                                            .optionId(opt.getId())
+                                            .title(opt.getOptionTitle())
+                                            .choices(
+                                                    opt.getChoices().stream()
+                                                            .map(c -> NormalVoteChoiceResponse.builder()
+                                                                    .choiceId(c.getId())
+                                                                    .text(c.getChoiceText())
+                                                                    .participantsCount(c.getParticipantsCount())
+                                                                    .build())
+                                                            .toList()
+                                            )
+                                            .build())
+                                    .toList()
+                    )
+                    .build();
+        }).toList();
 
         return NormalVoteListResponse.builder()
                 .votes(items)

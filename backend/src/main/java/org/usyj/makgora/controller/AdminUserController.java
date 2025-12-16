@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.request.UserUpdateRequest;
+import org.usyj.makgora.response.AdminDashboardStatsResponse;
 import org.usyj.makgora.response.AdminUserInfoResponse;
 import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.service.AdminDashboardService;
 import org.usyj.makgora.service.UserInfoService;
 import org.usyj.makgora.service.UserUpdateService;
 
@@ -30,6 +32,7 @@ public class AdminUserController {
 
     private final UserInfoService userInfoService;
     private final UserUpdateService userUpdateService;
+    private final AdminDashboardService dashboardService;
 
     // 🔹 SecurityContext에서 현재 로그인한 유저 정보 가져오기(역할 확인용)
     private UserEntity getCurrentUser() {
@@ -95,5 +98,10 @@ public class AdminUserController {
         UserEntity updatedUser = userUpdateService.updateUser(id, request, currentUser);
 
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<AdminDashboardStatsResponse> getStats() {
+        return ResponseEntity.ok(dashboardService.getDashboardStats());
     }
 }

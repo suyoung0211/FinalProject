@@ -7,9 +7,9 @@ import org.springframework.stereotype.Repository;
 import org.usyj.makgora.entity.VoteOptionChoiceEntity;
 
 @Repository
-public interface VoteOptionChoiceRepository extends JpaRepository<VoteOptionChoiceEntity, Long> {
-  List<VoteOptionChoiceEntity> findByOptionId(Long optionId);
+public interface VoteOptionChoiceRepository extends JpaRepository<VoteOptionChoiceEntity, Integer> {
+  List<VoteOptionChoiceEntity> findByOptionId(Integer optionId);
 
-  List<VoteOptionChoiceEntity> findByOptionIdOrderByPointsTotalDesc(Long optionId);
+  List<VoteOptionChoiceEntity> findByOptionIdOrderByPointsTotalDesc(Integer optionId);
 
 }

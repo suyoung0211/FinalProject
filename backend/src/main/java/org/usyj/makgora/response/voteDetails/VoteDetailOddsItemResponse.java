@@ -12,7 +12,7 @@ import lombok.Setter;
 @Getter @Setter @Builder
 public class VoteDetailOddsItemResponse {
 
-    private Integer choiceId;
+    private Integer optionId;
     private String text;
     private Double odds;
 }

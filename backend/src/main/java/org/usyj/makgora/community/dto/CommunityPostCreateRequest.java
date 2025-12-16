@@ -20,5 +20,5 @@ public class CommunityPostCreateRequest {
     @NotBlank(message = "내용은 필수입니다")
     private String content;
     
-    private String postType; // "포인트자랑" / "이슈추천" / "일반"
+    private String postType; // "예측 분석" / "전략 공유" / "정치" / "경제" / "크립토" / "스포츠" / "엔터" / "자유" 
 }
