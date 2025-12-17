@@ -20,7 +20,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.usyj.makgora.global.security.JwtTokenProvider;
-import org.usyj.makgora.service.CustomUserDetailsService;
+import org.usyj.makgora.user.service.CustomUserDetailsService;
 
 import java.util.Arrays;
 import java.util.List;

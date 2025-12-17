@@ -9,7 +9,7 @@ import org.usyj.makgora.community.entity.CommunityPostEntity;
 import org.usyj.makgora.community.entity.CommunityPostReactionEntity;
 import org.usyj.makgora.community.repository.CommunityPostReactionRepository;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
-import org.usyj.makgora.service.IssueTriggerPushService; // 🔥 [MODIFIED] 추가
+import org.usyj.makgora.issue.service.IssueTriggerPushService;
 import org.usyj.makgora.user.entity.UserEntity;
 
 @Service

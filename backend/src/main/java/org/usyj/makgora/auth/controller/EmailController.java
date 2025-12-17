@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.auth.dto.request.EmailSendRequest;
 import org.usyj.makgora.auth.dto.request.EmailVerifyRequest;
-import org.usyj.makgora.service.EmailService;
+import org.usyj.makgora.auth.service.EmailService;
 
 import java.time.LocalDateTime;
 

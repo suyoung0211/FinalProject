@@ -6,7 +6,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.issue.dto.request.IssueStatusUpdateRequest;
-import org.usyj.makgora.issue.dto.response.IssueResponse;
+import org.usyj.makgora.issue.dto.response.AiIssueResponse;
 import org.usyj.makgora.issue.entity.IssueEntity;
 import org.usyj.makgora.issue.repository.IssueRepository;
 
@@ -23,7 +23,7 @@ public class IssueStatusService {
      * 🔹 이슈 승인/거절 + 시간 기록 후 IssueResponse 반환
      */
     @Transactional
-    public IssueResponse updateStatus(IssueStatusUpdateRequest request) {
+    public AiIssueResponse updateStatus(IssueStatusUpdateRequest request) {
         IssueEntity issue = issueRepository.findById(request.getIssueId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이슈 ID: " + request.getIssueId()));
 
@@ -46,6 +46,6 @@ public class IssueStatusService {
         issueRepository.save(issue);
 
         // IssueResponse DTO 변환 후 반환
-        return IssueResponse.fromEntity(issue);
+        return AiIssueResponse.fromEntity(issue);
     }
 }

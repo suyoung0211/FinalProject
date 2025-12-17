@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.ranking.entity.RankingEntity.RankingType;
-import org.usyj.makgora.service.RankingService;
+import org.usyj.makgora.ranking.service.RankingService;
 
 @RestController
 @RequiredArgsConstructor
