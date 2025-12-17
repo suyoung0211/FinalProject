@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.usyj.makgora.community.dto.FileUploadResponse;
 import org.usyj.makgora.community.service.CommunityPostFileService;
-import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.global.security.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
 

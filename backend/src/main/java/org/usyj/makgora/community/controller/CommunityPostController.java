@@ -11,7 +11,7 @@ import org.usyj.makgora.community.dto.CommunityPostReactionResponse;
 import org.usyj.makgora.community.dto.CommunityPostResponse;
 import org.usyj.makgora.community.service.CommunityPostReactionService;
 import org.usyj.makgora.community.service.CommunityPostService;
-import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.global.security.CustomUserDetails;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

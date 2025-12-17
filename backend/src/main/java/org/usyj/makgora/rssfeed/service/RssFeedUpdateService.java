@@ -3,11 +3,11 @@ package org.usyj.makgora.rssfeed.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssFeedEntity;
-import org.usyj.makgora.rssfeed.dto.RssFeedResponse;
+import org.usyj.makgora.article.dto.response.ArticleResponse;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.article.repository.ArticleCategoryRepository;
 import org.usyj.makgora.rssfeed.dto.RssFeedUpdateRequest;
-import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
+import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 
 import java.util.Set;
@@ -24,7 +24,7 @@ public class RssFeedUpdateService {
      * RSS 피드 수정 처리 (전체 코드)
      */
     @Transactional
-    public RssFeedResponse updateRssFeed(RssFeedUpdateRequest request) {
+    public ArticleResponse updateRssFeed(RssFeedUpdateRequest request) {
 
         // 1️⃣ feed 엔티티 조회 + categories 함께 조회 (성능 최적화)
         RssFeedEntity feed = rssFeedRepository.findByIdWithCategories(request.getId())
@@ -68,14 +68,14 @@ public class RssFeedUpdateService {
     /**
      * Entity → DTO 변환 메서드
      */
-    private RssFeedResponse convertToDto(RssFeedEntity feed) {
+    private ArticleResponse convertToDto(RssFeedEntity feed) {
 
         Set<String> categoryNames = feed.getCategories()
                 .stream()
                 .map(ArticleCategoryEntity::getName)
                 .collect(Collectors.toSet());
 
-        return RssFeedResponse.builder()
+        return ArticleResponse.builder()
                 .id(feed.getId())
                 .sourceName(feed.getSourceName())
                 .url(feed.getUrl())

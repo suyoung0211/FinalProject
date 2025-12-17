@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.entity.VoteOptionChoiceEntity;
 import org.usyj.makgora.entity.VoteOptionEntity;
-import org.usyj.makgora.exception.VoteException;
+import org.usyj.makgora.global.exception.VoteException;
 import org.usyj.makgora.repository.VoteOptionChoiceRepository;
 import org.usyj.makgora.repository.VoteOptionRepository;
 import org.usyj.makgora.repository.VoteRepository;

@@ -3,6 +3,9 @@ package org.usyj.makgora.entity;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

@@ -5,10 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.response.voteDetails.*;
-import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
 import java.util.Comparator;
 import java.util.List;

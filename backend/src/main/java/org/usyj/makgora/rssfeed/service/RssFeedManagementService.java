@@ -8,9 +8,9 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssFeedEntity;
-import org.usyj.makgora.rssfeed.repository.ArticleCategoryRepository;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.article.repository.ArticleCategoryRepository;
+import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 
 import lombok.RequiredArgsConstructor;

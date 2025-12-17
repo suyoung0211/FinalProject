@@ -1,8 +1,9 @@
 package org.usyj.makgora.rssfeed.source;
 
-import org.usyj.makgora.rssfeed.dto.RssArticleCreateDTO;
 import java.util.List;
 import java.util.Map;
+
+import org.usyj.makgora.article.dto.RssArticleCreateDTO;
 
 public interface RssFeedSource {
     // 카테고리 이름 -> RSS 피드 URL

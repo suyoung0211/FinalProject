@@ -6,13 +6,13 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.article.entity.ArticleCommentEntity;
+import org.usyj.makgora.article.repository.ArticleCommentRepository;
 import org.usyj.makgora.community.repository.CommunityCommentRepository;
 import org.usyj.makgora.dto.UnifiedCommentResponse;
 import org.usyj.makgora.dto.UnifiedCommentResponse.CommentSource;
-import org.usyj.makgora.entity.ArticleCommentEntity;
 import org.usyj.makgora.entity.VoteCommentEntity;
 import org.usyj.makgora.entity.CommunityCommentEntity;
-import org.usyj.makgora.repository.ArticleCommentRepository;
 import org.usyj.makgora.repository.CommentRepository;
 
 import lombok.RequiredArgsConstructor;

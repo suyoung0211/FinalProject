@@ -5,12 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.response.VoteTrendChartResponse;
 import org.usyj.makgora.response.vote.OddsResponse;
 import org.usyj.makgora.response.voteDetails.*;
-import org.usyj.makgora.rssfeed.repository.ArticleAiTitleRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;

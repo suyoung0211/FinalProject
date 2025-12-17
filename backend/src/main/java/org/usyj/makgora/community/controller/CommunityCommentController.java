@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.community.dto.CommunityCommentRequest;
 import org.usyj.makgora.community.dto.CommunityCommentResponse;
 import org.usyj.makgora.community.service.CommunityCommentService;
-import org.usyj.makgora.security.CustomUserDetails;
+import org.usyj.makgora.global.security.CustomUserDetails;
 
 import java.util.List;
 

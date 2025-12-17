@@ -3,8 +3,8 @@ package org.usyj.makgora.rssfeed.dto;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.usyj.makgora.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssFeedEntity;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 
 import lombok.*;
 

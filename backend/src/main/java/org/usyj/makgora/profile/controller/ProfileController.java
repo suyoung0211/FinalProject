@@ -6,13 +6,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.profile.dto.RecentCommunityActivityResponse;
 import org.usyj.makgora.profile.dto.RecentVoteActivityResponse;
 import org.usyj.makgora.profile.service.ProfileActivityService;
 import org.usyj.makgora.profile.service.ProfileService;
 import org.usyj.makgora.request.ApplyItemRequest;
 import org.usyj.makgora.request.UserUpdateRequest;
-import org.usyj.makgora.security.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
 

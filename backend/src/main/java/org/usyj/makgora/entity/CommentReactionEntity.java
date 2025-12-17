@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
+import org.usyj.makgora.article.entity.ArticleCommentEntity;
+
 @Entity
 @Table(
         name = "comment_reactions",

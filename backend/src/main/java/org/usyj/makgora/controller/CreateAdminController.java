@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.request.CreateAdminRequest;
-import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.CreateAdminService;
 import org.springframework.security.core.Authentication;
 
