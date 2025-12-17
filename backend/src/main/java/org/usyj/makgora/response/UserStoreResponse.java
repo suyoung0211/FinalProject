@@ -1,8 +1,8 @@
 package org.usyj.makgora.response;
 
-import org.usyj.makgora.entity.StoreItemEntity;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.UserStoreEntity;
+import org.usyj.makgora.store.entity.StoreItemEntity;
+import org.usyj.makgora.store.entity.UserStoreEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import lombok.Builder;
 import lombok.Getter;

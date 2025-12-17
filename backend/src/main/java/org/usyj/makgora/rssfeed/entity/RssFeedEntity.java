@@ -4,7 +4,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

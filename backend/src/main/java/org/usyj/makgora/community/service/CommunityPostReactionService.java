@@ -4,13 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.community.dto.CommunityPostReactionResponse;
+import org.usyj.makgora.community.dto.response.CommunityPostReactionResponse;
+import org.usyj.makgora.community.entity.CommunityPostEntity;
+import org.usyj.makgora.community.entity.CommunityPostReactionEntity;
 import org.usyj.makgora.community.repository.CommunityPostReactionRepository;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
-import org.usyj.makgora.entity.CommunityPostEntity;
-import org.usyj.makgora.entity.CommunityPostReactionEntity;
-import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.service.IssueTriggerPushService; // 🔥 [MODIFIED] 추가
+import org.usyj.makgora.user.entity.UserEntity;
 
 @Service
 @RequiredArgsConstructor

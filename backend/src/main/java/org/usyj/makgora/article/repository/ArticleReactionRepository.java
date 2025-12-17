@@ -4,8 +4,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.usyj.makgora.article.entity.ArticleReactionEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import java.util.Optional;
 

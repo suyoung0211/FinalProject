@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 
 @Repository
 public interface ArticleAiTitleRepository extends JpaRepository<ArticleAiTitleEntity, Integer> {

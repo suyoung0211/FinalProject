@@ -1,6 +1,7 @@
 package org.usyj.makgora.response;
 
-import org.usyj.makgora.entity.StoreItemEntity;
+import org.usyj.makgora.store.entity.StoreItemEntity;
+
 import lombok.Builder;
 import lombok.Getter;
 

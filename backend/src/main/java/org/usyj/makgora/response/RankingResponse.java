@@ -1,8 +1,9 @@
 package org.usyj.makgora.response;
 
+import org.usyj.makgora.ranking.entity.RankingEntity;
+
 import lombok.Builder;
 import lombok.Getter;
-import org.usyj.makgora.entity.RankingEntity;
 
 @Getter
 @Builder

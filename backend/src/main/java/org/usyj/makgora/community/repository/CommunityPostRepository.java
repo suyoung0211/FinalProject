@@ -2,8 +2,8 @@ package org.usyj.makgora.community.repository;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.usyj.makgora.entity.CommunityPostEntity;
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.community.entity.CommunityPostEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import java.util.List;
 

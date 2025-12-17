@@ -2,7 +2,7 @@ package org.usyj.makgora.article.entity;
 
 import java.time.LocalDateTime;
 
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import jakarta.persistence.*;
 

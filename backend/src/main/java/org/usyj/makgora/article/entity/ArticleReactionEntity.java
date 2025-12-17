@@ -4,8 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
-import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 @Entity
 @Table(

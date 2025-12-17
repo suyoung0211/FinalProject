@@ -2,7 +2,7 @@ package org.usyj.makgora.repository;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.usyj.makgora.entity.VoteCommentEntity;
+import org.usyj.makgora.vote.entity.VoteCommentEntity;
 
 /**
  * 💬 VoteCommentRepository

@@ -2,10 +2,10 @@ package org.usyj.makgora.global.config;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.UserEntity.Role;
-import org.usyj.makgora.entity.UserEntity.Status;
-import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.entity.UserEntity.Role;
+import org.usyj.makgora.user.entity.UserEntity.Status;
+import org.usyj.makgora.user.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Component

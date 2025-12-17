@@ -5,14 +5,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.community.dto.CommunityCommentRequest;
-import org.usyj.makgora.community.dto.CommunityCommentResponse;
-import org.usyj.makgora.entity.CommunityCommentEntity;
-import org.usyj.makgora.entity.CommunityPostEntity;
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.community.dto.request.CommunityCommentRequest;
+import org.usyj.makgora.community.dto.response.CommunityCommentResponse;
+import org.usyj.makgora.community.entity.CommunityCommentEntity;
+import org.usyj.makgora.community.entity.CommunityPostEntity;
 import org.usyj.makgora.community.repository.CommunityCommentRepository;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
-import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
 
 import java.util.*;
 

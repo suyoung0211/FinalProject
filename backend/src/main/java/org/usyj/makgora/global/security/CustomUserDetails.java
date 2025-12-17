@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.*;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import java.util.Collection;
 import java.util.List;

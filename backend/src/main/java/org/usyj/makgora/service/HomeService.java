@@ -5,15 +5,15 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
-import org.usyj.makgora.dto.home.HotIssueDto;
-import org.usyj.makgora.dto.home.SlideNewsDto;
-import org.usyj.makgora.dto.home.VoteListDto;
-import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.VoteEntity;
+import org.usyj.makgora.home.dto.response.HotIssueResponse;
+import org.usyj.makgora.home.dto.response.SlideNewsResponse;
+import org.usyj.makgora.home.dto.response.VoteListResponse;
 import org.usyj.makgora.repository.VoteRepository;
 import org.usyj.makgora.response.home.HomeResponse;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
+import org.usyj.makgora.vote.entity.VoteEntity;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,8 +47,8 @@ public class HomeService {
                 .limit(10)
                 .toList();
 
-        List<SlideNewsDto> newsSlides = slideArticles.stream()
-                .map(a -> SlideNewsDto.builder()
+        List<SlideNewsResponse> newsSlides = slideArticles.stream()
+                .map(a -> SlideNewsResponse.builder()
                         .articleId(a.getId())
                         .aiTitle(getDisplayTitle(a))
                         .thumbnail(a.getThumbnailUrl())
@@ -59,14 +59,14 @@ public class HomeService {
         /* ===========================
          * 2) 핫 이슈 (null-safe)
          * =========================== */
-        List<HotIssueDto> hotIssues = articleRepository.findAll().stream()
+        List<HotIssueResponse> hotIssues = articleRepository.findAll().stream()
                 .filter(a -> a.getThumbnailUrl() != null)
                 .sorted(Comparator.comparing(
                         RssArticleEntity::getPublishedAt,
                         Comparator.nullsLast(Comparator.naturalOrder())
                 ).reversed())
                 .limit(20)
-                .map(a -> HotIssueDto.builder()
+                .map(a -> HotIssueResponse.builder()
                         .id(a.getId())
                         .articleId(a.getId())
                         .title(a.getTitle())
@@ -80,13 +80,13 @@ public class HomeService {
         /* ===========================
          * 3) 최신 뉴스 (null-safe)
          * =========================== */
-        List<HotIssueDto> latestIssues = articleRepository.findAll().stream()
+        List<HotIssueResponse> latestIssues = articleRepository.findAll().stream()
                 .sorted(Comparator.comparing(
                         RssArticleEntity::getPublishedAt,
                         Comparator.nullsLast(Comparator.naturalOrder())
                 ).reversed())
                 .limit(20)
-                .map(a -> HotIssueDto.builder()
+                .map(a -> HotIssueResponse.builder()
                         .id(a.getId())
                         .articleId(a.getId())
                         .title(a.getTitle())
@@ -100,13 +100,13 @@ public class HomeService {
         /* ===========================
          * 4) 투표 목록 (null-safe)
          * =========================== */
-        List<VoteListDto> aiVotes = voteRepository.findAll().stream()
+        List<VoteListResponse> aiVotes = voteRepository.findAll().stream()
                 .sorted(Comparator.comparing(
                         VoteEntity::getTotalParticipants,
                         Comparator.nullsLast(Comparator.naturalOrder())
                 ).reversed())
                 .limit(10)
-                .map(v -> VoteListDto.builder()
+                .map(v -> VoteListResponse.builder()
                         .voteId(v.getId())
                         .title(v.getTitle())
                         .status(v.getStatus().name())

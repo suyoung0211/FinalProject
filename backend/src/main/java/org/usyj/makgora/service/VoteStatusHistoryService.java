@@ -3,9 +3,9 @@ package org.usyj.makgora.service;
 import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.entity.VoteStatusHistoryEntity;
 import org.usyj.makgora.repository.VotesStatusHistoryRepository;
+import org.usyj.makgora.vote.entity.VoteEntity;
+import org.usyj.makgora.vote.entity.VoteStatusHistoryEntity;
 
 import lombok.RequiredArgsConstructor;
 

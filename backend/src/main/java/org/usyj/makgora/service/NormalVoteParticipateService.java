@@ -6,8 +6,13 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.*;
+import org.usyj.makgora.ranking.entity.*;
 import org.usyj.makgora.repository.*;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
+import org.usyj.makgora.vote.entity.NormalVoteChoiceEntity;
+import org.usyj.makgora.vote.entity.NormalVoteEntity;
+import org.usyj.makgora.vote.entity.VoteUserEntity;
 
 @Service
 @RequiredArgsConstructor

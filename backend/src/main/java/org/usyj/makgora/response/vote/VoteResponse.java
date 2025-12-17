@@ -7,8 +7,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import org.usyj.makgora.entity.VoteOptionEntity;
-import org.usyj.makgora.entity.VoteOptionChoiceEntity;
+import org.usyj.makgora.vote.entity.VoteOptionChoiceEntity;
+import org.usyj.makgora.vote.entity.VoteOptionEntity;
 
 @Getter
 @Setter

@@ -8,9 +8,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.article.dto.response.ArticleAiTitleResponse;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.article.repository.ArticleRepository;
-import org.usyj.makgora.entity.RssArticleEntity;
 
 import lombok.RequiredArgsConstructor;
 

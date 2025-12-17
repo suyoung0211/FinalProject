@@ -3,8 +3,8 @@ package org.usyj.makgora.community.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.usyj.makgora.community.dto.CommunityCommentRequest;
-import org.usyj.makgora.community.dto.CommunityCommentResponse;
+import org.usyj.makgora.community.dto.request.CommunityCommentRequest;
+import org.usyj.makgora.community.dto.response.CommunityCommentResponse;
 import org.usyj.makgora.community.service.CommunityCommentService;
 import org.usyj.makgora.global.security.CustomUserDetails;
 

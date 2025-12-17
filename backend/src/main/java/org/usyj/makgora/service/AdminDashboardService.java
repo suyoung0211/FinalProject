@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.response.AdminDashboardStatsResponse;
+import org.usyj.makgora.user.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor

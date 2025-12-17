@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;

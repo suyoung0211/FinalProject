@@ -7,8 +7,8 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
 import org.usyj.makgora.article.repository.ArticleCategoryRepository;
-import org.usyj.makgora.rssfeed.dto.Categoryresponse;
-import org.usyj.makgora.rssfeed.dto.RssFeedCreateRequest;
+import org.usyj.makgora.rssfeed.dto.request.RssFeedCreateRequest;
+import org.usyj.makgora.rssfeed.dto.response.Categoryresponse;
 import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 

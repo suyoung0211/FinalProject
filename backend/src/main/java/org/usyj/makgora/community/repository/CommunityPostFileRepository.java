@@ -1,7 +1,8 @@
 package org.usyj.makgora.community.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.usyj.makgora.entity.CommunityPostFileEntity;
+import org.usyj.makgora.community.entity.CommunityPostFileEntity;
+
 import java.util.List;
 
 public interface CommunityPostFileRepository extends JpaRepository<CommunityPostFileEntity, Long> {

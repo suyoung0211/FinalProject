@@ -3,8 +3,8 @@ package org.usyj.makgora.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.repository.IssueRepository;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
+import org.usyj.makgora.issue.repository.IssueRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 @Service

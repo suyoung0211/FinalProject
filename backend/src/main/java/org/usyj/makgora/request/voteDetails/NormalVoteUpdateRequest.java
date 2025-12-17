@@ -2,7 +2,8 @@ package org.usyj.makgora.request.voteDetails;
 
 import lombok.Data;
 import java.time.LocalDateTime;
-import org.usyj.makgora.entity.NormalVoteEntity;
+
+import org.usyj.makgora.vote.entity.NormalVoteEntity;
 
 @Data
 public class NormalVoteUpdateRequest {

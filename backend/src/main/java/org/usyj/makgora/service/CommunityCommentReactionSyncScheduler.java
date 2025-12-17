@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.usyj.makgora.community.entity.CommunityCommentEntity;
 import org.usyj.makgora.community.repository.CommunityCommentRepository;
-import org.usyj.makgora.entity.CommunityCommentEntity;
 
 import java.util.Set;
 

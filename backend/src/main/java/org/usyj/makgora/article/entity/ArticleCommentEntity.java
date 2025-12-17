@@ -6,8 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 @Entity
 @Table(name = "Article_Comments")
