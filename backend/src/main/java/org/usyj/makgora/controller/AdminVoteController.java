@@ -4,9 +4,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.request.voteDetails.VoteDetailResolveRequest;
 import org.usyj.makgora.response.voteDetails.VoteDetailSettlementResponse;
-import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.VoteSettlementService;
 
 import lombok.RequiredArgsConstructor;

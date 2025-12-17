@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.repository.UserRepository;
-import org.usyj.makgora.security.CustomUserDetails;
 
 @Service
 @RequiredArgsConstructor

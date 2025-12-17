@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.EmailVerificationEntity;
 import org.usyj.makgora.entity.RefreshTokenEntity;
 import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.global.security.JwtTokenProvider;
 import org.usyj.makgora.repository.EmailVerificationRepository;
 import org.usyj.makgora.repository.RefreshTokenRepository;
 import org.usyj.makgora.repository.UserRepository;
@@ -14,7 +15,6 @@ import org.usyj.makgora.request.auth.LoginRequest;
 import org.usyj.makgora.request.auth.RegisterRequest;
 import org.usyj.makgora.response.UserInfoResponse;
 import org.usyj.makgora.response.auth.LoginResponse;
-import org.usyj.makgora.security.JwtTokenProvider;
 
 @Service
 @Transactional

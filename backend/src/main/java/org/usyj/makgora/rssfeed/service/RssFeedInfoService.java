@@ -2,9 +2,9 @@ package org.usyj.makgora.rssfeed.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssFeedEntity;
-import org.usyj.makgora.rssfeed.dto.RssFeedResponse;
+import org.usyj.makgora.article.dto.response.ArticleResponse;
+import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 
 import java.util.List;
@@ -29,7 +29,7 @@ public class RssFeedInfoService {
      * - RSS + Article JOIN 조회
      * - 조회 결과(Object[]) → DTO 변환
      */
-    public List<RssFeedResponse> getAllFeedsWithArticleCount() {
+    public List<ArticleResponse> getAllFeedsWithArticleCount() {
 
         List<Object[]> results = rssFeedRepository.findAllFeedsWithArticleCount();
 
@@ -43,7 +43,7 @@ public class RssFeedInfoService {
                             .map(ArticleCategoryEntity::getName)
                             .collect(Collectors.toSet());
 
-                    return RssFeedResponse.builder()
+                    return ArticleResponse.builder()
                             .id(feed.getId())
                             .sourceName(feed.getSourceName())
                             .url(feed.getUrl())

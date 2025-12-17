@@ -5,12 +5,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.request.normalvote.NormalVoteCreateRequest;
 import org.usyj.makgora.request.normalvote.NormalVoteFullUpdateRequest;
 import org.usyj.makgora.request.normalvote.NormalVoteParticipateRequest;
 import org.usyj.makgora.response.normalvote.*;
 import org.usyj.makgora.response.voteDetails.NormalVoteResultResponse;
-import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.NormalVoteDetailService;
 import org.usyj.makgora.service.NormalVoteService;
 

@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.springframework.stereotype.Component;
-import org.usyj.makgora.rssfeed.dto.RssArticleCreateDTO;
+import org.usyj.makgora.article.dto.RssArticleCreateDTO;
 
 import com.rometools.rome.feed.module.Module;
 import com.rometools.rome.feed.synd.SyndEntry;

@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.usyj.makgora.article.service.ArticleListService;
 import org.usyj.makgora.response.home.HomeResponse;
-import org.usyj.makgora.service.ArticleListService;
 import org.usyj.makgora.service.HomeService;
 
 import lombok.RequiredArgsConstructor;

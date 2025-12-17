@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.response.UserInfoResponse;
-import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.UserInfoService;
 
 @RestController

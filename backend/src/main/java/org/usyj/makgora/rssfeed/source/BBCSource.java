@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
-import org.usyj.makgora.rssfeed.dto.RssArticleCreateDTO;
+import org.usyj.makgora.article.dto.RssArticleCreateDTO;
 
 import com.rometools.modules.mediarss.MediaEntryModule;
 import com.rometools.modules.mediarss.types.Thumbnail;

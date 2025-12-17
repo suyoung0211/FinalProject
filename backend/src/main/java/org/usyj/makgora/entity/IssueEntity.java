@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.usyj.makgora.converter.JpaJsonConverter;
+import org.usyj.makgora.global.converter.JpaJsonConverter;
 
 import java.time.LocalDateTime;
 import java.util.Map;

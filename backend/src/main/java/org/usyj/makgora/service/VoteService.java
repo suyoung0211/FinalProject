@@ -7,7 +7,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.entity.*;
-import org.usyj.makgora.exception.VoteException;
+import org.usyj.makgora.global.exception.VoteException;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.vote.*;
 import org.usyj.makgora.response.vote.*;

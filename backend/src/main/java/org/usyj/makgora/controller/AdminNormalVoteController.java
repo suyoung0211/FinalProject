@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.response.normalvote.NormalVoteResponse;
-import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.NormalVoteService;
 
 @RestController

@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import org.usyj.makgora.entity.ArticleAiTitleEntity;
+import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.RssFeedEntity;
+import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 
 import jakarta.transaction.Transactional;
 

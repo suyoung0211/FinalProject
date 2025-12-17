@@ -4,12 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
+import org.usyj.makgora.global.security.CustomUserDetails;
 import org.usyj.makgora.request.vote.*;
 import org.usyj.makgora.response.VoteTrendChartResponse;
 import org.usyj.makgora.response.vote.OddsResponse;
 import org.usyj.makgora.response.voteDetails.*;
-import org.usyj.makgora.security.CustomUserDetails;
 import org.usyj.makgora.service.*;
 
 @RestController
