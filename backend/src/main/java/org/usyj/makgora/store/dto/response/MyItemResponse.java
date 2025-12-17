@@ -1,4 +1,4 @@
-package org.usyj.makgora.response;
+package org.usyj.makgora.store.dto.response;
 
 
 import lombok.Builder;

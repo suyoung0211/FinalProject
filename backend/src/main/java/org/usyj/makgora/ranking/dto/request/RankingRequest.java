@@ -1,4 +1,4 @@
-package org.usyj.makgora.request;
+package org.usyj.makgora.ranking.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;

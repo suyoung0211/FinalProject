@@ -2,8 +2,6 @@ package org.usyj.makgora.vote.dto.voteDetailResponse;
 
 import java.util.List;
 
-import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailStatisticsResponse.OptionTrendItem;
-
 import lombok.Builder;
 import lombok.Data;
 

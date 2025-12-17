@@ -4,11 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.usyj.makgora.response.AdminUserInfoResponse;
-import org.usyj.makgora.response.UserInfoResponse;
+import org.usyj.makgora.admin.dto.response.AdminUserInfoResponse;
 import org.usyj.makgora.store.entity.StoreItemEntity;
 import org.usyj.makgora.store.entity.UserStoreEntity;
 import org.usyj.makgora.store.repository.UserStoreRepository;
+import org.usyj.makgora.user.dto.response.UserInfoResponse;
 import org.usyj.makgora.user.entity.UserEntity;
 import org.usyj.makgora.user.repository.UserRepository;
 

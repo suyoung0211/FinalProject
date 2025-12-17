@@ -1,4 +1,4 @@
-package org.usyj.makgora.response;
+package org.usyj.makgora.vote.dto.voteResponse;
 
 
 import java.util.List;

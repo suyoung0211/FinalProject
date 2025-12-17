@@ -1,6 +1,6 @@
 package org.usyj.makgora.auth.dto.response;
 
-import org.usyj.makgora.response.UserInfoResponse;
+import org.usyj.makgora.user.dto.response.UserInfoResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

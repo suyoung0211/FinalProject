@@ -1,9 +1,9 @@
 package org.usyj.makgora.admin.service;
 
 import org.springframework.stereotype.Service;
+import org.usyj.makgora.admin.dto.response.AdminDashboardStatsResponse;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
 import org.usyj.makgora.normalVote.repository.NormalVoteRepository;
-import org.usyj.makgora.response.AdminDashboardStatsResponse;
 import org.usyj.makgora.user.repository.UserRepository;
 import org.usyj.makgora.vote.repository.VoteRepository;
 

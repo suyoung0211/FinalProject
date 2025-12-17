@@ -1,4 +1,4 @@
-package org.usyj.makgora.response;
+package org.usyj.makgora.ranking.dto.response;
 
 import org.usyj.makgora.ranking.entity.RankingEntity;
 

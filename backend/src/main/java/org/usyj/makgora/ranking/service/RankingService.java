@@ -3,10 +3,10 @@ package org.usyj.makgora.ranking.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.ranking.dto.response.RankingResponse;
 import org.usyj.makgora.ranking.entity.RankingEntity;
 import org.usyj.makgora.ranking.entity.RankingEntity.RankingType;
 import org.usyj.makgora.ranking.repository.RankingRepository;
-import org.usyj.makgora.response.RankingResponse;
 import org.usyj.makgora.user.entity.UserEntity;
 import org.usyj.makgora.user.repository.UserRepository;
 
