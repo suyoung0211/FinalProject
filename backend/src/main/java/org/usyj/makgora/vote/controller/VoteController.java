@@ -1,18 +1,29 @@
 package org.usyj.makgora.vote.controller;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.usyj.makgora.global.security.CustomUserDetails;
-import org.usyj.makgora.global.service.*;
-import org.usyj.makgora.response.VoteTrendChartResponse;
-import org.usyj.makgora.vote.dto.voteDetailResponse.*;
-import org.usyj.makgora.vote.dto.voteRequest.*;
+import org.usyj.makgora.vote.dto.voteDetailResponse.ExpectedOddsResponse;
+import org.usyj.makgora.vote.dto.voteDetailResponse.MyParticipationResponse;
+import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailMainResponse;
+import org.usyj.makgora.vote.dto.voteRequest.UserVoteCreateRequest;
+import org.usyj.makgora.vote.dto.voteRequest.VoteAiCreateRequest;
+import org.usyj.makgora.vote.dto.voteRequest.VoteParticipateRequest;
 import org.usyj.makgora.vote.dto.voteResponse.OddsResponse;
+import org.usyj.makgora.vote.dto.voteResponse.VoteTrendChartResponse;
 import org.usyj.makgora.vote.service.OddsService;
 import org.usyj.makgora.vote.service.VoteDetailService;
 import org.usyj.makgora.vote.service.VoteService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/votes")

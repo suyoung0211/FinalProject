@@ -3,9 +3,9 @@ package org.usyj.makgora.store.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.request.StoreItemPurchaseRequest;
-import org.usyj.makgora.response.StoreItemResponse;
-import org.usyj.makgora.response.UserStoreResponse;
+import org.usyj.makgora.store.dto.request.StoreItemPurchaseRequest;
+import org.usyj.makgora.store.dto.response.StoreItemResponse;
+import org.usyj.makgora.store.dto.response.UserStoreResponse;
 import org.usyj.makgora.store.entity.StoreItemEntity;
 import org.usyj.makgora.store.entity.UserStoreEntity;
 import org.usyj.makgora.store.repository.StoreItemRepository;

@@ -19,7 +19,6 @@ import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
 import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
-import org.usyj.makgora.response.VoteTrendChartResponse;
 import org.usyj.makgora.vote.dto.voteDetailResponse.MyParticipationResponse;
 import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailArticleResponse;
 import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailChoiceResponse;
@@ -31,6 +30,7 @@ import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailParticipationRespo
 import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailSettlementSummaryResponse;
 import org.usyj.makgora.vote.dto.voteDetailResponse.VoteDetailStatisticsResponse;
 import org.usyj.makgora.vote.dto.voteResponse.OddsResponse;
+import org.usyj.makgora.vote.dto.voteResponse.VoteTrendChartResponse;
 import org.usyj.makgora.vote.entity.VoteCommentEntity;
 import org.usyj.makgora.vote.entity.VoteEntity;
 import org.usyj.makgora.vote.entity.VoteOptionChoiceEntity;

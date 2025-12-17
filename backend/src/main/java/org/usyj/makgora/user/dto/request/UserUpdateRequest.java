@@ -1,4 +1,4 @@
-package org.usyj.makgora.request;
+package org.usyj.makgora.user.dto.request;
 
 import org.usyj.makgora.user.entity.UserEntity;
 

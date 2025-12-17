@@ -3,7 +3,7 @@ package org.usyj.makgora.user.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.request.UserUpdateRequest;
+import org.usyj.makgora.user.dto.request.UserUpdateRequest;
 import org.usyj.makgora.user.entity.UserEntity;
 import org.usyj.makgora.user.repository.UserRepository;
 

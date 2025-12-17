@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.global.security.CustomUserDetails;
-import org.usyj.makgora.response.UserInfoResponse;
+import org.usyj.makgora.user.dto.response.UserInfoResponse;
 import org.usyj.makgora.user.service.UserInfoService;
 
 @RestController
