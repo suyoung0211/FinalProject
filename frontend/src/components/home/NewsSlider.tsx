@@ -76,7 +76,9 @@ export default function NewsSlider({ slides }: Props) {
         <h2 className="text-xl md:text-3xl font-bold text-white">
           {current.aiTitle || "제목 없음"}
         </h2>
-        <p className="text-gray-300 text-sm mt-1">{current.publishedAt}</p>
+        <p className="text-gray-300 text-sm mt-1">
+  {current.publishedAt?.slice(0, 10)}
+</p>
       </div>
 
       {/* 인디케이터 */}

@@ -21,6 +21,7 @@ public class VoteSettlementService {
     private final VoteUserRepository voteUserRepository;
     private final UserRepository userRepository;
     private final VoteStatusHistoryService historyService;
+    private final VoteOptionChoiceRepository choiceRepository;
 
     private static final double MAX_ODDS = 10.0;
 
@@ -49,18 +50,21 @@ public VoteDetailSettlementResponse finished(
 
     for (VoteDetailResolveRequest.CorrectAnswer ans : req.getAnswers()) {
 
-        VoteOptionEntity option = optionRepository.findById(ans.getOptionId())
-                .orElseThrow(() -> new RuntimeException("Option not found"));
+    VoteOptionEntity option = optionRepository.findById(ans.getOptionId())
+            .orElseThrow(() -> new RuntimeException("Option not found"));
+    Integer choiceId = Math.toIntExact(ans.getChoiceId());
 
-        VoteOptionChoiceEntity correctChoice =
-                option.getChoices().stream()
-                        .filter(c -> c.getId().equals(ans.getChoiceId().longValue()))
-                        .findFirst()
-                        .orElseThrow(() -> new RuntimeException("Choice not found"));
+    VoteOptionChoiceEntity correctChoice =
+            choiceRepository.findById(choiceId)
+                    .orElseThrow(() -> new RuntimeException("Choice not found"));
 
-        option.setCorrectChoice(correctChoice);
-        optionRepository.save(option);
+    // 🔥 핵심 방어: 이 choice가 이 option 소속인지 확인
+    if (!correctChoice.getOption().getId().equals(option.getId())) {
+        throw new RuntimeException("Choice does not belong to option");
     }
+
+    option.setCorrectChoice(correctChoice);
+}
 
     vote.setStatus(VoteEntity.Status.RESOLVED);
     vote.setUpdatedAt(LocalDateTime.now());
