@@ -1,4 +1,3 @@
-// src/main/java/org/usyj/makgora/controller/ArticleCommentReactionController.java
 package org.usyj.makgora.article.controller;
 
 import lombok.RequiredArgsConstructor;

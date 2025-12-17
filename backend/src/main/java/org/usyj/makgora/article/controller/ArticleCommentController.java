@@ -1,4 +1,3 @@
-// src/main/java/org/usyj/makgora/controller/ArticleController.java
 package org.usyj.makgora.article.controller;
 
 import java.time.Duration;
