@@ -3,8 +3,8 @@ package org.usyj.makgora.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.entity.IssueEntity;
+import org.usyj.makgora.issue.entity.IssueEntity;
+import org.usyj.makgora.vote.entity.VoteEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;

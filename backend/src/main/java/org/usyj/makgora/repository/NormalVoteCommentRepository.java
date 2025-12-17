@@ -3,7 +3,7 @@ package org.usyj.makgora.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.usyj.makgora.entity.NormalVoteCommentEntity;
+import org.usyj.makgora.vote.entity.NormalVoteCommentEntity;
 
 public interface NormalVoteCommentRepository extends JpaRepository<NormalVoteCommentEntity, Long> {
 

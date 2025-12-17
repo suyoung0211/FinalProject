@@ -1,6 +1,6 @@
 package org.usyj.makgora.request;
 
-import org.usyj.makgora.entity.UserEntity;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import lombok.Data;
 

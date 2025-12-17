@@ -1,9 +1,9 @@
 package org.usyj.makgora.profile.service;
 
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.profile.dto.UserPublicProfileResponse;
-import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 

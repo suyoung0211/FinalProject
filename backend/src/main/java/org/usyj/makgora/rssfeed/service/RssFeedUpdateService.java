@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.article.dto.response.ArticleResponse;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
 import org.usyj.makgora.article.repository.ArticleCategoryRepository;
-import org.usyj.makgora.rssfeed.dto.RssFeedUpdateRequest;
+import org.usyj.makgora.rssfeed.dto.request.RssFeedUpdateRequest;
 import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.repository.RssFeedRepository;
 

@@ -6,8 +6,8 @@ import java.util.List;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.VoteEntity;
 import org.usyj.makgora.repository.VoteRepository;
+import org.usyj.makgora.vote.entity.VoteEntity;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

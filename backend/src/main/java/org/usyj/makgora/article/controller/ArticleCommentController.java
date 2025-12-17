@@ -25,13 +25,12 @@ import org.usyj.makgora.article.dto.response.ArticleDetailResponse;
 import org.usyj.makgora.article.dto.response.ArticleListResponse;
 import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.article.repository.ArticleRepository;
 import org.usyj.makgora.article.service.ArticleCommentService;
 import org.usyj.makgora.article.service.ArticleDetailService;
-import org.usyj.makgora.article.service.ArticleReactionService;
 import org.usyj.makgora.article.service.ArticleViewService;
-import org.usyj.makgora.entity.RssArticleEntity;
 import org.usyj.makgora.global.security.CustomUserDetails;
 
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,6 @@ import lombok.RequiredArgsConstructor;
 public class ArticleCommentController {
 
     private final ArticleCommentService commentService;
-    private final ArticleReactionService reactionService;
     private final ArticleViewService viewService;
     private final ArticleRepository articleRepo;
     private final ArticleAiTitleRepository aiTitleRepo;

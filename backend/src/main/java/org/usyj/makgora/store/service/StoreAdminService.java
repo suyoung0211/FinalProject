@@ -7,13 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.usyj.makgora.entity.StoreItemEntity;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.UserStoreEntity;
 import org.usyj.makgora.profile.service.ImageService;
-import org.usyj.makgora.repository.StoreItemRepository;
-import org.usyj.makgora.repository.UserStoreRepository;
+import org.usyj.makgora.store.entity.StoreItemEntity;
+import org.usyj.makgora.store.entity.UserStoreEntity;
+import org.usyj.makgora.store.repository.StoreItemRepository;
+import org.usyj.makgora.store.repository.UserStoreRepository;
 import org.usyj.makgora.store.request.StoreItemCreateRequest;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import java.util.List;
 import java.util.Map;

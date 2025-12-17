@@ -3,15 +3,15 @@ package org.usyj.makgora.store.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.entity.StoreItemEntity;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.UserStoreEntity;
-import org.usyj.makgora.repository.StoreItemRepository;
-import org.usyj.makgora.repository.UserRepository;
-import org.usyj.makgora.repository.UserStoreRepository;
 import org.usyj.makgora.request.StoreItemPurchaseRequest;
 import org.usyj.makgora.response.StoreItemResponse;
 import org.usyj.makgora.response.UserStoreResponse;
+import org.usyj.makgora.store.entity.StoreItemEntity;
+import org.usyj.makgora.store.entity.UserStoreEntity;
+import org.usyj.makgora.store.repository.StoreItemRepository;
+import org.usyj.makgora.store.repository.UserStoreRepository;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

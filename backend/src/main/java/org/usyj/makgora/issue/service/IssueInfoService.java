@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.issue.dto.IssueResponse;
-import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.issue.dto.response.IssueResponse;
+import org.usyj.makgora.issue.repository.IssueRepository;
 
 import lombok.RequiredArgsConstructor;
 

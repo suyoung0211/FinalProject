@@ -3,10 +3,16 @@ package org.usyj.makgora.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.*;
+import org.usyj.makgora.ranking.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.request.voteDetails.VoteDetailResolveRequest;
 import org.usyj.makgora.response.voteDetails.VoteDetailSettlementResponse;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
+import org.usyj.makgora.vote.entity.VoteEntity;
+import org.usyj.makgora.vote.entity.VoteOptionChoiceEntity;
+import org.usyj.makgora.vote.entity.VoteOptionEntity;
+import org.usyj.makgora.vote.entity.VoteUserEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
 package org.usyj.makgora.repository;
 
-import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.entity.VoteStatusHistoryEntity;
+import org.usyj.makgora.vote.entity.VoteEntity;
+import org.usyj.makgora.vote.entity.VoteStatusHistoryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

@@ -7,10 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.VoteOptionChoiceEntity;
-import org.usyj.makgora.entity.VoteOptionEntity;
-import org.usyj.makgora.entity.VoteUserEntity;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.vote.entity.VoteOptionChoiceEntity;
+import org.usyj.makgora.vote.entity.VoteOptionEntity;
+import org.usyj.makgora.vote.entity.VoteUserEntity;
 
 @Repository
 public interface VoteUserRepository extends JpaRepository<VoteUserEntity, Long> {

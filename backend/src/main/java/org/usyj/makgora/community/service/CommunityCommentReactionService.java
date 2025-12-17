@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.community.dto.response.CommunityCommentReactionResponse;
+import org.usyj.makgora.community.entity.CommunityCommentEntity;
 import org.usyj.makgora.community.repository.CommunityCommentRepository;
-import org.usyj.makgora.entity.CommunityCommentEntity;
-import org.usyj.makgora.community.dto.CommunityCommentReactionResponse;
 
 @Service
 @RequiredArgsConstructor

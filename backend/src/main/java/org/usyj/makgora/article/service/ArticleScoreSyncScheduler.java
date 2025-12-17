@@ -6,7 +6,7 @@ import java.util.Set;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.entity.RssArticleEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 
 import jakarta.transaction.Transactional;
@@ -19,7 +19,7 @@ public class ArticleScoreSyncScheduler {
     private final StringRedisTemplate redis;
     private final RssArticleRepository articleRepo;
 
-    // @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
+    @Scheduled(fixedDelay = 60 * 60 * 1000) // 1시간마다
     @Transactional
     public void syncScores() {
 

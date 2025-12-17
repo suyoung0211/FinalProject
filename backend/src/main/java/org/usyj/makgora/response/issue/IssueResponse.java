@@ -4,10 +4,11 @@ package org.usyj.makgora.response.issue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.usyj.makgora.entity.IssueEntity;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+
+import org.usyj.makgora.issue.entity.IssueEntity;
 
 @Data
 @Builder

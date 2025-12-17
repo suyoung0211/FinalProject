@@ -11,9 +11,9 @@ import org.usyj.makgora.response.issue.IssueResponse;
 import org.usyj.makgora.response.vote.VoteResponse;
 import org.usyj.makgora.service.IssueService;
 import org.usyj.makgora.service.VoteService;
-import org.usyj.makgora.entity.IssueEntity;
-import org.usyj.makgora.entity.IssueEntity.Status;
-import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.issue.entity.IssueEntity;
+import org.usyj.makgora.issue.entity.IssueEntity.Status;
+import org.usyj.makgora.issue.repository.IssueRepository;
 import org.usyj.makgora.request.vote.VoteAiCreateRequest;
 
 import java.time.LocalDateTime;

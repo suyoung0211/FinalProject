@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.usyj.makgora.issue.dto.IssueResponse;
-import org.usyj.makgora.issue.dto.IssueStatusUpdateRequest;
+import org.usyj.makgora.issue.dto.request.IssueStatusUpdateRequest;
+import org.usyj.makgora.issue.dto.response.IssueResponse;
 import org.usyj.makgora.issue.service.IssueInfoService;
 import org.usyj.makgora.issue.service.IssueStatusService;
 

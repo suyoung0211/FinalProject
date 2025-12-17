@@ -4,13 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.NormalVoteCommentEntity;
-import org.usyj.makgora.entity.NormalVoteEntity;
-import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.repository.NormalVoteCommentRepository;
 import org.usyj.makgora.repository.NormalVoteRepository;
-import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
+import org.usyj.makgora.vote.entity.NormalVoteCommentEntity;
+import org.usyj.makgora.vote.entity.NormalVoteEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;

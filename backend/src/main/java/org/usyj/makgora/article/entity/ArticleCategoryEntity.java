@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.hibernate.annotations.CreationTimestamp;
-import org.usyj.makgora.entity.RssArticleEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

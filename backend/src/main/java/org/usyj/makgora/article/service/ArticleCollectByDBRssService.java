@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.article.dto.RssArticleCreateDTO;
 import org.usyj.makgora.article.entity.ArticleCategoryEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.rssfeed.entity.RssFeedEntity;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 import org.usyj.makgora.rssfeed.service.RssFeedManagementService;

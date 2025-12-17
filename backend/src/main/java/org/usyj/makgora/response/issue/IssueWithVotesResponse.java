@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import java.util.List;
 
-import org.usyj.makgora.entity.VoteEntity;
+import org.usyj.makgora.vote.entity.VoteEntity;
 
 @Data
 @Builder

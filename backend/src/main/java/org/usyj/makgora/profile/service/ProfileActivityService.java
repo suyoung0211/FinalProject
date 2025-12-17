@@ -6,20 +6,20 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.usyj.makgora.community.entity.CommunityPostEntity;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
-import org.usyj.makgora.dto.UnifiedCommentResponse;
-import org.usyj.makgora.dto.UnifiedCommentResponse.CommentSource;
-import org.usyj.makgora.entity.CommunityPostEntity;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.entity.VoteOptionChoiceEntity;
-import org.usyj.makgora.entity.VoteUserEntity;
 import org.usyj.makgora.profile.dto.RecentCommunityActivityResponse;
 import org.usyj.makgora.profile.dto.RecentCommunityActivityResponse.CommunityActivityType;
 import org.usyj.makgora.profile.dto.RecentVoteActivityResponse;
-import org.usyj.makgora.repository.UserRepository;
 import org.usyj.makgora.repository.VoteUserRepository;
 import org.usyj.makgora.service.UnifiedCommentService;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
+import org.usyj.makgora.vote.dto.response.UnifiedCommentResponse;
+import org.usyj.makgora.vote.dto.response.UnifiedCommentResponse.CommentSource;
+import org.usyj.makgora.vote.entity.VoteEntity;
+import org.usyj.makgora.vote.entity.VoteOptionChoiceEntity;
+import org.usyj.makgora.vote.entity.VoteUserEntity;
 
 import lombok.RequiredArgsConstructor;
 

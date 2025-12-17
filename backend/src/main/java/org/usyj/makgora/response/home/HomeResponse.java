@@ -3,11 +3,11 @@ package org.usyj.makgora.response.home;
 import lombok.*;
 import java.util.List;
 
-import org.usyj.makgora.dto.home.AiBannerDto;
-import org.usyj.makgora.dto.home.HotIssueDto;
-import org.usyj.makgora.dto.home.SlideNewsDto;
-import org.usyj.makgora.dto.home.TopVoteDto;
-import org.usyj.makgora.dto.home.VoteListDto;
+import org.usyj.makgora.home.dto.response.AiBannerResponse;
+import org.usyj.makgora.home.dto.response.HotIssueResponse;
+import org.usyj.makgora.home.dto.response.SlideNewsResponse;
+import org.usyj.makgora.home.dto.response.TopVoteResponse;
+import org.usyj.makgora.home.dto.response.VoteListResponse;
 
 @Getter
 @Setter
@@ -16,8 +16,8 @@ import org.usyj.makgora.dto.home.VoteListDto;
 @Builder
 public class HomeResponse {
 
-    private List<SlideNewsDto> newsSlides;   // 뉴스 슬라이드
-    private List<HotIssueDto> latestIssues;  // 최신 뉴스 20개
-    private List<HotIssueDto> hotIssues;
-    private List<VoteListDto> voteList;      // 🔥 전체 투표 목록 추가
+    private List<SlideNewsResponse> newsSlides;   // 뉴스 슬라이드
+    private List<HotIssueResponse> latestIssues;  // 최신 뉴스 20개
+    private List<HotIssueResponse> hotIssues;
+    private List<VoteListResponse> voteList;      // 🔥 전체 투표 목록 추가
 }

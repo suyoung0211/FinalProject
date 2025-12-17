@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.usyj.makgora.entity.NormalVoteCommentEntity;
+import org.usyj.makgora.vote.entity.NormalVoteCommentEntity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

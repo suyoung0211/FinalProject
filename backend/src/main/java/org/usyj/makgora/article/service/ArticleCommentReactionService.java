@@ -9,8 +9,8 @@ import org.usyj.makgora.article.entity.ArticleCommentEntity;
 import org.usyj.makgora.article.entity.ArticleCommentReactionEntity;
 import org.usyj.makgora.article.repository.ArticleCommentReactionRepository;
 import org.usyj.makgora.article.repository.ArticleCommentRepository;
-import org.usyj.makgora.entity.UserEntity;
-import org.usyj.makgora.repository.UserRepository;
+import org.usyj.makgora.user.entity.UserEntity;
+import org.usyj.makgora.user.repository.UserRepository;
 
 import java.util.Optional;
 

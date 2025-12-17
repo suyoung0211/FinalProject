@@ -9,14 +9,14 @@ import org.usyj.makgora.article.dto.response.ArticleCommentResponse;
 import org.usyj.makgora.article.dto.response.ArticleDetailResponse;
 import org.usyj.makgora.article.entity.ArticleAiTitleEntity;
 import org.usyj.makgora.article.entity.ArticleReactionEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.article.repository.ArticleReactionRepository;
-import org.usyj.makgora.entity.IssueEntity;
-import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.VoteEntity;
-import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.issue.entity.IssueEntity;
+import org.usyj.makgora.issue.repository.IssueRepository;
 import org.usyj.makgora.repository.VoteRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
+import org.usyj.makgora.vote.entity.VoteEntity;
 
 import java.util.List;
 import java.util.Optional;

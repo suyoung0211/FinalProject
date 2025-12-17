@@ -3,10 +3,14 @@ package org.usyj.makgora.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.*;
+import org.usyj.makgora.ranking.entity.*;
 import org.usyj.makgora.repository.*;
 import org.usyj.makgora.response.voteDetails.VoteDetailCommentResponse;
 import org.usyj.makgora.response.voteDetails.VoteDetailParticipationResponse;
+import org.usyj.makgora.vote.entity.NormalVoteChoiceEntity;
+import org.usyj.makgora.vote.entity.NormalVoteCommentEntity;
+import org.usyj.makgora.vote.entity.NormalVoteEntity;
+import org.usyj.makgora.vote.entity.NormalVoteOptionEntity;
 import org.usyj.makgora.response.normalvote.NormalVoteDetailResponse;
 
 import java.util.List;

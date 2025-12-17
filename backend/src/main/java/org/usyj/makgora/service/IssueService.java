@@ -7,8 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.IssueEntity;
-import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.issue.entity.IssueEntity;
+import org.usyj.makgora.issue.repository.IssueRepository;
 import org.usyj.makgora.response.issue.IssueResponse;
 
 import java.time.LocalDateTime;

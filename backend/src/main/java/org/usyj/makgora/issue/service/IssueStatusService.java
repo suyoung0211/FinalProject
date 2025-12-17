@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.IssueEntity;
-import org.usyj.makgora.issue.dto.IssueResponse;
-import org.usyj.makgora.issue.dto.IssueStatusUpdateRequest;
-import org.usyj.makgora.repository.IssueRepository;
+import org.usyj.makgora.issue.dto.request.IssueStatusUpdateRequest;
+import org.usyj.makgora.issue.dto.response.IssueResponse;
+import org.usyj.makgora.issue.entity.IssueEntity;
+import org.usyj.makgora.issue.repository.IssueRepository;
 
 import lombok.RequiredArgsConstructor;
 

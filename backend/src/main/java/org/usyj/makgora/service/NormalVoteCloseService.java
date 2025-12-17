@@ -3,8 +3,8 @@ package org.usyj.makgora.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.usyj.makgora.entity.NormalVoteEntity;
 import org.usyj.makgora.repository.NormalVoteRepository;
+import org.usyj.makgora.vote.entity.NormalVoteEntity;
 
 @Service
 @RequiredArgsConstructor

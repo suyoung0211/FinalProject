@@ -6,11 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.usyj.makgora.article.dto.response.ArticleReactionResponse;
 import org.usyj.makgora.article.entity.ArticleReactionEntity;
+import org.usyj.makgora.article.entity.RssArticleEntity;
 import org.usyj.makgora.article.repository.ArticleReactionRepository;
-import org.usyj.makgora.entity.RssArticleEntity;
-import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 import org.usyj.makgora.service.IssueTriggerPushService;
+import org.usyj.makgora.user.entity.UserEntity;
 
 @Service
 @RequiredArgsConstructor

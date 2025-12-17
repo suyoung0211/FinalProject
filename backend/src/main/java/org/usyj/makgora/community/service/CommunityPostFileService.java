@@ -6,13 +6,13 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.usyj.makgora.community.dto.FileUploadResponse;
+import org.usyj.makgora.community.dto.response.FileUploadResponse;
+import org.usyj.makgora.community.entity.CommunityPostEntity;
+import org.usyj.makgora.community.entity.CommunityPostFileEntity;
 import org.usyj.makgora.community.repository.CommunityPostFileRepository;
 import org.usyj.makgora.community.repository.CommunityPostRepository;
-import org.usyj.makgora.entity.CommunityPostEntity;
-import org.usyj.makgora.entity.CommunityPostFileEntity;
-import org.usyj.makgora.entity.UserEntity;
 import org.usyj.makgora.profile.service.ImageService;
+import org.usyj.makgora.user.entity.UserEntity;
 
 import java.io.IOException;
 import java.nio.file.Files;
