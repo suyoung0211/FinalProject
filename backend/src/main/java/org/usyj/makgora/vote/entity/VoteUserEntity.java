@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+import org.usyj.makgora.normalVote.entity.NormalVoteChoiceEntity;
+import org.usyj.makgora.normalVote.entity.NormalVoteEntity;
+import org.usyj.makgora.normalVote.entity.NormalVoteOptionEntity;
 import org.usyj.makgora.user.entity.UserEntity;
 
 @Entity

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.usyj.makgora.issue.dto.response.IssueResponse;
+import org.usyj.makgora.issue.dto.response.AiIssueResponse;
 import org.usyj.makgora.issue.repository.IssueRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -19,10 +19,10 @@ public class IssueInfoService {
      * 모든 이슈를 IssueResponse DTO로 반환
      * 변환 로직은 DTO 내부 fromEntity에서 처리
      */
-    public List<IssueResponse> getAllIssues() {
+    public List<AiIssueResponse> getAllIssues() {
         return issueRepository.findAllWithRelations()
                               .stream()
-                              .map(IssueResponse::fromEntity)
+                              .map(AiIssueResponse::fromEntity)
                               .collect(Collectors.toList());
     }
 }

@@ -14,9 +14,9 @@ import org.usyj.makgora.article.repository.ArticleAiTitleRepository;
 import org.usyj.makgora.article.repository.ArticleReactionRepository;
 import org.usyj.makgora.issue.entity.IssueEntity;
 import org.usyj.makgora.issue.repository.IssueRepository;
-import org.usyj.makgora.repository.VoteRepository;
 import org.usyj.makgora.rssfeed.repository.RssArticleRepository;
 import org.usyj.makgora.vote.entity.VoteEntity;
+import org.usyj.makgora.vote.repository.VoteRepository;
 
 import java.util.List;
 import java.util.Optional;

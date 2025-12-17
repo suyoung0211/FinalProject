@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.usyj.makgora.issue.dto.request.IssueStatusUpdateRequest;
-import org.usyj.makgora.issue.dto.response.IssueResponse;
+import org.usyj.makgora.issue.dto.response.AiIssueResponse;
 import org.usyj.makgora.issue.service.IssueInfoService;
 import org.usyj.makgora.issue.service.IssueStatusService;
 
@@ -26,8 +26,8 @@ public class IssueInfoController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<List<IssueResponse>> getAllIssues() {
-        List<IssueResponse> issues = issueInfoService.getAllIssues();
+    public ResponseEntity<List<AiIssueResponse>> getAllIssues() {
+        List<AiIssueResponse> issues = issueInfoService.getAllIssues();
         return ResponseEntity.ok(issues);
     }
 
@@ -38,8 +38,8 @@ public class IssueInfoController {
      */
     @PostMapping("/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<IssueResponse> updateIssueStatus(@RequestBody IssueStatusUpdateRequest request) {
-        IssueResponse updatedIssue = issueStatusService.updateStatus(request);
+    public ResponseEntity<AiIssueResponse> updateIssueStatus(@RequestBody IssueStatusUpdateRequest request) {
+        AiIssueResponse updatedIssue = issueStatusService.updateStatus(request);
         return ResponseEntity.ok(updatedIssue);
     }
 }

@@ -13,7 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.usyj.makgora.global.security.JwtTokenProvider;
-import org.usyj.makgora.service.CustomUserDetailsService;
+import org.usyj.makgora.user.service.CustomUserDetailsService;
 
 import java.io.IOException;
 
